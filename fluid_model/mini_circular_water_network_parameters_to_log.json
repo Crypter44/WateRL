@@ -1,0 +1,37 @@
+{
+    "water_network": [
+        "u_p_1",
+        "V_flow_1",
+        "p_rel_1",
+        "pump_1.W_total",
+        "u_v_2",
+        "V_flow_2",
+        "p_rel_2",
+        "V_flow_3",
+        "p_rel_3",
+        "u_v_3",
+        "V_flow_4",
+        "p_rel_4",
+        "u_p_4",
+        "u_v_5",
+        "V_flow_5",
+        "p_rel_5",
+        "u_p_6",
+        "V_flow_6",
+        "p_rel_6",
+        "pump_6.W_total",
+        "V_flow_7",
+        "p_rel_7",
+        "u_v_7"
+    ],
+    "control_api": [
+        "w_p_1",
+        "w_v_2",
+        "w_v_3",
+        "w_p_4",
+        "w_v_5",
+        "w_p_6",
+        "w_v_7",
+        "power_estimate_p1"
+    ]
+}
