@@ -1,0 +1,2 @@
+LOG FOR: -x64 -cross -cscvode simple_network 2 0 0 dsmodel
+Build: cc -c  -fpic  -DDYMOLA_STATIC= -DUNIX -DSkip_f2c_Undefs -DFMI_MODULE_NAME=simple_network.so -O1 -DBUILDFMU -DFMI_VERSION=200  -m64 -I '/mnt/c/Program Files/Dymola 2024x/source' -I .  -I '/mnt/c/Program Files/Dymola 2024x/source/FMI' '/mnt/c/Program Files/Dymola 2024x/source/FMI/fmi2Functions.c' ../dsmodel.c '/mnt/c/Program Files/Dymola 2024x/source/matrixop.c'
