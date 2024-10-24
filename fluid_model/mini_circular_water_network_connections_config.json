@@ -26,19 +26,14 @@
       "connect_to_external_parameter": "w_v_5"
     },
     {
-      "parameter_name": "w_p_6",
+      "parameter_name": "w_v_6",
       "connect_to_system": "control_api",
-      "connect_to_external_parameter": "w_p_6"
-    },
-    {
-      "parameter_name": "w_v_7",
-      "connect_to_system": "control_api",
-      "connect_to_external_parameter": "w_v_7"
+      "connect_to_external_parameter": "w_v_6"
     }
   ],
   "control_api": [
     {
-      "parameter_name": "u_p_1",
+      "parameter_name": "P_pum_1",
       "connect_to_system": "water_network",
       "connect_to_external_parameter": "u_p_1"
     },
@@ -83,9 +78,9 @@
       "connect_to_external_parameter": "p_rel_3"
     },
     {
-      "parameter_name": "u_p_4",
+      "parameter_name": "P_pum_4",
       "connect_to_system": "water_network",
-      "connect_to_external_parameter": "u_p_4"
+      "connect_to_external_parameter": "P_pum_4"
     },
     {
       "parameter_name": "V_flow_4",
@@ -113,9 +108,9 @@
       "connect_to_external_parameter": "p_rel_5"
     },
     {
-      "parameter_name": "u_p_6",
+      "parameter_name": "u_v_6",
       "connect_to_system": "water_network",
-      "connect_to_external_parameter": "u_p_6"
+      "connect_to_external_parameter": "u_v_6"
     },
     {
       "parameter_name": "V_flow_6",
@@ -126,21 +121,6 @@
       "parameter_name": "p_rel_6",
       "connect_to_system": "water_network",
       "connect_to_external_parameter": "p_rel_6"
-    },
-    {
-      "parameter_name": "u_v_7",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "u_v_7"
-    },
-    {
-      "parameter_name": "V_flow_7",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "V_flow_7"
-    },
-    {
-      "parameter_name": "p_rel_7",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "p_rel_7"
     }
   ]
 }
