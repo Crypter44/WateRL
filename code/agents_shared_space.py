@@ -18,6 +18,7 @@ class SharedSpace:
         self.pump_agents = []
         self.consumer_agents = []
         self.project_directory = project_directory
+        self.time_index = 0
 
     def _add_agent(self, agent_config: "AgentConfig"):
         """Adds agents to SharedSpace, based on the type of the agent.
@@ -65,14 +66,22 @@ class SharedSpace:
         # before the first iteration
 
         if time > 0:
-            for agent in self.all_agents:
-                agent.write_FMU_data(time)
+            if self.time_index == 9:
+                for agent in self.all_agents:
+                    agent.write_FMU_data(time)
 
-            # demand volume flow is input to PI-controller
-            for consumer in self.consumer_agents:
-                consumer.calculate_demand_volume_flow()
-                consumer.set_action(consumer.demand_volume_flow_m3h)
+                # demand volume flow is input to PI-controller
+                for consumer in self.consumer_agents:
+                    consumer.calculate_demand_volume_flow()
+                    consumer.set_action(consumer.demand_volume_flow_m3h)
 
-            for pump in self.pump_agents:
-                chosen_speed = random.choice(np.linspace(0, 1, 10))
-                pump.set_action(chosen_speed)
+                for pump in self.pump_agents:
+                    chosen_speed = random.choice(np.linspace(0, 1, 10))
+                    pump.set_action(chosen_speed)
+                self.time_index = 0
+
+            elif self.time_index != 9:
+                for agent in self.all_agents:
+                    agent.set_action(agent.old_action)
+
+                self.time_index += 1

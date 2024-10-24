@@ -64,7 +64,7 @@ with open(logging_config_path) as logging_config_json:
 # %% run simulation
 start_time = time.time()
 results, units = simulate(
-    stop_time=50,
+    stop_time=10,
     step_size=1,
     fmu_paths=fmu_paths,
     model_classes=model_classes,
@@ -79,7 +79,7 @@ results, units = simulate(
 fig, ax = plt.subplots()
 ax.plot(
     results["time"],
-    results["water_network.V_flow_7"],
+    results["water_network.V_flow_2"],
     lw=1.5,
     label="actual flow",
     marker=".",
@@ -87,7 +87,7 @@ ax.plot(
 )
 ax.plot(
     results["time"],
-    results["control_api.w_v_7"],
+    results["control_api.w_v_2"],
     lw=2,
     label="demand",
     path_effects=[
@@ -101,14 +101,14 @@ ax.set_title("VALVE 6")
 ax.legend(loc="lower right", ncol=2)
 
 
-# %% display results - volume flow, consumer 3
+# %% display results - volume flow, consumer 6
 fig, ax = plt.subplots()
 ax2 = ax.twinx()
-ax2.plot(results["time"], results["water_network.u_v_7"], lw=1.5)
+ax2.plot(results["time"], results["water_network.u_v_6"], lw=1.5)
 
 ax.plot(
     results["time"],
-    results["control_api.w_v_7"],
+    results["control_api.w_v_6"],
     lw=1.5,
     label="demand",
     path_effects=[
@@ -119,7 +119,7 @@ ax.plot(
 )
 ax.plot(
     results["time"],
-    results["water_network.V_flow_7"],
+    results["water_network.V_flow_6"],
     lw=1.5,
     label="actual flow",
     markersize=8,
@@ -134,7 +134,7 @@ ax2.spines["right"].set_visible(True)
 # %%
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
-ax2.plot(results["time"], results["water_network.u_p_4"], lw=1.5)
+ax2.plot(results["time"], results["control_api.w_p_4"], lw=1.5)
 ax1.plot(
     results["time"],
     results["control_api.w_p_4"],
