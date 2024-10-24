@@ -103,7 +103,7 @@ class ConsumerAgent(Agent):
         omega = 2.65711342e-01
         time_demand_curve = np.linspace(0, 24, 100)
         demand_volume_flow_curve = (
-            20  # daily demand in m3
+            40  # daily demand in m3
             # the following function gives a demand per time unit in % of the daily demand
             # the total daily demand is reached after 24 time units
             * (

@@ -24,7 +24,7 @@ model mini_circular_water_network
     redeclare function powerCharacteristic =
         Custom_Pump_V2.BaseClasses_Custom.PumpCharacteristics.cubicPower (c={-0.14637,
             1.1881,23.0824,53.0304,6.0431}),
-    checkValve=true,
+    checkValve=false,
     rpm_rel=0.93969,
     use_N_in=true,
     V=0.1,
@@ -46,7 +46,7 @@ model mini_circular_water_network
     redeclare function powerCharacteristic =
         Custom_Pump_V2.BaseClasses_Custom.PumpCharacteristics.cubicPower (c={-0.14637,
             1.1881,23.0824,53.0304,6.0431}),
-    checkValve=true,
+    checkValve=false,
     rpm_rel=0.93969,
     use_N_in=true,
     V=0.1,

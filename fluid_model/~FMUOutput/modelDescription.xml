@@ -3,11 +3,11 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   fmiVersion="2.0"
   modelName="mini_circular_water_network"
-  guid="{ae28bb56-b3ca-4971-af46-ee4422abd95f}"
+  guid="{acbbbcca-b028-4a87-9149-752c94530f88}"
   description="System consisting of tree pumps and multiple sinks (consumer)."
   version="1"
   generationTool="Dymola Version 2024x, 2023-10-06"
-  generationDateAndTime="2024-10-23T16:34:08Z"
+  generationDateAndTime="2024-10-24T08:02:12Z"
   variableNamingConvention="structured"
   numberOfEventIndicators="28">
   <CoSimulation
@@ -616,7 +616,7 @@
       <Real
         quantity="MassFlowRate.SimpleLiquidWater"
         unit="kg/s"
-        min="0.0"
+        min="-1E+60"
         max="100000.0"/>
     </ScalarVariable>
     <!-- Index for next variable = 20 -->
@@ -654,7 +654,7 @@
         quantity="MassFlowRate.SimpleLiquidWater"
         unit="kg/s"
         min="-100000.0"
-        max="0.0"/>
+        max="1E+60"/>
     </ScalarVariable>
     <!-- Index for next variable = 23 -->
     <ScalarVariable
@@ -761,7 +761,7 @@
       valueReference="100663314"
       description="= true to prevent reverse flow"
       variability="constant">
-      <Boolean start="true"/>
+      <Boolean start="false"/>
     </ScalarVariable>
     <!-- Index for next variable = 32 -->
     <ScalarVariable
@@ -1470,7 +1470,7 @@
       <Real
         quantity="MassFlowRate.SimpleLiquidWater"
         unit="kg/s"
-        min="0.0"
+        min="-1E+60"
         max="100000.0"/>
     </ScalarVariable>
     <!-- Index for next variable = 102 -->
@@ -1508,7 +1508,7 @@
         quantity="MassFlowRate.SimpleLiquidWater"
         unit="kg/s"
         min="-100000.0"
-        max="0.0"/>
+        max="1E+60"/>
     </ScalarVariable>
     <!-- Index for next variable = 105 -->
     <ScalarVariable
@@ -1615,7 +1615,7 @@
       valueReference="100663360"
       description="= true to prevent reverse flow"
       variability="constant">
-      <Boolean start="true"/>
+      <Boolean start="false"/>
     </ScalarVariable>
     <!-- Index for next variable = 114 -->
     <ScalarVariable
@@ -4161,7 +4161,7 @@
     <!-- Index for next variable = 334 -->
     <ScalarVariable
       name="idealJunction_1.port_1.h_outflow"
-      valueReference="905970457"
+      valueReference="637535001"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4197,7 +4197,7 @@
     <!-- Index for next variable = 337 -->
     <ScalarVariable
       name="idealJunction_1.port_2.h_outflow"
-      valueReference="905970458"
+      valueReference="637535002"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4233,7 +4233,7 @@
     <!-- Index for next variable = 340 -->
     <ScalarVariable
       name="idealJunction_1.port_3.h_outflow"
-      valueReference="905970460"
+      valueReference="637535004"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4269,7 +4269,7 @@
     <!-- Index for next variable = 343 -->
     <ScalarVariable
       name="idealJunction_2.port_1.h_outflow"
-      valueReference="905970462"
+      valueReference="637535006"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4305,7 +4305,7 @@
     <!-- Index for next variable = 346 -->
     <ScalarVariable
       name="idealJunction_2.port_2.h_outflow"
-      valueReference="905970464"
+      valueReference="637535008"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4379,7 +4379,7 @@
     <!-- Index for next variable = 352 -->
     <ScalarVariable
       name="idealJunction_3.port_1.h_outflow"
-      valueReference="905970469"
+      valueReference="637535013"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4415,7 +4415,7 @@
     <!-- Index for next variable = 355 -->
     <ScalarVariable
       name="idealJunction_3.port_2.h_outflow"
-      valueReference="905970471"
+      valueReference="637535015"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4451,7 +4451,7 @@
     <!-- Index for next variable = 358 -->
     <ScalarVariable
       name="idealJunction_3.port_3.h_outflow"
-      valueReference="905970473"
+      valueReference="637535017"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4487,7 +4487,7 @@
     <!-- Index for next variable = 361 -->
     <ScalarVariable
       name="idealJunction_4.port_1.h_outflow"
-      valueReference="905970474"
+      valueReference="637535018"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4523,7 +4523,7 @@
     <!-- Index for next variable = 364 -->
     <ScalarVariable
       name="idealJunction_4.port_2.h_outflow"
-      valueReference="905970476"
+      valueReference="637535020"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4595,7 +4595,7 @@
     <!-- Index for next variable = 370 -->
     <ScalarVariable
       name="teeJunctionIdeal_5.port_1.h_outflow"
-      valueReference="905970480"
+      valueReference="637535024"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4667,7 +4667,7 @@
     <!-- Index for next variable = 376 -->
     <ScalarVariable
       name="teeJunctionIdeal_5.port_3.h_outflow"
-      valueReference="905970484"
+      valueReference="637535028"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4739,7 +4739,7 @@
     <!-- Index for next variable = 382 -->
     <ScalarVariable
       name="idealJunction_6.port_2.h_outflow"
-      valueReference="905970489"
+      valueReference="637535033"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -4775,7 +4775,7 @@
     <!-- Index for next variable = 385 -->
     <ScalarVariable
       name="idealJunction_6.port_3.h_outflow"
-      valueReference="905970491"
+      valueReference="637535035"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -5759,7 +5759,7 @@
     <!-- Index for next variable = 473 -->
     <ScalarVariable
       name="pipe_1.port_a.h_outflow"
-      valueReference="905970516"
+      valueReference="637535060"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -5795,7 +5795,7 @@
     <!-- Index for next variable = 476 -->
     <ScalarVariable
       name="pipe_1.port_b.h_outflow"
-      valueReference="905970518"
+      valueReference="637535062"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -7105,7 +7105,7 @@
     <!-- Index for next variable = 601 -->
     <ScalarVariable
       name="pipe_3.port_a.h_outflow"
-      valueReference="905970534"
+      valueReference="637535078"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -7141,7 +7141,7 @@
     <!-- Index for next variable = 604 -->
     <ScalarVariable
       name="pipe_3.port_b.h_outflow"
-      valueReference="905970535"
+      valueReference="637535079"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -8451,7 +8451,7 @@
     <!-- Index for next variable = 729 -->
     <ScalarVariable
       name="pipe_5.port_a.h_outflow"
-      valueReference="905970551"
+      valueReference="637535095"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -8487,7 +8487,7 @@
     <!-- Index for next variable = 732 -->
     <ScalarVariable
       name="pipe_5.port_b.h_outflow"
-      valueReference="905970553"
+      valueReference="637535097"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -9123,7 +9123,7 @@
     <!-- Index for next variable = 793 -->
     <ScalarVariable
       name="pipe_6.port_a.h_outflow"
-      valueReference="905970562"
+      valueReference="637535106"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -9159,7 +9159,7 @@
     <!-- Index for next variable = 796 -->
     <ScalarVariable
       name="pipe_6.port_b.h_outflow"
-      valueReference="905970563"
+      valueReference="637535107"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -9795,7 +9795,7 @@
     <!-- Index for next variable = 857 -->
     <ScalarVariable
       name="pipe_7.port_a.h_outflow"
-      valueReference="905970573"
+      valueReference="637535117"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -9831,7 +9831,7 @@
     <!-- Index for next variable = 860 -->
     <ScalarVariable
       name="pipe_7.port_b.h_outflow"
-      valueReference="905970574"
+      valueReference="637535118"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -10467,7 +10467,7 @@
     <!-- Index for next variable = 921 -->
     <ScalarVariable
       name="pipe_8.port_a.h_outflow"
-      valueReference="905970583"
+      valueReference="637535127"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -10503,7 +10503,7 @@
     <!-- Index for next variable = 924 -->
     <ScalarVariable
       name="pipe_8.port_b.h_outflow"
-      valueReference="905970584"
+      valueReference="637535128"
       description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
@@ -11140,9 +11140,8 @@
     <!-- Index for next variable = 985 -->
     <ScalarVariable
       name="volumeFlow_1.port_a.h_outflow"
-      valueReference="100663409"
-      description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0"
-      variability="tunable">
+      valueReference="637534964"
+      description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
         unit="J/kg"
@@ -11764,9 +11763,8 @@
     <!-- Index for next variable = 1036 -->
     <ScalarVariable
       name="volumeFlow_4.port_a.h_outflow"
-      valueReference="100663460"
-      description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0"
-      variability="tunable">
+      valueReference="637534980"
+      description="Specific thermodynamic enthalpy close to the connection point if m_flow &lt; 0">
       <Real
         quantity="SpecificEnergy"
         unit="J/kg"
@@ -15736,11 +15734,11 @@
     </Outputs>
     <Derivatives>
       <Unknown index="47"
-        dependencies="46 1143 1219 1295 1371 1390 1393 1397 1401 1404 1408"
-        dependenciesKind="fixed dependent dependent dependent dependent dependent dependent dependent dependent dependent dependent"/>
+        dependencies="46 128 1143 1219 1295 1371 1390 1393 1397 1401 1404 1408"
+        dependenciesKind="fixed fixed dependent dependent dependent dependent dependent dependent dependent dependent dependent dependent"/>
       <Unknown index="129"
-        dependencies="128 1143 1219 1295 1371 1390 1393 1397 1401 1404 1408"
-        dependenciesKind="fixed dependent dependent dependent dependent dependent dependent dependent dependent dependent dependent"/>
+        dependencies="46 128 1143 1219 1295 1371 1390 1393 1397 1401 1404 1408"
+        dependenciesKind="fixed fixed dependent dependent dependent dependent dependent dependent dependent dependent dependent dependent"/>
       <Unknown index="1144"
         dependencies="1143 1219 1295 1371 1390 1393 1397 1401 1404 1408"
         dependenciesKind="dependent dependent dependent dependent dependent dependent dependent dependent dependent dependent"/>
