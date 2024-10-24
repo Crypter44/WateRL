@@ -35,7 +35,7 @@
     {
       "parameter_name": "P_pum_1",
       "connect_to_system": "water_network",
-      "connect_to_external_parameter": "u_p_1"
+      "connect_to_external_parameter": "P_pum_1"
     },
     {
       "parameter_name": "V_flow_1",
