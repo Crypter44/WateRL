@@ -7,10 +7,12 @@ from agents_shared_space import SharedSpace
 
 
 class ControlAPI(SimulationEntity):
-    """_summary_
+    """This Class is used when generating the input values for the FMU.
+
+    It connects the input and output values for the FMU to a custom code.
 
     Args:
-        SimulationEntity (_type_): _description_
+        SimulationEntity: Abstract object representing a simuation entity
     """
 
     def __init__(self):
@@ -19,7 +21,10 @@ class ControlAPI(SimulationEntity):
         self.project_dir = dir_path.parent / "Fluid_Model"
         # TODO: get the data from script calling the class
         agent_config_path = (
-            dir_path.parent / "Fluid_Model" / "mini_circular_water_network.json"
+            dir_path.parent
+            / "Fluid_Model"
+            / "circular_water_network"
+            / "mini_circular_water_network.json"
         )
         print("agent information taken from {}".format(agent_config_path))
 
@@ -32,14 +37,11 @@ class ControlAPI(SimulationEntity):
         self.mas = SharedSpace(project_directory=self.project_dir)
         self.mas.add_agents_from_file(agents_config_data)
 
-    # TODO
-    # def initialize(self)
-
     def do_step(self, time: float):  # mandatory method
-        """_summary_
+        """This code is executed during each simulation step.
 
         Args:
-            time (float): _description_
+            time (float): Simulated timestep
 
         """
         self.mas.step(time)
@@ -47,11 +49,11 @@ class ControlAPI(SimulationEntity):
     def set_parameter(
         self, parameter_name: str, parameter_value: float
     ):  # mandatory method
-        """_summary_
+        """Gets parameters from the FMU.
 
         Args:
-            parameter_name (str): _description_
-            parameter_value (float): _description_
+            parameter_name (str): Name of the value as given in the connections_config.
+            parameter_value (float): Value of the parameter.
         """
         for agent in self.mas.all_agents:
             for key in agent.inputs_from_FMU.keys():
@@ -59,13 +61,13 @@ class ControlAPI(SimulationEntity):
                     agent.inputs_from_FMU[key] = parameter_value
 
     def get_parameter_value(self, output_name: str) -> float:  # mandatory method
-        """_summary_
+        """Extracts parameters that are imposed on the FMU.
 
         Args:
-            output_name (str): _description_
+            output_name (str): Name of the value as given in the connections_config.
 
         Returns:
-            float: _description_
+            float: Value of the parameter.
         """
         output_value = None
         for agent in self.mas.all_agents:
@@ -74,8 +76,9 @@ class ControlAPI(SimulationEntity):
                     output_value = agent.output_to_FMU[key]
         if output_value is None:
             print(("Output variable '{}' has no value").format(output_name))
+            output_value = 0
         return output_value
 
     def conclude_simulation(self):  # optional
-        """_summary_"""
+        """Just to make sure."""
         print("Concluded simulation!")

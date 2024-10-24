@@ -2,7 +2,6 @@
 import json
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
-import numpy as np
 from pathlib import Path
 import time
 
@@ -15,7 +14,7 @@ plt.style.use(dir_path / "FST.mplstyle")
 
 # %% setup simulation
 
-fmu_dir_path = dir_path.parent / "Fluid_Model"
+fmu_dir_path = dir_path.parent / "Fluid_Model" / "circular_water_network"
 
 fmu_path = fmu_dir_path / "mini_circular_water_network.fmu"
 
@@ -40,26 +39,6 @@ with open(logging_config_path) as logging_config_json:
     parameters_to_log = json.load(logging_config_json)
 
 
-# %% demand curve for consumer
-omega = 2.65711342e-01
-time_demand_curve = np.linspace(0, 24, 100)
-demand_volume_flow_curve = (
-    20  # daily demand in m3
-    # the following function gives a demand per time unit in % of the daily demand
-    # the total daily demand is reached after 24 time units
-    * (
-        4.21452027e-02
-        - 1.41579420e-02 * np.cos(omega * time_demand_curve)
-        - 1.62752679e-02 * np.sin(omega * time_demand_curve)
-        + 5.94972876e-03 * np.cos(2 * omega * time_demand_curve)
-        - 1.82545802e-02 * np.sin(2 * omega * time_demand_curve)
-        - 2.72810544e-03 * np.cos(3 * omega * time_demand_curve)
-        + 2.15704832e-03 * np.sin(3 * omega * time_demand_curve)
-        - 5.15308835e-03 * np.cos(4 * omega * time_demand_curve)
-        - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve)
-    )
-)
-plt.plot(time_demand_curve, demand_volume_flow_curve)
 # %% run simulation
 start_time = time.time()
 results, units = simulate(
@@ -73,7 +52,7 @@ results, units = simulate(
     get_units=True,
 )
 
-# %% display results - volume flow, consumer 2
+# %% display results - consumer 2
 
 fig, ax = plt.subplots()
 ax.plot(
@@ -100,7 +79,7 @@ ax.set_title("VALVE 2")
 ax.legend(loc="upper left", ncol=2)
 
 
-# %% display results - volume flow, consumer 6
+# %% display results - consumer 6
 fig, ax = plt.subplots()
 ax2 = ax.twinx()
 ax2.plot(results["time"], results["water_network.u_v_6"], lw=1.5)
@@ -130,7 +109,8 @@ ax2.set_ylabel("VALVE POSITION in %", c=[0 / 255, 78 / 255, 115 / 255])
 ax.set_title("VALVE 6")
 ax.legend(loc="lower right", ncol=2)
 ax2.spines["right"].set_visible(True)
-# %% display results - volume flow, pump 4
+
+# %% display results - pump 4
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
 ax2.plot(results["time"], results["control_api.w_p_4"], lw=1.5)
@@ -143,7 +123,6 @@ ax1.plot(
     ],
     c=[253 / 255, 202 / 255, 0 / 255],
     label="actual flow",
-    # visible=False
 )
 ax1.set_xlabel("TIME in s")
 ax2.set_ylabel("ROTATIONAL SPEED in rpm", c=[0 / 255, 78 / 255, 115 / 255])
@@ -151,7 +130,7 @@ ax2.spines["right"].set_visible(True)
 ax1.set_ylabel("VOLUME FLOW in m$^3$/h ")
 ax1.set_title("PUMP 4")
 
-# %% display results - volume flow, pump 1
+# %% display results - pump 1
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
 ax2.plot(results["time"], results["control_api.w_p_1"], lw=1.5)
@@ -165,21 +144,18 @@ ax1.plot(
     c=[253 / 255, 202 / 255, 0 / 255],
     lw=1.5,
     label="actual flow",
-    # visible=False
 )
 ax1.set_xlabel("TIME in s")
 ax2.set_ylabel("ROTATIONAL SPEED in rpm", c=[0 / 255, 78 / 255, 115 / 255])
 ax2.spines["right"].set_visible(True)
 ax1.set_ylabel("VOLUME FLOW in m$^3$/h ")
 ax1.set_title("PUMP 1")
-# %%
+# %% display results - valve 2, 3, & 5
 fig, ax = plt.subplots()
 ax.plot(results["time"], results["water_network.u_v_2"] * 100, label="valve 2")
 ax.plot(results["time"], results["water_network.u_v_3"] * 100, label="valve 3")
-# ax.plot(results["time"], results["water_network.u_v_4"] * 100, label="valve 4")
+ax.plot(results["time"], results["water_network.u_v_5"] * 100, label="valve 4")
 ax.set_xlabel("TIME in s")
 ax.set_ylabel("VALVE POSITION in %")
 ax.legend()
-# ax.set_ylim([-0.1, 100])
-# ax.set_title("VALVE 2, 3 & 4")
-ax.set_title("VALVE 2 & 3 ")
+ax.set_title("VALVE 2, 3 & 5")

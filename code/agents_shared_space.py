@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from typing import List, Union
 
 from agents import AgentConfig, PumpAgent, ConsumerAgent
 
@@ -14,9 +15,9 @@ class SharedSpace:
             project_directory (str): Current project directory
         """
         self.number_agents = 0
-        self.all_agents = []
-        self.pump_agents = []
-        self.consumer_agents = []
+        self.all_agents: List[Union["PumpAgent", "ConsumerAgent"]] = []
+        self.pump_agents: List["PumpAgent"] = []
+        self.consumer_agents: List["ConsumerAgent"] = []
         self.project_directory = project_directory
         self.time_index = 0
 
@@ -27,13 +28,14 @@ class SharedSpace:
             agent_config (AgentConfig):  Data class with all the information required to instantiate the agents.
         """
         if agent_config.agent_type == "consumer":
-            agent = ConsumerAgent(agent_config=agent_config)
-            self.consumer_agents.append(agent)
+            consumer_agent = ConsumerAgent(agent_config=agent_config)
+            self.consumer_agents.append(consumer_agent)
+            self.all_agents.append(consumer_agent)
         elif agent_config.agent_type == "pump":
-            agent = PumpAgent(agent_config=agent_config)
-            self.pump_agents.append(agent)
+            pump_agent = PumpAgent(agent_config=agent_config)
+            self.pump_agents.append(pump_agent)
+            self.all_agents.append(pump_agent)
 
-        self.all_agents.append(agent)
         self.number_agents += 1
 
     def add_agents_from_file(self, agents_config_json: dict):
@@ -68,7 +70,7 @@ class SharedSpace:
         if time > 0:
             if self.time_index == 9:
                 for agent in self.all_agents:
-                    agent.write_FMU_data(time)
+                    agent.write_FMU_data()
 
                 # demand volume flow is input to PI-controller
                 for consumer in self.consumer_agents:

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import numpy as np
 import random
-from typing import Tuple
 
 
 @dataclass
@@ -20,7 +19,7 @@ class AgentConfig:
 
 class Agent(ABC):
     def __init__(self, agent_config: "AgentConfig", agent_type: str):
-        """Base class for all agents, regardless of their type (e.g. pump, valve, tank)
+        """Base class for all agents, regardless of their type (e.g. pump, valve)
 
         Args:
             agent_config (AgentConfig): Data class with all the information required to instantiate the agents.
@@ -29,21 +28,20 @@ class Agent(ABC):
         self.name = agent_config.name
         self.agent_id = agent_config.agent_id
         self.agent_type = agent_type
-        self.old_action = 0
+        self.old_action = 0.0
 
         self.output_to_FMU = {}
         for name in agent_config.names_output_to_FMU:
-            self.output_to_FMU[name] = 0  # initial value
+            self.output_to_FMU[name] = 0.0  # initial value
         self.inputs_from_FMU = {}
         for name in agent_config.names_input_from_FMU:
-            self.inputs_from_FMU[name] = None
+            self.inputs_from_FMU[name] = 0.0
 
     def set_action(self, action: float):
         """Set an action to the environment, given the value of the action.
 
         Args:
-            action (float): Action to be taken, this is equal to volume flow in m^3/h, which is transferred
-                to the local PI-controller as a setpoint value . Defaults to None.
+            action (float): Action to be taken, which is transfered to the FMU.
         """
         key = list(self.output_to_FMU.keys())[0]  # agent has only one output to the FMU
         self.output_to_FMU[key] = action
@@ -81,7 +79,7 @@ class ConsumerAgent(Agent):
         self.measured_volume_flow_m3h = 0  # volume flow through valve in m^3/h from FMU
         self.measured_valve_position = 0  # valve opening position in % from FMU
 
-    def write_FMU_data(self, time):
+    def write_FMU_data(self):
         """Assigns the data from the inputs_from_FMU dict to specific attributes of the agent."""
         for key in self.inputs_from_FMU.keys():
             if "V_flow" in key:
@@ -92,13 +90,11 @@ class ConsumerAgent(Agent):
                 self.measured_valve_position = self.inputs_from_FMU[key]
 
     def calculate_demand_volume_flow(self):
-        """Calculates the current demand of the consumer based on the time step of the simulation.
+        """Calculates the current demand of the consumer based on a random value on the Tagesganglinie.
 
         The curve fallows data from  'DVGW Arbeitsblatt W 410 2008-12 Wasserbedarf - Kennwerte und Einflussgrößen'
-        (Tagesganglinie eines städischen Versogungsgebiets - Figure C2).
-
-        Args:
-            time_in_s (float): Time step of the co-simulation in seconds.
+        (Tagesganglinie eines städischen Versogungsgebiets - Figure C2). A random value from the curve is selected as
+        current demand.
         """
         omega = 2.65711342e-01
         time_demand_curve = np.linspace(0, 24, 100)
@@ -142,7 +138,7 @@ class PumpAgent(Agent):
         self.measured_power_consumption = 0
         self.speed_to_FMU = 0
 
-    def write_FMU_data(self, time):
+    def write_FMU_data(self):
         """Assigns the data from the inputs_from_FMU dict to specific attributes of the agent."""
         for key in self.inputs_from_FMU.keys():
             if "V_flow" in key:
