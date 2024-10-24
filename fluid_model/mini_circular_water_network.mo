@@ -17,6 +17,7 @@ model mini_circular_water_network
 
   Custom_Pump_V2.BaseClasses_Custom.Pump_vs pump_1(
     redeclare package Medium = Medium,
+    allowFlowReversal=true,
     m_flow_start=0,
     redeclare function flowCharacteristic =
         Custom_Pump_V2.BaseClasses_Custom.PumpCharacteristics.quadraticFlow (c={
@@ -39,6 +40,7 @@ model mini_circular_water_network
 
     Custom_Pump_V2.BaseClasses_Custom.Pump_vs pump_4(
     redeclare package Medium = Medium,
+    allowFlowReversal=true,
     m_flow_start=0,
     redeclare function flowCharacteristic =
         Custom_Pump_V2.BaseClasses_Custom.PumpCharacteristics.quadraticFlow (c=
@@ -56,7 +58,7 @@ model mini_circular_water_network
     "Magna3_25_80"
     annotation (Placement(transformation(extent={{10,10},{-10,-10}},
         rotation=90,
-        origin={84,228})));
+        origin={88,240})));
 
   Modelica.Fluid.Sources.FixedBoundary source_1(
     nPorts=1,
@@ -86,7 +88,7 @@ model mini_circular_water_network
     use_T=true,
     T=system.T_ambient,
     p=system.p_ambient)
-    annotation (Placement(transformation(extent={{46,284},{66,304}})));
+    annotation (Placement(transformation(extent={{46,294},{66,314}})));
 
    Modelica.Fluid.Sources.FixedBoundary sink_5(
     redeclare package Medium = Medium,
@@ -137,28 +139,28 @@ model mini_circular_water_network
         origin={100,0})));
 
   Modelica.Fluid.Valves.ValveLinear valve_2(
-    allowFlowReversal=true,
+    allowFlowReversal=false,
     dp_nominal=100000,
     m_flow_nominal=1,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{-114,28},{-134,48}})));
 
   Modelica.Fluid.Valves.ValveLinear valve_3(
-    allowFlowReversal=true,
+    allowFlowReversal=false,
     dp_nominal=100000,
     m_flow_nominal=1,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{-136,166},{-156,186}})));
 
   Modelica.Fluid.Valves.ValveLinear valve_5(
-    allowFlowReversal=true,
+    allowFlowReversal=false,
     dp_nominal=100000,
     m_flow_nominal=1,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{178,156},{198,136}})));
 
   Modelica.Fluid.Valves.ValveLinear valve_6(
-    allowFlowReversal=true,
+    allowFlowReversal=false,
     dp_nominal=100000,
     m_flow_nominal=1,
     redeclare package Medium = Medium)
@@ -166,9 +168,10 @@ model mini_circular_water_network
 
   Modelica.Fluid.Pipes.StaticPipe pipe_1(
     allowFlowReversal=true,
-    length=5,
+    length=20,
     diameter(displayUnit="m") = 0.025,
-    redeclare package Medium = Medium)
+    redeclare package Medium = Medium,
+    height_ab=0)
     annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=90,
@@ -176,14 +179,14 @@ model mini_circular_water_network
 
   Modelica.Fluid.Pipes.StaticPipe pipe_2(
     allowFlowReversal=true,
-    length=5,
+    length=20,
     diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{-38,28},{-58,48}})));
 
   Modelica.Fluid.Pipes.StaticPipe pipe_3(
     allowFlowReversal=true,
-    length=5,
+    length=20,
     diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
@@ -192,28 +195,28 @@ model mini_circular_water_network
 
   Modelica.Fluid.Pipes.StaticPipe pipe_4(
     allowFlowReversal=true,
-    length=5,
+    length=20,
     diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{-56,166},{-76,186}})));
 
   Modelica.Fluid.Pipes.StaticPipe pipe_5(
     allowFlowReversal=true,
-    length=5,
+    length=80,
     diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium,
     height_ab=0)
     annotation (Placement(transformation(extent={{60,176},{40,196}})));
   Modelica.Fluid.Pipes.StaticPipe pipe_6(
     allowFlowReversal=true,
-    length=5,
+    length=20,
     diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{40,128},{60,148}})));
 
   Modelica.Fluid.Pipes.StaticPipe pipe_7(
     allowFlowReversal=true,
-    length=2.5,
+    length=20,
     diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{9,-11},{-9,11}},
@@ -222,7 +225,7 @@ model mini_circular_water_network
 
   Modelica.Fluid.Pipes.StaticPipe pipe_8(
     allowFlowReversal=true,
-    length=5,
+    length=20,
     diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{40,-10},{60,10}})));
@@ -254,13 +257,13 @@ model mini_circular_water_network
       = Medium) annotation (Placement(transformation(
         extent={{-10,10},{10,-10}},
         rotation=-90,
-        origin={86,266})));
+        origin={88,278})));
 
   Modelica.Fluid.Sensors.RelativePressure pressure_4(redeclare package Medium
       = Medium) annotation (Placement(transformation(
         extent={{-10,10},{10,-10}},
         rotation=90,
-        origin={42,232})));
+        origin={42,244})));
 
   Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_5(
     redeclare package Medium = Medium)
@@ -415,7 +418,7 @@ model mini_circular_water_network
         transformation(
         extent={{10,-10},{-10,10}},
         rotation=-90,
-        origin={-28,250})));
+        origin={-28,266})));
   Modelica.Blocks.Math.UnitConversions.To_bar to_bar5 annotation (Placement(transformation(extent={{236,180},
             {256,200}})));
   Modelica.Blocks.Math.UnitConversions.To_bar to_bar6 annotation (Placement(transformation(extent={{216,-26},{236,-6}})));
@@ -431,7 +434,7 @@ model mini_circular_water_network
         rotation=90,
         origin={-112,224})));
   To_m3hr to_m3hr4
-    annotation (Placement(transformation(extent={{32,256},{12,276}})));
+    annotation (Placement(transformation(extent={{34,268},{14,288}})));
   To_m3hr to_m3hr5 annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=0,
@@ -464,7 +467,37 @@ model mini_circular_water_network
       Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=-90,
-        origin={140,272})));
+        origin={138,284})));
+  Modelica.Blocks.Logical.GreaterThreshold greaterThreshold(threshold=0.01)
+    annotation (Placement(transformation(extent={{-108,-40},{-88,-20}})));
+  Modelica.Blocks.Logical.Switch switch1
+    annotation (Placement(transformation(extent={{-62,-12},{-42,8}})));
+  Modelica.Blocks.Sources.RealExpression realExpression(y=0)
+    annotation (Placement(transformation(extent={{-62,-42},{-42,-22}})));
+  Modelica.Fluid.Valves.ValveDiscrete     valveDiscreteRamp(
+    redeclare package Medium = Medium,
+    allowFlowReversal=true,
+    dp_nominal=1,
+    m_flow_nominal=100)
+    annotation (Placement(transformation(
+        extent={{-10,10},{10,-10}},
+        rotation=90,
+        origin={16,-92})));
+  Modelica.Blocks.Logical.GreaterThreshold greaterThreshold1(threshold=0.01)
+    annotation (Placement(transformation(extent={{160,248},{180,268}})));
+  Modelica.Blocks.Logical.Switch switch2
+    annotation (Placement(transformation(extent={{140,220},{120,240}})));
+  Modelica.Fluid.Valves.ValveDiscrete     valveDiscreteRamp1(
+    redeclare package Medium = Medium,
+    allowFlowReversal=true,
+    dp_nominal=1,
+    m_flow_nominal=100)
+    annotation (Placement(transformation(
+        extent={{10,10},{-10,-10}},
+        rotation=90,
+        origin={88,208})));
+  Modelica.Blocks.Sources.RealExpression realExpression1(y=0)
+    annotation (Placement(transformation(extent={{174,206},{154,226}})));
 equation
   P_pum_1 = pump_1.W_total;
   P_pum_4 = pump_4.W_total;
@@ -506,15 +539,15 @@ equation
     annotation (Line(points={{237,-16},{260,-16},{260,-146}},
                                                  color={0,0,127}));
   connect(pressure_4.p_rel, to_bar4.u)
-    annotation (Line(points={{33,232},{-28,232},{-28,238}},
+    annotation (Line(points={{33,244},{-28,244},{-28,254}},
                                                         color={0,0,127}));
-  connect(to_bar4.y, p_rel_4) annotation (Line(points={{-28,261},{-28,324}},
+  connect(to_bar4.y, p_rel_4) annotation (Line(points={{-28,277},{-28,324}},
                                 color={0,0,127}));
   connect(to_m3hr.u, volumeFlow_1.V_flow)
     annotation (Line(points={{-88,-84},{-88,-92},{-82,-92},{-82,-103}},
                                                              color={0,0,127}));
   connect(volumeFlow_4.V_flow, to_m3hr4.u)
-    annotation (Line(points={{75,266},{34,266}}, color={0,0,127}));
+    annotation (Line(points={{77,278},{36,278}}, color={0,0,127}));
   connect(V_flow_6,to_m3hr6. y) annotation (Line(points={{132,-144},{132,-130},
           {130,-130},{130,-116},{134,-116},{132,-87}},
                           color={0,0,127}));
@@ -567,8 +600,8 @@ equation
   connect(valve_3.opening, PI_3.y) annotation (Line(points={{-146,184},{-146,192},
           {-80,192},{-80,274},{-101,274}},
                                          color={0,0,127}));
-  connect(to_m3hr4.y, V_flow_4) annotation (Line(points={{11,266},{11,262},{2,262},
-          {2,322}},         color={0,0,127}));
+  connect(to_m3hr4.y, V_flow_4) annotation (Line(points={{13,278},{2,278},{2,
+          322}},            color={0,0,127}));
   connect(pressure_5.port_b,valve_5. port_b) annotation (Line(
       points={{196,170},{198,170},{198,146}},
       color={0,127,255},
@@ -660,23 +693,17 @@ equation
   connect(volumeFlow_1.port_b, pump_1.port_a)
     annotation (Line(points={{-72,-114},{-36,-114}},
                                                    color={0,127,255}));
-  connect(pump_1.port_b, pipe_1.port_a)
-    annotation (Line(points={{-16,-114},{-16,-116},{-8,-116},{-8,-44}},
-                                                           color={0,127,255}));
   connect(pressure_1.port_b, pump_1.port_a) annotation (Line(points={{-50,-82},
           {-60,-82},{-60,-114},{-36,-114}},
                                          color={0,127,255}));
-  connect(pump_4.port_b, pipe_5.port_a)
-    annotation (Line(points={{84,218},{84,186},{60,186}}, color={0,127,255}));
   connect(volumeFlow_4.port_b, pump_4.port_a)
-    annotation (Line(points={{86,256},{88,256},{88,248},{84,248},{84,238}},
-                                                 color={0,127,255}));
-  connect(pressure_4.port_b, pump_4.port_a) annotation (Line(points={{42,242},{
-          42,248},{84,248},{84,238}}, color={0,127,255}));
-  connect(pressure_4.port_a, pipe_5.port_a) annotation (Line(points={{42,222},{
-          42,202},{84,202},{84,186},{60,186}}, color={0,127,255}));
+    annotation (Line(points={{88,268},{88,250}}, color={0,127,255}));
+  connect(pressure_4.port_b, pump_4.port_a) annotation (Line(points={{42,254},{
+          42,260},{88,260},{88,250}}, color={0,127,255}));
+  connect(pressure_4.port_a, pipe_5.port_a) annotation (Line(points={{42,234},{
+          42,202},{66,202},{66,186},{60,186}}, color={0,127,255}));
   connect(volumeFlow_4.port_a, source_4.ports[1])
-    annotation (Line(points={{86,276},{86,294},{66,294}},  color={0,127,255}));
+    annotation (Line(points={{88,288},{88,304},{66,304}},  color={0,127,255}));
   connect(V_flow_4, V_flow_4)
     annotation (Line(points={{2,322},{2,322}},       color={0,0,127}));
   connect(teeJunctionIdeal_5.port_1, pipe_6.port_b)
@@ -687,8 +714,6 @@ equation
           128},{101,124},{101,86}}, color={0,127,255}));
   connect(fixedDelay.u, w_p_1)
     annotation (Line(points={{-152,-42},{-188,-42}}, color={0,0,127}));
-  connect(fixedDelay.y, pump_1.N_in) annotation (Line(points={{-129,-42},{-26,
-          -42},{-26,-104}}, color={0,0,127}));
   connect(fixedDelay1.y, PI_6.u_s)
     annotation (Line(points={{197,-90},{204,-90}}, color={0,0,127}));
   connect(fixedDelay1.u, w_v_6) annotation (Line(points={{174,-90},{168,-90},{
@@ -705,10 +730,42 @@ equation
     annotation (Line(points={{-143,274},{-124,274}}, color={0,0,127}));
   connect(fixedDelay4.u, w_v_3)
     annotation (Line(points={{-166,274},{-196,274}}, color={0,0,127}));
-  connect(fixedDelay5.y, pump_4.N_in)
-    annotation (Line(points={{140,261},{140,228},{94,228}}, color={0,0,127}));
   connect(fixedDelay5.u, w_p_4)
-    annotation (Line(points={{140,284},{140,326}}, color={0,0,127}));
+    annotation (Line(points={{138,296},{140,296},{140,326}},
+                                                   color={0,0,127}));
+  connect(switch1.u1, fixedDelay.y) annotation (Line(points={{-64,6},{-120,6},{-120,
+          -42},{-129,-42}}, color={0,0,127}));
+  connect(greaterThreshold.y, switch1.u2) annotation (Line(points={{-87,-30},{-76,
+          -30},{-76,-2},{-64,-2}}, color={255,0,255}));
+  connect(greaterThreshold.u, fixedDelay.y) annotation (Line(points={{-110,-30},
+          {-120,-30},{-120,-42},{-129,-42}}, color={0,0,127}));
+  connect(realExpression.y, switch1.u3) annotation (Line(points={{-41,-32},{-34,
+          -32},{-34,-22},{-70,-22},{-70,-10},{-64,-10}}, color={0,0,127}));
+  connect(switch1.y, pump_1.N_in) annotation (Line(points={{-41,-2},{-32,-2},{-32,
+          -30},{-30,-30},{-30,-60},{-16,-60},{-16,-104},{-26,-104}}, color={0,0,
+          127}));
+  connect(pump_1.port_b, valveDiscreteRamp.port_a) annotation (Line(points={{-16,
+          -114},{16,-114},{16,-102}}, color={0,127,255}));
+  connect(valveDiscreteRamp.port_b, pipe_1.port_a) annotation (Line(points={{16,
+          -82},{16,-50},{-8,-50},{-8,-44}}, color={0,127,255}));
+  connect(valveDiscreteRamp.open, greaterThreshold.y) annotation (Line(points={{
+          24,-92},{-28,-92},{-28,-30},{-87,-30}}, color={255,0,255}));
+  connect(valveDiscreteRamp1.open, greaterThreshold1.y) annotation (Line(points
+        ={{96,208},{188,208},{188,258},{181,258}}, color={255,0,255}));
+  connect(greaterThreshold1.u, fixedDelay5.y)
+    annotation (Line(points={{158,258},{138,258},{138,273}}, color={0,0,127}));
+  connect(pump_4.port_b, valveDiscreteRamp1.port_a)
+    annotation (Line(points={{88,230},{88,218}}, color={0,127,255}));
+  connect(valveDiscreteRamp1.port_b, pipe_5.port_a)
+    annotation (Line(points={{88,198},{88,186},{60,186}}, color={0,127,255}));
+  connect(switch2.u2, greaterThreshold1.y) annotation (Line(points={{142,230},{
+          188,230},{188,258},{181,258}}, color={255,0,255}));
+  connect(switch2.u1, fixedDelay5.y) annotation (Line(points={{142,238},{142,
+          258},{138,258},{138,273}}, color={0,0,127}));
+  connect(realExpression1.y, switch2.u3) annotation (Line(points={{153,216},{
+          146,216},{146,214},{142,214},{142,222}}, color={0,0,127}));
+  connect(switch2.y, pump_4.N_in)
+    annotation (Line(points={{119,230},{98,230},{98,240}}, color={0,0,127}));
  annotation (Placement(transformation(
         extent={{10,-10},{-10,10}},
         rotation=180,

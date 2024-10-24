@@ -39,10 +39,31 @@ with open(connections_config_path) as connections_config_json:
 with open(logging_config_path) as logging_config_json:
     parameters_to_log = json.load(logging_config_json)
 
+
+# %% demand curve for consumer
+omega = 2.65711342e-01
+time_demand_curve = np.linspace(0, 24, 100)
+demand_volume_flow_curve = (
+    20  # daily demand in m3
+    # the following function gives a demand per time unit in % of the daily demand
+    # the total daily demand is reached after 24 time units
+    * (
+        4.21452027e-02
+        - 1.41579420e-02 * np.cos(omega * time_demand_curve)
+        - 1.62752679e-02 * np.sin(omega * time_demand_curve)
+        + 5.94972876e-03 * np.cos(2 * omega * time_demand_curve)
+        - 1.82545802e-02 * np.sin(2 * omega * time_demand_curve)
+        - 2.72810544e-03 * np.cos(3 * omega * time_demand_curve)
+        + 2.15704832e-03 * np.sin(3 * omega * time_demand_curve)
+        - 5.15308835e-03 * np.cos(4 * omega * time_demand_curve)
+        - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve)
+    )
+)
+plt.plot(time_demand_curve, demand_volume_flow_curve)
 # %% run simulation
 start_time = time.time()
 results, units = simulate(
-    stop_time=100,
+    stop_time=200,
     step_size=1,
     fmu_paths=fmu_paths,
     model_classes=model_classes,
@@ -76,7 +97,7 @@ ax.plot(
 ax.set_xlabel("TIME in s")
 ax.set_ylabel("VOLUME FLOW in m$^3$/h")
 ax.set_title("VALVE 2")
-ax.legend(loc="lower right", ncol=2)
+ax.legend(loc="upper left", ncol=2)
 
 
 # %% display results - volume flow, consumer 6
@@ -116,8 +137,11 @@ ax2.plot(results["time"], results["control_api.w_p_4"], lw=1.5)
 ax1.plot(
     results["time"],
     results["water_network.V_flow_4"],
-    c=[233 / 255, 80 / 255, 62 / 255],
-    lw=1.5,
+    path_effects=[
+        pe.Stroke(linewidth=2.5, foreground=[77 / 255, 73 / 255, 67 / 255]),
+        pe.Normal(),
+    ],
+    c=[253 / 255, 202 / 255, 0 / 255],
     label="actual flow",
     # visible=False
 )
@@ -134,7 +158,11 @@ ax2.plot(results["time"], results["control_api.w_p_1"], lw=1.5)
 ax1.plot(
     results["time"],
     results["water_network.V_flow_1"],
-    c=[233 / 255, 80 / 255, 62 / 255],
+    path_effects=[
+        pe.Stroke(linewidth=2.5, foreground=[77 / 255, 73 / 255, 67 / 255]),
+        pe.Normal(),
+    ],
+    c=[253 / 255, 202 / 255, 0 / 255],
     lw=1.5,
     label="actual flow",
     # visible=False

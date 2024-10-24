@@ -2,17 +2,17 @@ within ;
 model wrapper_mini_circular_water_network
   mini_circular_water_network mini_circular_water_network_test1
     annotation (Placement(transformation(extent={{-22,4},{32,54}})));
-  Modelica.Blocks.Sources.Step step
+  Modelica.Blocks.Sources.Step step(height=2)
     annotation (Placement(transformation(extent={{-16,-32},{4,-12}})));
-  Modelica.Blocks.Sources.Step step1
+  Modelica.Blocks.Sources.Step step1(height=0.005)
     annotation (Placement(transformation(extent={{-58,0},{-38,20}})));
-  Modelica.Blocks.Sources.Step step2
+  Modelica.Blocks.Sources.Step step2(height=2)
     annotation (Placement(transformation(extent={{-88,22},{-68,42}})));
-  Modelica.Blocks.Sources.Step step3
+  Modelica.Blocks.Sources.Step step3(height=2)
     annotation (Placement(transformation(extent={{-60,48},{-40,68}})));
-  Modelica.Blocks.Sources.Step step4
+  Modelica.Blocks.Sources.Step step4(height=0.5)
     annotation (Placement(transformation(extent={{90,58},{70,78}})));
-  Modelica.Blocks.Sources.Step step5
+  Modelica.Blocks.Sources.Step step5(height=2)
     annotation (Placement(transformation(extent={{94,20},{74,40}})));
 equation
   connect(step.y, mini_circular_water_network_test1.w_v_6) annotation (Line(

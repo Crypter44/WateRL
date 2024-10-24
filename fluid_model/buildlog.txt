@@ -10,9 +10,9 @@ Compiling the model (Visual C++) with FMI.
  
 fmi2Functions.c
 dsmodel.c
-dsmodel.c(3903): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
-dsmodel.c(4720): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
-dsmodel.c(9645): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
+dsmodel.c(3941): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
+dsmodel.c(4960): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
+dsmodel.c(10115): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
 Code wird generiert...
    Bibliothek "~FMUOutput\binaries\win32\mini_circular_water_network.lib" und Objekt "~FMUOutput\binaries\win32\mini_circular_water_network.exp" werden erstellt.
 Adding [modelDescription.xml] ... OK
