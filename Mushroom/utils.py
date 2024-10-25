@@ -17,8 +17,12 @@ def render_episode(core, fname="video.mp4", custom_tmp_path="./tmp"):
     :param custom_tmp_path: The path to the temporary directory where the frames are stored.
     :return: None
     """
-    core.evaluate(n_episodes=1, render=True, quiet=True)
-    os.system(f"ffmpeg -y -r 50 -i {custom_tmp_path}/frame_%04d.png -vcodec libx264 -pix_fmt yuv420p {fname} > /dev/null 2>&1")
+    try:
+        if os.environ["RENDER"] != "true":
+            core.evaluate(n_episodes=1, render=True, quiet=True)
+            os.system(f"ffmpeg -y -r 50 -i {custom_tmp_path}/frame_%04d.png -vcodec libx264 -pix_fmt yuv420p {fname} > /dev/null 2>&1")
+    except KeyError:
+        return
 
 
 def set_seed(seed: int):

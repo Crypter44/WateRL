@@ -12,11 +12,9 @@ from tqdm import tqdm
 
 from utils import render_episode, set_seed, set_mujoco_custom_rendering, plot_J
 
-set_seed(526)
-# TODO This requires my own custom code for the core of mushroom_rl to work, SET TO FALSE IF NOT AVAILABLE
-set_mujoco_custom_rendering(True)
-
 # Parametrization
+seed = 526
+
 horizon = 500
 gamma = 0.99
 gamma_eval = 1.
@@ -30,6 +28,10 @@ tau = .001
 n_epochs = 50
 n_steps = 1000
 n_steps_test = 2000
+
+set_seed(seed)
+# TODO This requires my own custom code for the core of mushroom_rl to work, SET TO FALSE IF NOT AVAILABLE
+set_mujoco_custom_rendering(True)
 
 # Define the neural networks for the actor and the critic
 class CriticNetwork(nn.Module):
@@ -85,7 +87,7 @@ class ActorNetwork(nn.Module):
         return a
 
 # MDP
-mdp = DMControl('walker', 'stand', horizon, gamma)
+mdp = DMControl('walker', 'stand', horizon, gamma, task_kwargs={'random': seed})
 
 # Policy
 policy_class = OrnsteinUhlenbeckPolicy
