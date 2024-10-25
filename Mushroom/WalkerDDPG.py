@@ -4,13 +4,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from mushroom_rl.algorithms.actor_critic import DDPG
-from mushroom_rl.core import Core
 from mushroom_rl.environments.dm_control_env import DMControl
 from mushroom_rl.policy import OrnsteinUhlenbeckPolicy
 from mushroom_rl.utils.dataset import compute_J, compute_metrics
 from tqdm import tqdm
 
-from utils import render_episode, set_seed, set_mujoco_custom_rendering, plot_J
+from Mushroom.BetterMujocoCore import BetterMujocoCore
+from utils import set_seed, plot_J
 
 # Parametrization
 seed = 526
@@ -30,8 +30,6 @@ n_steps = 1000
 n_steps_test = 2000
 
 set_seed(seed)
-# TODO This requires my own custom code for the core of mushroom_rl to work, SET TO FALSE IF NOT AVAILABLE
-set_mujoco_custom_rendering(True)
 
 # Define the neural networks for the actor and the critic
 class CriticNetwork(nn.Module):
@@ -122,7 +120,7 @@ agent = DDPG(mdp.info, policy_class, policy_params,
              tau)
 
 # Algorithm
-core = Core(agent, mdp)
+core = BetterMujocoCore(agent, mdp)
 
 # Fill the replay memory with random samples
 core.learn(n_steps=initial_replay_size, n_steps_per_fit=initial_replay_size, quiet=True)
@@ -142,11 +140,13 @@ for n in pbar:
     # evaluation step, agent evaluates 2000 steps -> 4 episodes
     dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
     if (n+1) % 5 == 0:
-        render_episode(core, f"../Videos/walker-stand-ep{n+1}.mp4")
+        core.render_episode(f"./Videos/walker-stand-ep{n+1}.mp4")
     J = compute_J(dataset, gamma_eval)
     Js.append(J)
     metric = compute_metrics(dataset, gamma_eval)
     pbar.set_postfix(J=np.mean(J), Metrics=metric)
+
+core.clear_render_cache()
 
 # Plot the results
 plot_J(Js)
