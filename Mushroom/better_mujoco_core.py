@@ -63,4 +63,5 @@ class BetterMujocoCore(Core):
         """
         Clear the temporary directory where the frames are saved.
         """
-        os.system(f"rm {self.frame_dir}/*.png")
+        for file in os.listdir(self.frame_dir):
+            os.remove(os.path.join(self.frame_dir, file))

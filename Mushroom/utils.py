@@ -1,4 +1,3 @@
-import os
 import random
 
 import numpy as np
@@ -19,15 +18,33 @@ def set_seed(seed: int):
         torch.cuda.manual_seed_all(seed)
     random.seed(seed)
 
+def plot_multiple_seeds(data: dict, title: str, multiple_seeds_per_plot=True, range_alpha=0.1):
+    fig, ax = plt.subplots(1 if multiple_seeds_per_plot else len(data), 1, figsize=(8, 8))
 
-def plot_J(Js):
-    Js = np.array(Js)
+    if multiple_seeds_per_plot:
+        plot_to_ax(ax, data, title, range_alpha)
+    else:
+        for i, (seed, metrics) in enumerate(data.items()):
+            # Get the default color cycle
+            color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+            print(color_cycle[i])
 
-    # Plot the cumulated reward
-    plt.plot(np.mean(Js, axis=1), label="Mean J")
-    plt.fill_between(np.arange(len(Js)), np.min(Js, axis=1), np.max(Js, axis=1), alpha=0.2, label="Range of J")
-    plt.title("Cumulated reward per epoch")
-    plt.xlabel("Epoch")
-    plt.ylabel("J")
-    plt.legend()
-    plt.show()
+            plot_to_ax(ax[i], {seed: metrics}, title, range_alpha, color_cycle[i])
+
+
+    return fig, ax
+
+def plot_to_ax(ax, data: dict, title: str, range_alpha=0.1, color = None):
+    for seed, metrics in data.items():
+        ax.plot(metrics[:, 2], label=f"Mean score, s={seed}", color=color)
+
+    for seed, metrics in data.items():
+        if color is not None:
+            ax.fill_between(np.arange(len(metrics)), metrics[:, 0], metrics[:, 1], alpha=range_alpha, label=f"Range, s={seed}", color=color)
+        else:
+            ax.fill_between(np.arange(len(metrics)), metrics[:, 0], metrics[:, 1], alpha=range_alpha, label=f"Range, s={seed}")
+    ax.set_title(title)
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Score")
+    ax.legend()
+
