@@ -1,13 +1,13 @@
 # %% import
-import matplotlib.pyplot as plt
-import matplotlib.patheffects as pe
 from pathlib import Path
-import time
 
-from sofirpy import simulate, SimulationEntity
+import matplotlib.patheffects as pe
+import matplotlib.pyplot as plt
+import numpy as np
+
+from Sofirpy.step_by_step_simulation import SimulationEntityWithAction, setup_manual_step_simulation
 
 dir_path = Path(__file__).parent
-# plt.style.use(dir_path / "FST.mplstyle")
 
 # %% setup simulation
 
@@ -64,7 +64,7 @@ parameters_to_log = {
 
 
 # %%
-class Controler(SimulationEntity):
+class Controler(SimulationEntityWithAction):
     """This Class is used when generating the input values for the FMU.
 
     It connects the input and output values for the FMU to a custom code.
@@ -85,24 +85,16 @@ class Controler(SimulationEntity):
         self.requested_volume_flow = 0.0  # setpoint for volume flow at valve
         self.error_flow = 0.0
 
-    def do_step(self, time: float):  # mandatory method
+    def do_step_with_action(self, time: float, action: np.ndarray):  # mandatory method
         """This code is executed during each simulation step.
 
         Args:
             time (float): Simulated timestep
 
         """
-        self.requested_volume_flow = 0.5
-        self.error_flow = self.requested_volume_flow - self.inputs["V_flow_2"]
-        u = self.outputs["w_v_2"] + 0.1 * self.error_flow
+        self.outputs["w_v_2"] = float(action[0])
+        return self.inputs["V_flow_2"]
 
-        # limitation of actions
-        if u > 1:
-            u = 1
-        if u < 0:
-            u = 0
-
-        self.outputs["w_v_2"] = u
 
     def set_parameter(
         self, parameter_name: str, parameter_value: float
@@ -137,27 +129,55 @@ class Controler(SimulationEntity):
 model_classes = {"control_api": Controler}
 fmu_paths = {"water_network": str(fmu_path)}
 
-start_time = time.time()
-results, units = simulate(
-    stop_time=100.0,
-    step_size=1.0,
+# create simulation
+sim = setup_manual_step_simulation(
+    stop_time=100,
+    step_size=1,
     fmu_paths=fmu_paths,
     model_classes=model_classes,
     connections_config=connections_config,
     parameters_to_log=parameters_to_log,
-    logging_step_size=1,
-    get_units=True,
 )
 
+# Run the simulation
+out = 0
+while not sim.is_done():
+    # calculate the control action
+    requested_volume_flow = 0.5
+    error_flow = requested_volume_flow - sim.systems["water_network"].simulation_entity.get_parameter_value("V_flow_2")
+    u = out + 0.1 * error_flow
+
+    # limitation of actions
+    if u > 1:
+        u = 1
+    if u < 0:
+        u = 0
+
+    out = u
+
+    # do simulation step with the calculated action
+    actual_vf = sim.do_simulation_step(np.array([u]))
+
+# finalize simulation and get results
+results = sim.finalize()
+
 # %% display results - consumer 6
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(10, 8))
 ax2 = ax.twinx()
 
+ax.plot(
+    np.linspace(0, 100, 100),
+    [0.5] * 100,
+    lw=1.5,
+    label="DEMAND",
+    linestyle=(0, (2, 1)),
+    c = [0 / 255, 78 / 255, 115 / 255],
+)
 ax.plot(
     results["time"],
     results["water_network.V_flow_2"],
     lw=1.5,
-    label="volume flow",
+    label="VOLUME FLOW",
     path_effects=[
         pe.Stroke(linewidth=2.5, foreground=[77 / 255, 73 / 255, 67 / 255]),
         pe.Normal(),
@@ -168,7 +188,7 @@ ax2.plot(
     results["time"],
     results["control_api.w_v_2"],
     lw=1.5,
-    label="valve opening",
+    label="VALVE OPENING",
     markersize=8,
     c=[0 / 255, 78 / 255, 115 / 255],
 )
