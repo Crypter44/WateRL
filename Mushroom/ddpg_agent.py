@@ -50,12 +50,12 @@ class ActorNetwork(nn.Module):
         nn.init.xavier_uniform_(self._h2.weight,
                                 gain=nn.init.calculate_gain('relu'))
         nn.init.xavier_uniform_(self._h3.weight,
-                                gain=nn.init.calculate_gain('linear'))
+                                gain=nn.init.calculate_gain('sigmoid'))
 
     def forward(self, state):
         features1 = F.relu(self._h1(torch.squeeze(state, 1).float()))
         features2 = F.relu(self._h2(features1))
-        a = self._h3(features2)
+        a = F.sigmoid(self._h3(features2))
 
         return a
 

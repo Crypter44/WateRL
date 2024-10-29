@@ -20,6 +20,10 @@ class SimulationEntityWithAction(SimulationEntity):
     def do_step_with_action(self, time: float, action: np.ndarray):
         """Perform a simulation step with a given action."""
 
+    @abstractmethod
+    def get_state(self):
+        """Return the current state information, which this entity is aware of."""
+
     @final
     def do_step(self, time: float) -> None:
         raise NotImplementedError("This method should not be called on an entity which supports actions.")
@@ -96,11 +100,19 @@ class ManualStepSimulator(Simulator):
             self._log_step += 1
         self._time_step += 1
 
+    def get_current_state(self):
+        """Return the current state of the simulation."""
+        state = {}
+        for agent in self.agents.values():
+            state[agent.name] = agent.simulation_entity.get_state()
+
+        return state, self.is_done()
+
     def is_done(self) -> bool:
         """Return True iff the simulation is finished."""
         return self._time_step == len(self._time_series) - 1
 
-    def finalize(self):
+    def end_and_get_results(self):
         """Finalize the simulation and return the results."""
         self.conclude_simulation()
         if self._return_units:

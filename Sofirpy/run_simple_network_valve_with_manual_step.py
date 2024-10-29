@@ -64,7 +64,7 @@ parameters_to_log = {
 
 
 # %%
-class Controler(SimulationEntityWithAction):
+class Controller(SimulationEntityWithAction):
     """This Class is used when generating the input values for the FMU.
 
     It connects the input and output values for the FMU to a custom code.
@@ -82,7 +82,7 @@ class Controler(SimulationEntityWithAction):
             "p_rel_2": 0.0,
         }
         self.outputs = {"w_v_2": 0.0}  # rotational speed at the pump
-        self.requested_volume_flow = 0.0  # setpoint for volume flow at valve
+        self.requested_volume_flow = np.random.uniform(0.1, 0.65)  # setpoint for volume flow at valve
         self.error_flow = 0.0
 
     def do_step_with_action(self, time: float, action: np.ndarray):  # mandatory method
@@ -93,11 +93,12 @@ class Controler(SimulationEntityWithAction):
 
         """
         self.outputs["w_v_2"] = float(action[0])
-        return self.inputs["V_flow_2"]
 
+    def get_state(self):
+        return np.array([self.requested_volume_flow, self.inputs["V_flow_2"], self.outputs["w_v_2"]])
 
     def set_parameter(
-        self, parameter_name: str, parameter_value: float
+            self, parameter_name: str, parameter_value: float
     ):  # mandatory method
         """Gets parameters from the FMU.
 
@@ -126,7 +127,7 @@ class Controler(SimulationEntityWithAction):
 # %% run simulation
 
 # create interface of multi-agent system to FMU
-model_classes = {"control_api": Controler}
+model_classes = {"control_api": Controller}
 fmu_paths = {"water_network": str(fmu_path)}
 
 # create simulation
@@ -137,14 +138,23 @@ sim = setup_manual_step_simulation(
     model_classes=model_classes,
     connections_config=connections_config,
     parameters_to_log=parameters_to_log,
+    logging_step_size=1,
+    get_units=True,
 )
+
+# for i in range(20):
+#     for j in range(0, np.random.randint(10, 50)):
+#         sim.do_simulation_step(np.array([0.5]))
+#     sim.reset_simulation(
+#         100, 1, 1
+#     )
 
 # Run the simulation
 out = 0
 while not sim.is_done():
     # calculate the control action
-    requested_volume_flow = 0.5
-    error_flow = requested_volume_flow - sim.systems["water_network"].simulation_entity.get_parameter_value("V_flow_2")
+    error_flow = sim.systems["control_api"].simulation_entity.requested_volume_flow - sim.systems[
+        "water_network"].simulation_entity.get_parameter_value("V_flow_2")
     u = out + 0.1 * error_flow
 
     # limitation of actions
@@ -156,10 +166,10 @@ while not sim.is_done():
     out = u
 
     # do simulation step with the calculated action
-    actual_vf = sim.do_simulation_step(np.array([u]))
+    sim.do_simulation_step(np.array([u]))
 
 # finalize simulation and get results
-results = sim.finalize()
+results, units = sim.end_and_get_results()
 
 # %% display results - consumer 6
 fig, ax = plt.subplots(figsize=(10, 8))
@@ -167,11 +177,11 @@ ax2 = ax.twinx()
 
 ax.plot(
     np.linspace(0, 100, 100),
-    [0.5] * 100,
+    [sim.systems["control_api"].simulation_entity.requested_volume_flow] * 100,
     lw=1.5,
     label="DEMAND",
     linestyle=(0, (2, 1)),
-    c = [0 / 255, 78 / 255, 115 / 255],
+    c=[0 / 255, 78 / 255, 115 / 255],
 )
 ax.plot(
     results["time"],
