@@ -5,7 +5,7 @@ from typing import final
 import numpy as np
 import sofirpy.common as co
 from sofirpy import SimulationEntity
-from sofirpy.simulation.simulation import Simulator, System, Connection, SystemParameter, _validate_input, init_fmus, \
+from sofirpy.simulation.simulation import Simulator, _validate_input, init_fmus, \
     init_models, init_connections, init_parameter_list
 
 
@@ -16,6 +16,7 @@ class SimulationEntityWithAction(SimulationEntity):
     This interface extends the SimulationEntity interface by adding a method to perform a simulation step with a given
     action. The old do_step method is marked as final to prevent it from being called on entities which support actions.
     """
+
     @abstractmethod
     def do_step_with_action(self, time: float, action: np.ndarray):
         """Perform a simulation step with a given action."""
@@ -37,41 +38,100 @@ class ManualStepSimulator(Simulator):
     where the user has to call the do_simulation_step method to perform a single step.
     The old simulate method is marked as final to prevent it from being called on a manual step simulator.
     """
+
     def __init__(
             self,
-            systems: dict[str, System],
-            fmus: dict[str, System],
-            agents: dict[str, System],
-            connections: list[Connection],
-            parameters_to_log: list[SystemParameter],
-            return_units: bool = False
+            stop_time: float,
+            step_size: float,
+            fmu_paths: co.FmuPaths | None = None,
+            model_classes: co.ModelClasses | None = None,
+            connections_config: co.ConnectionsConfig | None = None,
+            start_values: co.StartValues | None = None,
+            parameters_to_log: co.ParametersToLog | None = None,
+            logging_step_size: float | None = None,
+            get_units: bool = False,
+            verbose: bool = False,
     ):
-        super().__init__(systems, connections, parameters_to_log)
-        self.fmus = fmus
-        self.agents = agents
+        """Initialize the simulator."""
+
+        if verbose:
+            logging.basicConfig(
+                format="Simulation::%(levelname)s::%(message)s",
+                level=logging.INFO,
+                force=True,
+            )
+
+
+        _validate_input(stop_time, step_size, fmu_paths, model_classes, connections_config, parameters_to_log,
+                        logging_step_size, start_values, )
+
+        # Save the parameters for a possible reset
+        self._fmu_paths = fmu_paths or {}
+        self._model_classes = model_classes or {}
+        self._connections_config = connections_config or {}
+        self._start_values = start_values or {}
+        self._given_parameters_to_log = parameters_to_log or {}
+
+        # Initialize attributes
+        self.fmus = None
+        self.models = None
+        self._get_units = get_units
+
         self._time_series = None
         self._time_step = None
+
         self._number_log_steps = None
         self._logging_multiple = None
-        self.results = None
         self._log_step = None
-        self._return_units = return_units
+        self._parameters_to_log = None
+
+        self.results = None
+
+        self.reset_simulation(stop_time, step_size, logging_step_size)
+        super().__init__(self.systems, self.connections, self._parameters_to_log)
 
     def reset_simulation(
             self,
             stop_time: float,
             step_size: float,
-            logging_step_size: float,
+            logging_step_size: float | None = None,
             start_time: float = 0.0,
     ) -> None:
         """Reset the simulation to the initial state."""
+        stop_time = float(stop_time)
+        step_size = float(step_size)
+
+        logging.info(f"Simulation stop time set to {stop_time} seconds.")
+        logging.info(f"Simulation step size set to {step_size} seconds.")
+
+        logging_step_size = float(logging_step_size or step_size)
+
+        logging.info(f"Simulation logging step size set to {logging_step_size} seconds.")
+
+        self.fmus = init_fmus(self._fmu_paths, step_size, self._start_values.copy())
+        self.models = init_models(self._model_classes, self._start_values.copy())
+
+        # Check if all user-defined python models are SimulationEntityWithAction
+        for model in self.models.values():
+            if not isinstance(model.simulation_entity, SimulationEntityWithAction):
+                raise TypeError(f"Model '{model}' is not a SimulationEntityWithAction.")
+
+        self.systems = {**self.fmus, **self.models}
+        self.connections = init_connections(self._connections_config)
+        self._parameters_to_log = init_parameter_list(self._given_parameters_to_log)
+        self.parameters_to_log = self._parameters_to_log
+
         self._time_series = self.compute_time_array(stop_time, step_size, start_time)
         self._time_step = 0
+
         self._number_log_steps = int(stop_time / logging_step_size) + 1
         self._logging_multiple = round(logging_step_size / step_size)
+
         self.results = np.zeros((self._number_log_steps, len(self.parameters_to_log) + 1))
+
         self.log_values(time=0, log_step=0)
         self._log_step = 1
+
         logging.info("Reset simulation.")
 
     @final
@@ -92,7 +152,7 @@ class ManualStepSimulator(Simulator):
         time_step, time = self._time_step, self._time_series[self._time_step]
         for fmu in self.fmus.values():
             fmu.simulation_entity.do_step(time)
-        for agent in self.agents.values():
+        for agent in self.models.values():
             agent.simulation_entity.do_step_with_action(time, action)
         self.set_systems_inputs()
         if ((time_step + 1) % self._logging_multiple) == 0:
@@ -103,7 +163,7 @@ class ManualStepSimulator(Simulator):
     def get_current_state(self):
         """Return the current state of the simulation."""
         state = {}
-        for agent in self.agents.values():
+        for agent in self.models.values():
             state[agent.name] = agent.simulation_entity.get_state()
 
         return state, self.is_done()
@@ -115,78 +175,7 @@ class ManualStepSimulator(Simulator):
     def end_and_get_results(self):
         """Finalize the simulation and return the results."""
         self.conclude_simulation()
-        if self._return_units:
+        logging.info("Simulation finished.")
+        if self._get_units:
             return self.convert_to_data_frame(self.results), self.get_units()
         return self.convert_to_data_frame(self.results)
-
-
-def setup_manual_step_simulation(
-    stop_time: float,
-    step_size: float,
-    fmu_paths: co.FmuPaths | None = None,
-    model_classes: co.ModelClasses | None = None,
-    connections_config: co.ConnectionsConfig | None = None,
-    start_values: co.StartValues | None = None,
-    parameters_to_log: co.ParametersToLog | None = None,
-    logging_step_size: float | None = None,
-    get_units: bool = False,
-):
-    """Set up a simulation with manual step control."""
-    logging.basicConfig(
-        format="Simulation::%(levelname)s::%(message)s",
-        level=logging.INFO,
-        force=True,
-    )
-    _validate_input(
-        stop_time,
-        step_size,
-        fmu_paths,
-        model_classes,
-        connections_config,
-        parameters_to_log,
-        logging_step_size,
-        start_values,
-    )
-
-    stop_time = float(stop_time)
-    step_size = float(step_size)
-
-    logging.info(f"Simulation stop time set to {stop_time} seconds.")
-    logging.info(f"Simulation step size set to {step_size} seconds.")
-
-    logging_step_size = float(logging_step_size or step_size)
-
-    logging.info(f"Simulation logging step size set to {logging_step_size} seconds.")
-
-    connections_config = connections_config or {}
-    fmu_paths = fmu_paths or {}
-    model_classes = model_classes or {}
-    start_values = start_values or {}
-    parameters_to_log = parameters_to_log or {}
-
-    start_values = start_values.copy()  # copy because dict will be modified in fmu.py
-
-    fmus = init_fmus(fmu_paths, step_size, start_values)
-
-    models = init_models(model_classes, start_values)
-
-    # Check if all user-defined python models are SimulationEntityWithAction
-    for model in models.values():
-        if not isinstance(model.simulation_entity, SimulationEntityWithAction):
-            raise TypeError(f"Model '{model}' is not a SimulationEntityWithAction.")
-
-    connections = init_connections(connections_config)
-    _parameters_to_log = init_parameter_list(parameters_to_log)
-
-    # Create the simulator
-    sim = ManualStepSimulator(
-        {**fmus, **models},
-        fmus,
-        models,
-        connections,
-        _parameters_to_log,
-        return_units=get_units
-    )
-    # Reset the simulation to the initial state
-    sim.reset_simulation(stop_time, step_size, logging_step_size)
-    return sim

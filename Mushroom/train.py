@@ -12,7 +12,7 @@ from utils import set_seed, plot_multiple_seeds
 # Parametrization
 seeds = [526, 42, 7, 999, 1]
 
-horizon = 50
+horizon = 100
 gamma = 0.99
 gamma_eval = 1.
 
@@ -21,14 +21,14 @@ lr_critic = 1e-3
 
 initial_replay_size = 500
 max_replay_size = 5000
-batch_size = 200
+batch_size = 100
 n_features = 5
 tau = .001
 sigma = 0.2
 theta = 0.15
 dt = 1e-2
 
-n_epochs = 50
+n_epochs = 20
 n_steps_learn = 200
 n_steps_test = 400
 n_steps_per_fit = 1

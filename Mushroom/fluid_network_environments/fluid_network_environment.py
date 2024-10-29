@@ -4,7 +4,7 @@ import numpy as np
 from mushroom_rl.core import Environment, MDPInfo
 from mushroom_rl.utils import spaces
 
-from Sofirpy.step_by_step_simulation import ManualStepSimulator
+from Sofirpy.simulation import ManualStepSimulator
 
 
 class AbstractFluidNetworkEnv(Environment):
@@ -32,7 +32,7 @@ class AbstractFluidNetworkEnv(Environment):
             raise NotImplementedError("Resetting to a specific state is not supported.")
 
         if self._fns_args is None:
-            self._sim.reset_simulation(100, 1, 1)
+            self._sim.reset_simulation(self._horizon, 1, 1)
         else:
             self._sim.reset_simulation(self._horizon, **self._fns_args)
 
