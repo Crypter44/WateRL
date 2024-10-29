@@ -11,7 +11,7 @@ dir_path = Path(__file__).parent
 
 # %% setup simulation
 
-fmu_dir_path = dir_path.parent / "Fluid_Model" / "simple_network_valve"
+fmu_dir_path = dir_path.parent.parent / "Fluid_Model" / "simple_network_valve"
 fmu_path = fmu_dir_path / "simple_network_valve.fmu"
 
 connections_config = {

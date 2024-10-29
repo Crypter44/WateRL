@@ -14,7 +14,7 @@ plt.style.use(dir_path / "FST.mplstyle")
 
 # %% setup simulation
 
-fmu_dir_path = dir_path.parent / "Fluid_Model" / "circular_water_network"
+fmu_dir_path = dir_path.parent.parent / "Fluid_Model" / "circular_water_network"
 
 fmu_path = fmu_dir_path / "mini_circular_water_network.fmu"
 
@@ -77,7 +77,7 @@ ax.set_xlabel("TIME in s")
 ax.set_ylabel("VOLUME FLOW in m$^3$/h")
 ax.set_title("VALVE 2")
 ax.legend(loc="upper left", ncol=2)
-
+fig.show()
 
 # %% display results - consumer 6
 fig, ax = plt.subplots()
@@ -109,6 +109,7 @@ ax2.set_ylabel("VALVE POSITION in %", c=[0 / 255, 78 / 255, 115 / 255])
 ax.set_title("VALVE 6")
 ax.legend(loc="lower right", ncol=2)
 ax2.spines["right"].set_visible(True)
+fig.show()
 
 # %% display results - pump 4
 fig, ax1 = plt.subplots()
@@ -129,6 +130,7 @@ ax2.set_ylabel("ROTATIONAL SPEED in rpm", c=[0 / 255, 78 / 255, 115 / 255])
 ax2.spines["right"].set_visible(True)
 ax1.set_ylabel("VOLUME FLOW in m$^3$/h ")
 ax1.set_title("PUMP 4")
+fig.show()
 
 # %% display results - pump 1
 fig, ax1 = plt.subplots()
@@ -150,6 +152,8 @@ ax2.set_ylabel("ROTATIONAL SPEED in rpm", c=[0 / 255, 78 / 255, 115 / 255])
 ax2.spines["right"].set_visible(True)
 ax1.set_ylabel("VOLUME FLOW in m$^3$/h ")
 ax1.set_title("PUMP 1")
+fig.show()
+
 # %% display results - valve 2, 3, & 5
 fig, ax = plt.subplots()
 ax.plot(results["time"], results["water_network.u_v_2"] * 100, label="valve 2")
@@ -159,3 +163,4 @@ ax.set_xlabel("TIME in s")
 ax.set_ylabel("VALVE POSITION in %")
 ax.legend()
 ax.set_title("VALVE 2, 3 & 5")
+fig.show()

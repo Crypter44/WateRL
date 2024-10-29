@@ -21,7 +21,7 @@ class ControlAPI(SimulationEntity):
         self.project_dir = dir_path.parent / "Fluid_Model"
         # TODO: get the data from script calling the class
         agent_config_path = (
-            dir_path.parent
+            dir_path.parent.parent
             / "Fluid_Model"
             / "circular_water_network"
             / "mini_circular_water_network.json"
