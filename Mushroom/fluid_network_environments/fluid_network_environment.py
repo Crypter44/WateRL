@@ -41,6 +41,8 @@ class AbstractFluidNetworkEnv(Environment):
         return self._current_state
 
     def step(self, action):
+        # clip action to action space
+        action = np.clip(action, self._mdp_info.action_space.low, self._mdp_info.action_space.high)
         self._sim.do_simulation_step(action)
         new_state, absorbing = self._get_current_state()
 

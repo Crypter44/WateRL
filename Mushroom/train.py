@@ -28,9 +28,9 @@ sigma = 0.2
 theta = 0.15
 dt = 1e-2
 
-n_epochs = 20
-n_steps_learn = 200
-n_steps_test = 400
+n_epochs = 2
+n_steps_learn = 400
+n_steps_test = 600
 n_steps_per_fit = 1
 
 # Tuning parameters
@@ -66,14 +66,9 @@ def run_training(
         core.learn(n_steps=n_steps_learn, n_steps_per_fit=n_steps_per_fit, quiet=True)
         # evaluation step, agent evaluates 2000 steps -> 4 episodes
         dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
-        # if record and (n + 1) % record_every == 0:
-        #     core.render_episode(f"{record_dir}/{record_name}-ep{n + 1}.mp4")
         metrics = compute_metrics(dataset, gamma_eval)
         data.append(metrics)
-        pbar.set_postfix(Metrics=metrics)
-
-    # core.clear_render_cache()
-
+        pbar.set_postfix(Metrics=np.round(metrics, 2))
     return np.array(data)
 
 # create a dictionary to store data for each seed
@@ -133,7 +128,14 @@ for p1 in tuning_params1:
         fig1.show()
         fig2.show()
 
-        plot_to_ax(ax[x, y], data[f"{p1}-{p2}"], f"Walker Stand p1={p1} p2={p2}", 0.1)
+        if len(tuning_params1) == 1 and len(tuning_params2) == 1:
+            plot_to_ax(ax, data[f"{p1}-{p2}"], f"Walker Stand p1={p1} p2={p2}", 0.1)
+        elif len(tuning_params1) == 1:
+            plot_to_ax(ax[y], data[f"{p1}-{p2}"], f"Walker Stand p1={p1} p2={p2}", 0.1)
+        elif len(tuning_params2) == 1:
+            plot_to_ax(ax[x], data[f"{p1}-{p2}"], f"Walker Stand p1={p1} p2={p2}", 0.1)
+        else:
+            plot_to_ax(ax[x][y], data[f"{p1}-{p2}"], f"Walker Stand p1={p1} p2={p2}", 0.1)
         y += 1
     x += 1
 

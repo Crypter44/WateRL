@@ -27,8 +27,6 @@ def plot_multiple_seeds(data: dict, title: str, multiple_seeds_per_plot=True, ra
         for i, (seed, metrics) in enumerate(data.items()):
             # Get the default color cycle
             color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-            print(color_cycle[i])
-
             plot_to_ax(ax[i], {seed: metrics}, title, range_alpha, color_cycle[i])
 
 

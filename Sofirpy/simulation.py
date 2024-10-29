@@ -1,4 +1,7 @@
 import logging
+import os
+import shutil
+import tempfile
 from abc import abstractmethod
 from typing import final
 
@@ -54,6 +57,12 @@ class ManualStepSimulator(Simulator):
     ):
         """Initialize the simulator."""
 
+        # Set the temporary directory for the FMUs, since fmpy does not allow to set it and creates a data leak otherwise
+        self.tmp_dir = os.path.abspath("./fmu_tmp")
+        tempfile.tempdir = self.tmp_dir
+        os.makedirs(self.tmp_dir, exist_ok=True)
+
+        # Set the logging level to INFO if verbose is True, to get more information about the simulation
         if verbose:
             logging.basicConfig(
                 format="Simulation::%(levelname)s::%(message)s",
@@ -73,6 +82,7 @@ class ManualStepSimulator(Simulator):
         self._given_parameters_to_log = parameters_to_log or {}
 
         # Initialize attributes
+        self.systems = {}
         self.fmus = None
         self.models = None
         self._get_units = get_units
@@ -98,6 +108,13 @@ class ManualStepSimulator(Simulator):
             start_time: float = 0.0,
     ) -> None:
         """Reset the simulation to the initial state."""
+        self.conclude_simulation()
+        # clear the fmu_temp directory
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        logging.info("Cleared temporary directory.")
+        os.makedirs(self.tmp_dir, exist_ok=True)
+
+
         stop_time = float(stop_time)
         step_size = float(step_size)
 
