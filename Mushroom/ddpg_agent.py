@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from mushroom_rl.algorithms.actor_critic import DDPG
-from mushroom_rl.policy import OrnsteinUhlenbeckPolicy
+from mushroom_rl.policy import OrnsteinUhlenbeckPolicy, GaussianPolicy
 from torch import nn, optim
 import torch.nn.functional as F
 
@@ -95,13 +95,13 @@ def create_ddpg_agent(
 
     # Policy
     policy_class = OrnsteinUhlenbeckPolicy
-    policy_params = dict(sigma=np.ones(1) * .2, theta=.15, dt=1e-2)
+    policy_params = dict(sigma=np.ones(1) * sigma, theta=theta, dt=dt)
 
     # policy_class = GaussianPolicy
-    # policy_params = dict(sigma=np.ones(6) * .2)
+    # policy_params = dict(sigma=np.eye(2) * .2)
 
     # Agent
     return DDPG(mdp.info, policy_class, policy_params,
-                 actor_params, actor_optimizer, critic_params,
-                 batch_size, initial_replay_size, max_replay_size,
-                 tau)
+                actor_params, actor_optimizer, critic_params,
+                batch_size, initial_replay_size, max_replay_size,
+                tau)
