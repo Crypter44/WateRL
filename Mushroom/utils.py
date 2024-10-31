@@ -21,7 +21,7 @@ def set_seed(seed: int):
 def plot_multiple_seeds(data: dict, title: str, multiple_seeds_per_plot=True, range_alpha=0.1):
     fig, ax = plt.subplots(1 if multiple_seeds_per_plot else len(data), 1, figsize=(8, 8))
 
-    if multiple_seeds_per_plot:
+    if multiple_seeds_per_plot or len(data) == 1:
         plot_to_ax(ax, data, title, range_alpha)
     else:
         for i, (seed, metrics) in enumerate(data.items()):
@@ -46,3 +46,34 @@ def plot_to_ax(ax, data: dict, title: str, range_alpha=0.1, color = None):
     ax.set_ylabel("Score")
     ax.legend()
 
+def plot_data(tuning_params1, tuning_params2, seeds, data):
+    # Plot the results
+    fig, ax = plt.subplots(
+        len(tuning_params1),
+        len(tuning_params2),
+        figsize=(len(tuning_params2) * 8, len(tuning_params1) * 8)
+    )
+
+    x = 0
+    y = 0
+    for p1 in tuning_params1:
+        y = 0
+        for p2 in tuning_params2:
+            fig1, ax1 = plot_multiple_seeds(data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", True)
+            fig1.show()
+            if len(seeds) > 1:
+                fig2, ax2 = plot_multiple_seeds(data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", False)
+                fig2.show()
+
+            if len(tuning_params1) == 1 and len(tuning_params2) == 1:
+                plot_to_ax(ax, data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
+            elif len(tuning_params1) == 1:
+                plot_to_ax(ax[y], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
+            elif len(tuning_params2) == 1:
+                plot_to_ax(ax[x], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
+            else:
+                plot_to_ax(ax[x][y], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
+            y += 1
+        x += 1
+
+    fig.show()

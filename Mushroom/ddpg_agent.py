@@ -1,9 +1,13 @@
 import numpy as np
 import torch
-from mushroom_rl.algorithms.actor_critic import DDPG
-from mushroom_rl.policy import OrnsteinUhlenbeckPolicy, GaussianPolicy
-from torch import nn, optim
 import torch.nn.functional as F
+from mushroom_rl.algorithms.actor_critic import DDPG
+from mushroom_rl.policy import OrnsteinUhlenbeckPolicy
+from mushroom_rl.utils.dataset import compute_metrics
+from torch import nn, optim
+from tqdm import tqdm
+
+from Mushroom.train_ddpg import horizon
 
 
 # Define the neural networks for the actor and the critic
@@ -62,14 +66,14 @@ class ActorNetwork(nn.Module):
 
 def create_ddpg_agent(
         mdp,
-        n_features_actor,
-        lr_actor,
-        n_features_critic,
-        lr_critic,
-        batch_size,
-        initial_replay_size,
-        max_replay_size,
-        tau,
+        n_features_actor=80,
+        lr_actor=1e-4,
+        n_features_critic=80,
+        lr_critic=1e-3,
+        batch_size=200,
+        initial_replay_size=500,
+        max_replay_size=5000,
+        tau=0.001,
         sigma=0.2,
         theta=0.15,
         dt=1e-2
@@ -105,3 +109,57 @@ def create_ddpg_agent(
                 actor_params, actor_optimizer, critic_params,
                 batch_size, initial_replay_size, max_replay_size,
                 tau)
+
+
+def run_ddpg_training(
+        core,
+        n_epochs,
+        n_steps_learn=600,
+        n_steps_test=400,
+        n_steps_per_fit=1,
+        initial_replay_size=500,
+        gamma_eval=1,
+        disable_noise_for_evaluation=True,
+        record=False,
+        record_every=5,
+        n_recordings=1,
+        record_postfix=""
+):
+    # Fill the replay memory with random samples
+    core.learn(n_steps=initial_replay_size, n_steps_per_fit=initial_replay_size, quiet=True)
+
+    # ------------- RUN EXPERIMENT ------------- #
+    dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+    data = []
+
+    metrics = compute_metrics(dataset, gamma_eval)
+    data.append(metrics)
+
+    pbar = tqdm(range(n_epochs), desc='Running... ', unit='epoch')
+    for n in pbar:
+        # learning step, agent learns from 1000 steps -> 2 episodes
+        core.learn(n_steps=n_steps_learn, n_steps_per_fit=n_steps_per_fit, quiet=True)
+        # evaluation step, agent evaluates 2000 steps -> 4 episodes
+        if disable_noise_for_evaluation:
+            dataset = evaluate_without_noise(core, n_steps_test)
+        else:
+            dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+        metrics = compute_metrics(dataset, gamma_eval)
+        data.append(metrics)
+        pbar.set_postfix(Metrics=np.round(metrics, 2))
+
+        if (n + 1) % record_every == 0 and record:
+            for _ in range(n_recordings):
+                if disable_noise_for_evaluation:
+                    evaluate_without_noise(core, horizon)
+                else:
+                    core.evaluate(n_steps=horizon, render=False, quiet=True)
+                core.mdp.render(f"Epoch {n + 1}" + record_postfix)
+    return np.array(data)
+
+def evaluate_without_noise(core, n_steps_test):
+    tmp = core.agent.policy._sigma
+    core.agent.policy._sigma = 0.0
+    dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+    core.agent.policy._sigma = tmp
+    return dataset
