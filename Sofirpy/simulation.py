@@ -189,10 +189,13 @@ class ManualStepSimulator(Simulator):
         """Return True iff the simulation is finished."""
         return self._time_step == len(self._time_series) - 1
 
-    def end_and_get_results(self):
-        """Finalize the simulation and return the results."""
-        self.conclude_simulation()
-        logging.info("Simulation finished.")
+    def get_results(self):
+        """Return the simulation results."""
         if self._get_units:
             return self.convert_to_data_frame(self.results), self.get_units()
         return self.convert_to_data_frame(self.results)
+
+    def finalize(self):
+        """Finalize the simulation"""
+        self.conclude_simulation()
+        logging.info("Simulation finished.")

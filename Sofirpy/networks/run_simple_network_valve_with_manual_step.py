@@ -41,7 +41,8 @@ while not sim.is_done():
     sim.do_simulation_step(np.array([u]))
 
 # finalize simulation and get results
-results, units = sim.end_and_get_results()
+results, _ = sim.get_results()
+sim.finalize()
 
 # %% display results - consumer 6
 fig, ax = plt.subplots(figsize=(10, 8))
