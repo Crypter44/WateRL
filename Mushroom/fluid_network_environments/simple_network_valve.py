@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+from matplotlib import pyplot as plt
 from mushroom_rl.utils import spaces
 
 from Mushroom.fluid_network_environments.fluid_network_environment import AbstractFluidNetworkEnv
@@ -25,7 +26,7 @@ class Controller(SimulationEntityWithAction):
             "p_rel_2": 0.0,
         }
         self.outputs = {"w_v_2": 0.0}  # rotational speed at the pump
-        self.requested_volume_flow = np.random.uniform(0.1, 0.65)  # setpoint for volume flow at valve
+        self.requested_volume_flow = np.random.uniform(0.1, 0.55)  # setpoint for volume flow at valve
         self.error_flow = 0.0
 
     def do_step_with_action(self, time: float, action: np.ndarray):  # mandatory method
@@ -126,7 +127,7 @@ fmu_paths = {"water_network": str(fmu_path)}
 class SimpleNetworkValve(AbstractFluidNetworkEnv):
     def __init__(self, gamma: float, horizon: int, fluid_network_simulator_args: dict = None):
         super().__init__(
-            observation_space=spaces.Box(low=-10, high=10, shape=(3,)),
+            observation_space=spaces.Box(low=-10, high=10, shape=(2,)),
             action_space=spaces.Box(low=0, high=1, shape=(1,)),
             fluid_network_simulator=ManualStepSimulator(
                 stop_time=horizon,
@@ -144,13 +145,62 @@ class SimpleNetworkValve(AbstractFluidNetworkEnv):
             fluid_network_simulator_args=fluid_network_simulator_args,
         )
 
+    def render(self, title: str = None):
+        dataframe = self._sim.get_results()
+        demand = self._sim.systems["control_api"].simulation_entity.requested_volume_flow,
+
+        last_non_zero_index = dataframe["time"].to_numpy().nonzero()[0]
+
+        if len(last_non_zero_index) == 0:
+            print("No data to plot.")
+            return
+        else :
+            last_non_zero_index = last_non_zero_index[-1]
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax2 = ax.twinx()
+
+        ax.plot(
+            dataframe["time"][:last_non_zero_index],
+            [demand] * last_non_zero_index,
+            lw=1.5,
+            label="DEMAND",
+            linestyle=(0, (2, 1)),
+            c=[253 / 255, 202 / 255, 0 / 255],
+        )
+        ax.plot(
+            dataframe["time"][:last_non_zero_index],
+            dataframe["water_network.V_flow_2"][:last_non_zero_index],
+            lw=1.5,
+            label="VOLUME FLOW",
+            c=[253 / 255, 202 / 255, 0 / 255],
+        )
+        ax2.plot(
+            dataframe["time"][:last_non_zero_index],
+            dataframe["control_api.w_v_2"][:last_non_zero_index],
+            lw=1.5,
+            label="VALVE OPENING",
+            markersize=8,
+            c=[0 / 255, 78 / 255, 115 / 255],
+        )
+        ax.set_xlabel("TIME in s")
+        ax.set_xlim(0, self._horizon)
+        ax.set_ylim(0, 0.65)
+        ax.set_ylabel("VOLUME FLOW AT VALVE in m$^3$/h")
+        ax2.set_ylabel("VALVE OPENING in %", c=[0 / 255, 78 / 255, 115 / 255])
+        ax2.set_ylim(0, 1)
+        ax2.spines["right"].set_visible(True)
+        fig.suptitle(title)
+        fig.legend()
+        fig.show()
+
     def _get_current_state(self):
         global_state, done = self._sim.get_current_state()
         try:
             local_state = global_state["control_api"]
         except KeyError:
             raise KeyError("The key 'control_api' was not found in the global state.")
-        return local_state, done
+        return local_state[0:2], done
 
     def _reward_fun(self, state, action, new_state):
         demand = state[0]
@@ -159,4 +209,4 @@ class SimpleNetworkValve(AbstractFluidNetworkEnv):
         new_demand = new_state[0]
         new_supply = new_state[1]
 
-        return -abs(new_demand - new_supply)
+        return -10*(new_demand - new_supply)**2
