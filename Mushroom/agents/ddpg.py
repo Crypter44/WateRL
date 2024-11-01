@@ -7,8 +7,6 @@ from mushroom_rl.utils.dataset import compute_metrics
 from torch import nn, optim
 from tqdm import tqdm
 
-from Mushroom.train_ddpg import horizon
-
 
 # Define the neural networks for the actor and the critic
 class CriticNetwork(nn.Module):
@@ -151,11 +149,12 @@ def run_ddpg_training(
         if (n + 1) % record_every == 0 and record:
             for _ in range(n_recordings):
                 if disable_noise_for_evaluation:
-                    evaluate_without_noise(core, horizon)
+                    evaluate_without_noise(core, core.mdp.info.horizon)
                 else:
-                    core.evaluate(n_steps=horizon, render=False, quiet=True)
+                    core.evaluate(n_steps=core.mdp.info.horizon, render=False, quiet=True)
                 core.mdp.render(f"Epoch {n + 1}" + record_postfix)
     return np.array(data)
+
 
 def evaluate_without_noise(core, n_steps_test):
     tmp = core.agent.policy._sigma

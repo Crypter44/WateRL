@@ -1,10 +1,9 @@
-from matplotlib import pyplot as plt
 from mushroom_rl.core import Core
 
-from Mushroom.ddpg_agent import create_ddpg_agent, run_ddpg_training
+from Mushroom.agents.ddpg import create_ddpg_agent, run_ddpg_training
 from Mushroom.fluid_network_environments.simple_network_valve import SimpleNetworkValve
-from Mushroom.utils import plot_to_ax, plot_data
-from utils import set_seed, plot_multiple_seeds
+from Mushroom.utils import plot_data
+from Mushroom.utils import set_seed
 
 # Parametrization
 seeds = [4403, 2003, 2024, 5264]

@@ -18,8 +18,10 @@ def set_seed(seed: int):
         torch.cuda.manual_seed_all(seed)
     random.seed(seed)
 
+
 def plot_multiple_seeds(data: dict, title: str, multiple_seeds_per_plot=True, range_alpha=0.1):
-    fig, ax = plt.subplots(1 if multiple_seeds_per_plot else len(data), 1, figsize=(8, 8))
+    rows = 1 if multiple_seeds_per_plot else len(data)
+    fig, ax = plt.subplots(rows, 1, figsize=(8 if multiple_seeds_per_plot else rows * 3, 8))
 
     if multiple_seeds_per_plot or len(data) == 1:
         plot_to_ax(ax, data, title, range_alpha)
@@ -29,22 +31,25 @@ def plot_multiple_seeds(data: dict, title: str, multiple_seeds_per_plot=True, ra
             color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
             plot_to_ax(ax[i], {seed: metrics}, title, range_alpha, color_cycle[i])
 
-
     return fig, ax
 
-def plot_to_ax(ax, data: dict, title: str, range_alpha=0.1, color = None):
+
+def plot_to_ax(ax, data: dict, title: str, range_alpha=0.1, color=None):
     for seed, metrics in data.items():
         ax.plot(metrics[:, 2], label=f"Mean score, s={seed}", color=color)
 
     for seed, metrics in data.items():
         if color is not None:
-            ax.fill_between(np.arange(len(metrics)), metrics[:, 0], metrics[:, 1], alpha=range_alpha, label=f"Range, s={seed}", color=color)
+            ax.fill_between(np.arange(len(metrics)), metrics[:, 0], metrics[:, 1], alpha=range_alpha,
+                            label=f"Range, s={seed}", color=color)
         else:
-            ax.fill_between(np.arange(len(metrics)), metrics[:, 0], metrics[:, 1], alpha=range_alpha, label=f"Range, s={seed}")
+            ax.fill_between(np.arange(len(metrics)), metrics[:, 0], metrics[:, 1], alpha=range_alpha,
+                            label=f"Range, s={seed}")
     ax.set_title(title)
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Score")
     ax.legend()
+
 
 def plot_data(tuning_params1, tuning_params2, seeds, data):
     # Plot the results

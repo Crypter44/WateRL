@@ -70,7 +70,6 @@ class ManualStepSimulator(Simulator):
                 force=True,
             )
 
-
         _validate_input(stop_time, step_size, fmu_paths, model_classes, connections_config, parameters_to_log,
                         logging_step_size, start_values, )
 
@@ -109,11 +108,9 @@ class ManualStepSimulator(Simulator):
     ) -> None:
         """Reset the simulation to the initial state."""
         self.conclude_simulation()
-        # clear the fmu_temp directory
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
         logging.info("Cleared temporary directory.")
         os.makedirs(self.tmp_dir, exist_ok=True)
-
 
         stop_time = float(stop_time)
         step_size = float(step_size)
@@ -198,4 +195,6 @@ class ManualStepSimulator(Simulator):
     def finalize(self):
         """Finalize the simulation"""
         self.conclude_simulation()
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        logging.info("Cleared temporary directory.")
         logging.info("Simulation finished.")

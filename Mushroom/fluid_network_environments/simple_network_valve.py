@@ -146,15 +146,15 @@ class SimpleNetworkValve(AbstractFluidNetworkEnv):
         )
 
     def render(self, title: str = None):
-        dataframe = self._sim.get_results()
-        demand = self._sim.systems["control_api"].simulation_entity.requested_volume_flow,
+        dataframe = self.sim.get_results()
+        demand = self.sim.systems["control_api"].simulation_entity.requested_volume_flow,
 
         last_non_zero_index = dataframe["time"].to_numpy().nonzero()[0]
 
         if len(last_non_zero_index) == 0:
             print("No data to plot.")
             return
-        else :
+        else:
             last_non_zero_index = last_non_zero_index[-1]
 
         fig, ax = plt.subplots(figsize=(10, 8))
@@ -195,7 +195,7 @@ class SimpleNetworkValve(AbstractFluidNetworkEnv):
         fig.show()
 
     def _get_current_state(self):
-        global_state, done = self._sim.get_current_state()
+        global_state, done = self.sim.get_current_state()
         try:
             local_state = global_state["control_api"]
         except KeyError:
@@ -209,4 +209,4 @@ class SimpleNetworkValve(AbstractFluidNetworkEnv):
         new_demand = new_state[0]
         new_supply = new_state[1]
 
-        return -10*(new_demand - new_supply)**2
+        return -10 * (new_demand - new_supply) ** 2

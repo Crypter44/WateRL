@@ -21,7 +21,7 @@ class AbstractFluidNetworkEnv(Environment):
         self._fns_args = fluid_network_simulator_args
         mdp_info = MDPInfo(observation_space, action_space, gamma, horizon)
         self._horizon = horizon
-        self._sim = fluid_network_simulator
+        self.sim = fluid_network_simulator
         super().__init__(mdp_info)
 
     def render(self):
@@ -32,9 +32,9 @@ class AbstractFluidNetworkEnv(Environment):
             raise NotImplementedError("Resetting to a specific state is not supported.")
 
         if self._fns_args is None:
-            self._sim.reset_simulation(self._horizon, 1, 1)
+            self.sim.reset_simulation(self._horizon, 1, 1)
         else:
-            self._sim.reset_simulation(self._horizon, **self._fns_args)
+            self.sim.reset_simulation(self._horizon, **self._fns_args)
 
         self._current_state, _ = self._get_current_state()
 
@@ -43,7 +43,7 @@ class AbstractFluidNetworkEnv(Environment):
     def step(self, action):
         # clip action to action space
         action = np.clip(action, self._mdp_info.action_space.low, self._mdp_info.action_space.high)
-        self._sim.do_simulation_step(action)
+        self.sim.do_simulation_step(action)
         new_state, absorbing = self._get_current_state()
 
         reward = self._reward_fun(self._current_state, action, new_state)
