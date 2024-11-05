@@ -60,7 +60,6 @@ def plot_data(tuning_params1, tuning_params2, seeds, data):
     )
 
     x = 0
-    y = 0
     for p1 in tuning_params1:
         y = 0
         for p2 in tuning_params2:

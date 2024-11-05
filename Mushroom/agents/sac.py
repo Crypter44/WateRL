@@ -194,18 +194,17 @@ def run_sac_training(
     core.learn(n_steps=initial_replay_size, n_steps_per_fit=initial_replay_size, quiet=True)
     data = [compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True), gamma_eval)]
 
-    progressbar = tqdm(range(n_epochs), unit='epoch')
-    for n in progressbar:
-        core.learn(n_steps=n_steps_learn, n_steps_per_fit=n_steps_per_fit, quiet=True)
-        data.append(compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True)))
+    with tqdm(range(n_epochs), unit='epoch', leave=False) as progressbar:
+        for n in progressbar:
+            core.learn(n_steps=n_steps_learn, n_steps_per_fit=n_steps_per_fit, quiet=True)
+            data.append(compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True)))
 
-        if record and (n+1) % record_every == 0:
-            for i in range(n_recordings):
-                core.evaluate(n_episodes=1, quiet=True)
-                core.mdp.render(f"Epo {n+1} - Eval {i+1}{record_postfix}")
-            core.agent.save(f"weights/agent_epo_{n+1}{record_postfix}")
+            if record and (n+1) % record_every == 0:
+                for i in range(n_recordings):
+                    core.evaluate(n_episodes=1, quiet=True)
+                    core.mdp.render(f"Epo {n+1} - Eval {i+1}{record_postfix}")
+                core.agent.save(f"weights/agent_epo_{n+1}{record_postfix.replace(' ', '')}")
 
-        progressbar.set_postfix(MinMaxMean=np.round(data[-1][:3], 2))
+            progressbar.set_postfix(MinMaxMean=np.round(data[-1][:3], 2))
 
     return np.array(data)
-

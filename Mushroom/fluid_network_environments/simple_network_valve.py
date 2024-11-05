@@ -161,23 +161,23 @@ class SimpleNetworkValve(AbstractFluidNetworkEnv):
         ax2 = ax.twinx()
 
         ax.plot(
-            dataframe["time"][:last_non_zero_index],
-            [demand] * last_non_zero_index,
+            dataframe["time"][1:last_non_zero_index],
+            [demand] * (last_non_zero_index-1),
             lw=1.5,
             label="DEMAND",
             linestyle=(0, (2, 1)),
             c=[253 / 255, 202 / 255, 0 / 255],
         )
         ax.plot(
-            dataframe["time"][:last_non_zero_index],
-            dataframe["water_network.V_flow_2"][:last_non_zero_index],
+            dataframe["time"][1:last_non_zero_index],
+            dataframe["water_network.V_flow_2"][1:last_non_zero_index],
             lw=1.5,
             label="VOLUME FLOW",
             c=[253 / 255, 202 / 255, 0 / 255],
         )
         ax2.plot(
-            dataframe["time"][:last_non_zero_index],
-            dataframe["control_api.w_v_2"][:last_non_zero_index],
+            dataframe["time"][1:last_non_zero_index],
+            dataframe["control_api.w_v_2"][1:last_non_zero_index],
             lw=1.5,
             label="VALVE OPENING",
             markersize=8,
