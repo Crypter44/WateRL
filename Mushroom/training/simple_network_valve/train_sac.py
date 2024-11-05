@@ -1,8 +1,9 @@
 from mushroom_rl.core import Core
+from tqdm import tqdm
 
 from Mushroom.agents.sac import create_sac_agent, run_sac_training
 from Mushroom.fluid_network_environments.simple_network_valve import SimpleNetworkValve
-from Mushroom.utils import plot_multiple_seeds
+from Mushroom.utils import plot_data
 from Mushroom.utils import set_seed
 
 # Parametrization
@@ -12,9 +13,9 @@ horizon = 100
 gamma = 0.99
 gamma_eval = 1.
 
-lr_actor = 1e-4
-lr_critic = 1e-3
-lr_alpha = 3e-4
+lr_actor = 1e-3
+lr_critic = 6e-4
+lr_alpha = 3e-3
 
 initial_replay_size = 500
 max_replay_size = 5000
@@ -36,52 +37,62 @@ warmup_transitions = initial_replay_size
 # Record
 record = True
 record_every = 60
-n_recordings = 4
+n_recordings = 0
+
+# Tuning
+tuning_params1 = ["N/A"]
+tuning_params2 = ["N/A"]
 
 # Training
 data = {}
-for seed in seeds:
-    set_seed(seed)
+pbar = tqdm(total=len(tuning_params1) * len(tuning_params2), unit='experiment')
+for p1 in tuning_params1:
+    for p2 in tuning_params2:
+        seedbar = tqdm(total=len(seeds), unit='seed', leave=False)
+        current_data = {}
+        for seed in seeds:
+            set_seed(seed)
 
-    mdp = SimpleNetworkValve(gamma, horizon)
+            mdp = SimpleNetworkValve(gamma, horizon)
 
-    agent = create_sac_agent(
-        mdp,
-        n_features_actor=n_features_actor,
-        n_features_critic=n_features_critic,
-        lr_actor=lr_actor,
-        lr_critic=lr_critic,
-        lr_alpha=lr_alpha,
-        batch_size=batch_size,
-        initial_replay_size=initial_replay_size,
-        max_replay_size=max_replay_size,
-        warmup_transitions=warmup_transitions,
-        tau=tau,
-        log_std_min=log_std_min,
-        log_std_max=log_std_max,
-        target_entropy=target_entropy
-    )
+            agent = create_sac_agent(
+                mdp,
+                n_features_actor=n_features_actor,
+                n_features_critic=n_features_critic,
+                lr_actor=lr_actor,
+                lr_critic=lr_critic,
+                lr_alpha=p1,
+                batch_size=batch_size,
+                initial_replay_size=initial_replay_size,
+                max_replay_size=max_replay_size,
+                warmup_transitions=warmup_transitions,
+                tau=tau,
+                log_std_min=log_std_min,
+                log_std_max=log_std_max,
+                target_entropy=p2
+            )
 
-    core = Core(agent, mdp)
+            core = Core(agent, mdp)
 
-    results = run_sac_training(
-        core,
-        n_epochs=n_epochs,
-        n_steps_learn=n_steps_learn,
-        n_steps_test=n_steps_test,
-        n_steps_per_fit=n_steps_per_fit,
-        initial_replay_size=initial_replay_size,
-        gamma_eval=gamma_eval,
-        record=record,
-        record_every=record_every,
-        record_postfix=f" - s:{seed}",
-        n_recordings=n_recordings
-    )
+            results = run_sac_training(
+                core,
+                n_epochs=n_epochs,
+                n_steps_learn=n_steps_learn,
+                n_steps_test=n_steps_test,
+                n_steps_per_fit=n_steps_per_fit,
+                initial_replay_size=initial_replay_size,
+                gamma_eval=gamma_eval,
+                record=record,
+                record_every=record_every,
+                record_postfix=f" - s:{seed} - p1:{p1} - p2:{p2}",
+                n_recordings=n_recordings
+            )
 
-    data[seed] = results
+            current_data[seed] = results
+            seedbar.update(1)
+        seedbar.close()
 
-# Plot results
-fig, _ = plot_multiple_seeds(data, "SAC on Simple Network Valve")
-fig2, _ = plot_multiple_seeds(data, "SAC on Simple Network Valve", False)
-fig.show()
-fig2.show()
+        data[f'{p1}-{p2}'] = current_data
+        pbar.update(1)
+
+plot_data(tuning_params1, tuning_params2, seeds, data)

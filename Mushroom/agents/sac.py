@@ -203,7 +203,7 @@ def run_sac_training(
                 for i in range(n_recordings):
                     core.evaluate(n_episodes=1, quiet=True)
                     core.mdp.render(f"Epo {n+1} - Eval {i+1}{record_postfix}")
-                core.agent.save(f"weights/agent_epo_{n+1}{record_postfix.replace(' ', '')}")
+                core.agent.save(f"weights/sac_agent_epo_{n+1}{record_postfix.replace(' ', '')}")
 
             progressbar.set_postfix(MinMaxMean=np.round(data[-1][:3], 2))
 
