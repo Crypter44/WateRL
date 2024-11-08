@@ -1,58 +1,6 @@
 # %% import
-import json
-import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
-from pathlib import Path
-import time
-
-from sofirpy import simulate
-
-from control_api import ControlAPI
-
-dir_path = Path(__file__).parent
-plt.style.use(dir_path / "FST.mplstyle")
-
-# %% setup simulation
-
-fmu_dir_path = dir_path.parent.parent / "Fluid_Model" / "circular_water_network"
-
-fmu_path = fmu_dir_path / "mini_circular_water_network.fmu"
-
-agent_config_path = fmu_dir_path / "mini_circular_water_network.json"
-
-connections_config_path = (
-    fmu_dir_path / "mini_circular_water_network_connections_config.json"
-)
-
-logging_config_path = (
-    fmu_dir_path / "mini_circular_water_network_parameters_to_log.json"
-)
-
-# create interface of multi-agent system to FMU
-model_classes = {"control_api": ControlAPI}
-fmu_paths = {"water_network": str(fmu_path)}
-
-with open(connections_config_path) as connections_config_json:
-    connections_config = json.load(connections_config_json)
-
-with open(logging_config_path) as logging_config_json:
-    parameters_to_log = json.load(logging_config_json)
-
-
-# %% run simulation
-start_time = time.time()
-results, units = simulate(
-    stop_time=200,
-    step_size=1,
-    fmu_paths=fmu_paths,
-    model_classes=model_classes,
-    connections_config=connections_config,
-    parameters_to_log=parameters_to_log,
-    logging_step_size=1,
-    get_units=True,
-)
-
-# %% display results - consumer 2
+import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots()
 ax.plot(

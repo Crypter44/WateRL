@@ -3,10 +3,11 @@ from pathlib import Path
 
 from sofirpy import SimulationEntity
 
+from Sofirpy.simulation import SimulationEntityWithAction
 from agents_shared_space import SharedSpace
 
 
-class ControlAPI(SimulationEntity):
+class ControlApiCircular(SimulationEntityWithAction):
     """This Class is used when generating the input values for the FMU.
 
     It connects the input and output values for the FMU to a custom code.
@@ -17,12 +18,11 @@ class ControlAPI(SimulationEntity):
 
     def __init__(self):
         """_summary_"""
-        dir_path = Path(__file__).parent
-        self.project_dir = dir_path.parent / "Fluid_Model"
+        working_dir = Path(__file__).parent.parent.parent
+        self.project_dir = working_dir / "Fluid_Model"
         # TODO: get the data from script calling the class
         agent_config_path = (
-            dir_path.parent.parent
-            / "Fluid_Model"
+            self.project_dir
             / "circular_water_network"
             / "mini_circular_water_network.json"
         )
@@ -37,14 +37,16 @@ class ControlAPI(SimulationEntity):
         self.mas = SharedSpace(project_directory=self.project_dir)
         self.mas.add_agents_from_file(agents_config_data)
 
-    def do_step(self, time: float):  # mandatory method
-        """This code is executed during each simulation step.
+    def do_step_with_action(self, time: float, action):
+        self.mas.step(time, action)
 
-        Args:
-            time (float): Simulated timestep
-
-        """
-        self.mas.step(time)
+    def get_state(self):
+        return (
+            # demands of the valves
+            [c.demand_volume_flow_m3h for c in self.mas.consumer_agents]
+            # resulting volume flows at the valves, 1 and 4 are at the pumps
+            + [self.get_parameter_value(f"V_flow_{i}") for i in [2, 3, 5, 6]]
+        )
 
     def set_parameter(
         self, parameter_name: str, parameter_value: float
