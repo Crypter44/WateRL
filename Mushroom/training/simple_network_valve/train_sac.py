@@ -7,7 +7,7 @@ from Mushroom.utils import plot_data
 from Mushroom.utils import set_seed
 
 # Parametrization
-seeds = [1234, 2345]
+seeds = [3, 33]
 
 horizon = 100
 gamma = 0.99
@@ -37,11 +37,11 @@ warmup_transitions = initial_replay_size
 # Record
 record = True
 record_every = 60
-n_recordings = 0
+n_recordings = 1
 
 # Tuning
-tuning_params1 = ["N/A"]
-tuning_params2 = ["N/A"]
+tuning_params1 = ["xxx"]
+tuning_params2 = ["xxx"]
 
 # Training
 data = {}
@@ -61,7 +61,7 @@ for p1 in tuning_params1:
                 n_features_critic=n_features_critic,
                 lr_actor=lr_actor,
                 lr_critic=lr_critic,
-                lr_alpha=p1,
+                lr_alpha=lr_alpha,
                 batch_size=batch_size,
                 initial_replay_size=initial_replay_size,
                 max_replay_size=max_replay_size,
@@ -69,7 +69,7 @@ for p1 in tuning_params1:
                 tau=tau,
                 log_std_min=log_std_min,
                 log_std_max=log_std_max,
-                target_entropy=p2
+                target_entropy=target_entropy
             )
 
             core = Core(agent, mdp)

@@ -51,7 +51,7 @@ def plot_to_ax(ax, data: dict, title: str, range_alpha=0.1, color=None):
     ax.legend()
 
 
-def plot_data(tuning_params1, tuning_params2, seeds, data):
+def plot_data(tuning_params1, tuning_params2, seeds, data, only_xy_plot=False):
     # Plot the results
     fig, ax = plt.subplots(
         len(tuning_params1),
@@ -63,11 +63,12 @@ def plot_data(tuning_params1, tuning_params2, seeds, data):
     for p1 in tuning_params1:
         y = 0
         for p2 in tuning_params2:
-            fig1, ax1 = plot_multiple_seeds(data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", True)
-            fig1.show()
-            if len(seeds) > 1:
-                fig2, ax2 = plot_multiple_seeds(data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", False)
-                fig2.show()
+            if not only_xy_plot:
+                fig1, ax1 = plot_multiple_seeds(data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", True)
+                fig1.show()
+                if len(seeds) > 1:
+                    fig2, ax2 = plot_multiple_seeds(data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", False)
+                    fig2.show()
 
             if len(tuning_params1) == 1 and len(tuning_params2) == 1:
                 plot_to_ax(ax, data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)

@@ -57,7 +57,8 @@ class ActorNetwork(nn.Module):
     def forward(self, state):
         features1 = F.relu(self._h1(torch.squeeze(state, 1).float()))
         features2 = F.relu(self._h2(features1))
-        a = F.sigmoid(self._h3(features2))
+        a = F.tanh(self._h3(features2))
+        # change to sigmoid for fluid network
 
         return a
 
@@ -99,9 +100,6 @@ def create_ddpg_agent(
     policy_class = OrnsteinUhlenbeckPolicy
     policy_params = dict(sigma=np.ones(1) * sigma, theta=theta, dt=dt)
 
-    # policy_class = GaussianPolicy
-    # policy_params = dict(sigma=np.eye(2) * .2)
-
     # Agent
     return DDPG(mdp.info, policy_class, policy_params,
                 actor_params, actor_optimizer, critic_params,
@@ -116,12 +114,13 @@ def run_ddpg_training(
         n_steps_test=400,
         n_steps_per_fit=1,
         initial_replay_size=500,
+        sigma=0.2,
+        target_sigma=0.001,
         gamma_eval=1,
         disable_noise_for_evaluation=True,
-        record=False,
-        record_every=5,
-        n_recordings=1,
-        record_postfix=""
+        save=False,
+        save_every=5,
+        save_postfix=""
 ):
     # Fill the replay memory with random samples
     core.learn(n_steps=initial_replay_size, n_steps_per_fit=initial_replay_size, quiet=True)
@@ -133,26 +132,28 @@ def run_ddpg_training(
     metrics = compute_metrics(dataset, gamma_eval)
     data.append(metrics)
 
-    pbar = tqdm(range(n_epochs), desc='Running... ', unit='epoch')
+    pbar = tqdm(range(n_epochs), unit='epoch', leave=False)
     for n in pbar:
-        # learning step, agent learns from 1000 steps -> 2 episodes
         core.learn(n_steps=n_steps_learn, n_steps_per_fit=n_steps_per_fit, quiet=True)
-        # evaluation step, agent evaluates 2000 steps -> 4 episodes
+
         if disable_noise_for_evaluation:
             dataset = evaluate_without_noise(core, n_steps_test)
         else:
             dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+
         metrics = compute_metrics(dataset, gamma_eval)
         data.append(metrics)
-        pbar.set_postfix(Metrics=np.round(metrics, 2))
+        pbar.set_postfix(
+            MinMaxMean=np.round(metrics[0:3], 2),
+            sigma=np.round(core.agent.policy._sigma, 2)
+        )
 
-        if (n + 1) % record_every == 0 and record:
-            for _ in range(n_recordings):
-                if disable_noise_for_evaluation:
-                    evaluate_without_noise(core, core.mdp.info.horizon)
-                else:
-                    core.evaluate(n_steps=core.mdp.info.horizon, render=False, quiet=True)
-                core.mdp.render(f"Epoch {n + 1}" + record_postfix)
+        if (n + 1) % save_every == 0 and save:
+            core.agent.save(f"weights/ddpg_agent_epo_{n + 1}_{save_postfix}")
+
+        core.agent.policy._sigma *= (target_sigma/sigma) ** (1/n_epochs)
+
+    pbar.close()
     return np.array(data)
 
 

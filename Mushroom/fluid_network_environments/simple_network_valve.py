@@ -25,7 +25,7 @@ class Controller(SimulationEntityWithAction):
             "V_flow_2": 0.0,
             "p_rel_2": 0.0,
         }
-        self.outputs = {"w_v_2": 0.0}  # rotational speed at the pump
+        self.outputs = {"w_v_2": 0.0}  # valve opening
         self.requested_volume_flow = np.random.uniform(0.1, 0.55)  # setpoint for volume flow at valve
         self.error_flow = 0.0
 
@@ -209,4 +209,4 @@ class SimpleNetworkValve(AbstractFluidNetworkEnv):
         new_demand = new_state[0]
         new_supply = new_state[1]
 
-        return -10 * (new_demand - new_supply) ** 2
+        return -100 * (new_demand - new_supply) ** 2
