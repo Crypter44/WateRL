@@ -70,7 +70,7 @@ class SharedSpace:
         # before the first iteration
 
         if time > 0:
-            if self.time_index % self.control_step_interval:
+            if self.time_index % self.control_step_interval == 9:
                 for agent in self.all_agents:
                     agent.write_FMU_data()
 
