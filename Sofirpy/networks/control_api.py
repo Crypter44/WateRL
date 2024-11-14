@@ -1,10 +1,9 @@
 import json
+import logging
 from pathlib import Path
 
-from sofirpy import SimulationEntity
-
+from Sofirpy.networks.agents_shared_space import SharedSpace
 from Sofirpy.simulation import SimulationEntityWithAction
-from agents_shared_space import SharedSpace
 
 
 class ControlApiCircular(SimulationEntityWithAction):
@@ -22,11 +21,11 @@ class ControlApiCircular(SimulationEntityWithAction):
         self.project_dir = working_dir / "Fluid_Model"
         # TODO: get the data from script calling the class
         agent_config_path = (
-            self.project_dir
-            / "circular_water_network"
-            / "mini_circular_water_network.json"
+                self.project_dir
+                / "circular_water_network"
+                / "mini_circular_water_network.json"
         )
-        print("agent information taken from {}".format(agent_config_path))
+        logging.info("agent information taken from {}".format(agent_config_path))
 
         # read agent configuration from json-file
         with open(agent_config_path) as agent_config_json:
@@ -41,15 +40,27 @@ class ControlApiCircular(SimulationEntityWithAction):
         self.mas.step(time, action)
 
     def get_state(self):
+        """
+        Returns the current state information:
+
+        [0:4] demands of the consumers
+        [4:8] volume flows 2, 3, 5, 6 at the valves, 1 and 4 are at the pumps
+        [8:10] rotational speeds of the pumps
+        [10:12] volume flows at the pumps
+        """
         return (
-            # demands of the valves
-            [c.demand_volume_flow_m3h for c in self.mas.consumer_agents]
-            # resulting volume flows at the valves, 1 and 4 are at the pumps
-            + [self.get_parameter_value(f"V_flow_{i}") for i in [2, 3, 5, 6]]
+                # demands of the valves
+                [c.demand_volume_flow_m3h for c in self.mas.consumer_agents]
+                # resulting volume flows at the valves, 1 and 4 are at the pumps
+                + [self.get_parameter_value(f"V_flow_{i}") for i in [2, 3, 5, 6]]
+                # rotational speeds of the pumps
+                + [p.speed_to_FMU for p in self.mas.pump_agents]
+                # volume flows at the pumps
+                + [self.get_parameter_value(f"V_flow_{i}") for i in [1, 4]]
         )
 
     def set_parameter(
-        self, parameter_name: str, parameter_value: float
+            self, parameter_name: str, parameter_value: float
     ):  # mandatory method
         """Gets parameters from the FMU.
 
@@ -76,6 +87,9 @@ class ControlApiCircular(SimulationEntityWithAction):
             for key in agent.output_to_FMU.keys():
                 if output_name == key:
                     output_value = agent.output_to_FMU[key]
+            for key in agent.inputs_from_FMU.keys():
+                if output_name == key:
+                    output_value = agent.inputs_from_FMU[key]
         if output_value is None:
             print(("Output variable '{}' has no value").format(output_name))
             output_value = 0
@@ -83,4 +97,5 @@ class ControlApiCircular(SimulationEntityWithAction):
 
     def conclude_simulation(self):  # optional
         """Just to make sure."""
-        print("Concluded simulation!")
+        # print("Concluded simulation!")
+        pass

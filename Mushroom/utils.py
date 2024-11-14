@@ -1,8 +1,12 @@
+import os
 import random
+from typing import Callable
 
 import numpy as np
 import torch
+from future.backports.datetime import datetime
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 
 def set_seed(seed: int):
@@ -82,3 +86,20 @@ def plot_data(tuning_params1, tuning_params2, seeds, data, only_xy_plot=False):
         x += 1
 
     fig.show()
+
+
+def grid_search(tuning_params1, tuning_params2, seeds, train: Callable, base_path):
+    data = {}
+    base_path += datetime.now().strftime("%y-%m-%d:%H-%M/")
+    experiment_bar = tqdm(total=len(tuning_params1) * len(tuning_params2), unit='experiment')
+    for p1 in tuning_params1:
+        for p2 in tuning_params2:
+            data[f"{p1}-{p2}"] = {}
+            seed_bar = tqdm(seeds, unit='seed', leave=False)
+            for seed in seed_bar:
+                set_seed(seed)
+                path = base_path+f"{p1}-{p2}/s{seed}/"
+                os.makedirs(path, exist_ok=True)
+                data[f"{p1}-{p2}"][seed] = train(p1, p2, seed, path)
+            experiment_bar.update()
+    return data

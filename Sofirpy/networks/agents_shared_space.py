@@ -1,8 +1,8 @@
-import numpy as np
-import random
 from typing import List, Union
 
-from agents import AgentConfig, PumpAgent, ConsumerAgent
+import numpy as np
+
+from Sofirpy.networks.agents import AgentConfig, PumpAgent, ConsumerAgent
 
 
 class SharedSpace:
@@ -20,6 +20,7 @@ class SharedSpace:
         self.consumer_agents: List["ConsumerAgent"] = []
         self.project_directory = project_directory
         self.time_index = 0
+        self.control_step_interval = 10
 
     def _add_agent(self, agent_config: "AgentConfig"):
         """Adds agents to SharedSpace, based on the type of the agent.
@@ -62,21 +63,21 @@ class SharedSpace:
 
         Args:
             time (float): Time step of the co-simulation in seconds.
-            action (List[float]): List of actions for the pumps in the network.
+            action (np.ndarray): Array with the chosen actions for the pump agents.
         """
 
         # for t=0.0 FMU returns only none values, that is why it is not necessary to update
         # before the first iteration
 
         if time > 0:
-            if self.time_index == 9:
+            if self.time_index % self.control_step_interval:
                 for agent in self.all_agents:
                     agent.write_FMU_data()
 
                 # demand volume flow is input to PI-controller
                 for consumer in self.consumer_agents:
-                    consumer.calculate_demand_volume_flow()
-                    # TODO: overwrite calculated demand (demand_volume_flow_m3h) for simpler training
+                    # overwrite calculated demand (demand_volume_flow_m3h) for simpler training
+                    # consumer.calculate_demand_volume_flow()
                     consumer.set_action(consumer.demand_volume_flow_m3h)
 
                 for idx, pump in enumerate(self.pump_agents):
@@ -84,7 +85,7 @@ class SharedSpace:
                     pump.set_action(chosen_speed)
                 self.time_index = 0
 
-            elif self.time_index != 9:  # TODO: is this necessary?
+            else:
                 for agent in self.all_agents:
                     agent.set_action(agent.old_action)
 

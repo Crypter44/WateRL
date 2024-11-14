@@ -163,6 +163,9 @@ class ManualStepSimulator(Simulator):
             action: np.ndarray,
     ):
         """Perform a single simulation step."""
+        if self.is_done():
+            return
+
         time_step, time = self._time_step, self._time_series[self._time_step]
         for fmu in self.fmus.values():
             fmu.simulation_entity.do_step(time)

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 from mushroom_rl.utils import spaces
 
@@ -36,8 +37,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         super().__init__(
             # 4 demands of the network, 4 resulting volume flows
             observation_space=spaces.Box(low=-10, high=10, shape=(8,)),
-            # 2 rotaional speeds of the pumps
-            action_space=spaces.Box(low=0, high=1, shape=(2,)),
+            # 2 rotational speeds of the pumps
+            action_space=spaces.Box(low=0, high=1, shape=(1,)),
             fluid_network_simulator=ManualStepSimulator(
                 stop_time=200,
                 step_size=1,
@@ -52,14 +53,102 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             gamma=gamma,
             horizon=200,
         )
+        self._current_simulation_state = None
+
+    def render(self, title=None, save_path=None):
+        results = self.sim.get_results()
+
+        fig, axs = plt.subplots(2, 4, figsize=(20, 10))
+
+        valves = [2, 3, 5, 6]
+        valve_colors = ['#FFA500', '#FF8C00', '#FF7F50', '#FF6347']
+        pumps = [1, 4]
+        pump_colors = ['#1E90FF', '#00BFFF']
+
+        for i in range(4):
+            axs.flatten()[i].plot(
+                results["time"],
+                results[f"control_api.w_v_{valves[i]}"],
+                label=f"Demand at v_{valves[i]}",
+                color=valve_colors[i],
+                linestyle='--',
+                linewidth=2,
+            )
+            axs.flatten()[i].plot(
+                results["time"],
+                results[f"water_network.V_flow_{valves[i]}"],
+                label=f"Volume flow at v_{valves[i]}",
+                color=valve_colors[i],
+            )
+            axs.flatten()[i].set_xlabel("Time [s]")
+            axs.flatten()[i].set_ylabel("Volume flow [m³/h]")
+
+        axs.flatten()[4].set_visible(False)
+        axs.flatten()[7].set_visible(False)
+
+        for i in range(2):
+            axs.flatten()[i + 5].plot(
+                results["time"],
+                results[f"control_api.w_p_{pumps[i]}"],
+                label=f"Pump speed at p_{pumps[i]}",
+                color=pump_colors[i],
+            )
+            axs.flatten()[i+5].set_xlabel("Time [s]")
+            axs.flatten()[i+5].set_ylabel("Rotational speed")
+
+        fig.subplots_adjust(
+            left=0.05,
+            bottom=0.12,
+            right=0.95,
+            top=0.9,
+            hspace=0.25,
+            wspace=0.25
+        )
+        fig.legend(loc="lower center", ncol=6)
+        fig.suptitle(title)
+
+        if save_path is None:
+            fig.show()
+        else:
+            fig.savefig(save_path+".png")
+            plt.close(fig)
+
+    def step(self, action):
+        # clip action to action space
+        action = np.clip(action, self._mdp_info.action_space.low, self._mdp_info.action_space.high)
+        simulation_states = []
+        for i in range(10):  # simulate 10 time steps, to the next control step
+            self.sim.do_simulation_step(action)
+            simulation_states.append(self._get_current_simulation_state())  # save each sim state to calculate reward
+
+        # calculate reward based on how the network behaved during two control steps
+        reward = self._reward_fun(self._current_state, action, simulation_states)
+
+        self._current_simulation_state = simulation_states[-1]
+        self._current_state, absorbing = self._get_current_state()
+        return self._current_state, reward, absorbing, {}
 
     def _get_current_state(self):
+        """
+        Return the observable state of the environment.
+        """
+        state, absorbing = self._get_current_simulation_state()
+        return state[:8], absorbing
+
+    def _get_current_simulation_state(self):
+        """
+        Return the current state of the simulation, even if it is not observable.
+        """
         global_state, done = self.sim.get_current_state()
         try:
             controller_state = global_state["control_api"]
-            return controller_state, done
+            return np.array(controller_state), done
         except KeyError:
             raise KeyError("The key 'control_api' was not found in the global state.")
 
-    def _reward_fun(self, state: np.ndarray, action: np.ndarray, new_state: np.ndarray):
-        pass  # TODO: implement reward function
+    def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
+        reward = 0
+        for s, _ in sim_states:
+            for i in range(4):
+                reward -= (s[i] - s[i + 4]) ** 2
+        return reward

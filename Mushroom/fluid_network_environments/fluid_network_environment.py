@@ -40,16 +40,9 @@ class AbstractFluidNetworkEnv(Environment):
 
         return self._current_state
 
+    @abstractmethod
     def step(self, action):
-        # clip action to action space
-        action = np.clip(action, self._mdp_info.action_space.low, self._mdp_info.action_space.high)
-        self.sim.do_simulation_step(action)
-        new_state, absorbing = self._get_current_state()
-
-        reward = self._reward_fun(self._current_state, action, new_state)
-
-        self._current_state = new_state
-        return self._current_state, reward, absorbing, {}
+        pass
 
     def seed(self, seed):
         super().seed(seed)
@@ -61,5 +54,3 @@ class AbstractFluidNetworkEnv(Environment):
     @abstractmethod
     def _reward_fun(self, state: np.ndarray, action: np.ndarray, new_state: np.ndarray):
         pass
-
-

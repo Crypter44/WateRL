@@ -72,6 +72,7 @@ class ConsumerAgent(Agent):
         """
         super().__init__(agent_config, agent_type="consumer")
         self.demand_volume_flow_m3h = 0  # agent's demand in m^3/h
+        self.demand_volume_flow_m3h = np.random.uniform(0.1, 0.8)  # agent's demand in m^3/h
         self.volume_flow_m3h_to_PI = 0  # Volume flow in m^3/h, which is transferred to the local PI as a setpoint
         self.measured_delta_pressure_bar = (
             0  # relative pressure difference over valve in bar from FMU
@@ -99,20 +100,20 @@ class ConsumerAgent(Agent):
         omega = 2.65711342e-01
         time_demand_curve = np.linspace(0, 24, 100)
         demand_volume_flow_curve = (
-            20  # daily demand in m3
-            # the following function gives a demand per time unit in % of the daily demand
-            # the total daily demand is reached after 24 time units
-            * (
-                4.21452027e-02
-                - 1.41579420e-02 * np.cos(omega * time_demand_curve)
-                - 1.62752679e-02 * np.sin(omega * time_demand_curve)
-                + 5.94972876e-03 * np.cos(2 * omega * time_demand_curve)
-                - 1.82545802e-02 * np.sin(2 * omega * time_demand_curve)
-                - 2.72810544e-03 * np.cos(3 * omega * time_demand_curve)
-                + 2.15704832e-03 * np.sin(3 * omega * time_demand_curve)
-                - 5.15308835e-03 * np.cos(4 * omega * time_demand_curve)
-                - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve)
-            )
+                20  # daily demand in m3
+                # the following function gives a demand per time unit in % of the daily demand
+                # the total daily demand is reached after 24 time units
+                * (
+                        4.21452027e-02
+                        - 1.41579420e-02 * np.cos(omega * time_demand_curve)
+                        - 1.62752679e-02 * np.sin(omega * time_demand_curve)
+                        + 5.94972876e-03 * np.cos(2 * omega * time_demand_curve)
+                        - 1.82545802e-02 * np.sin(2 * omega * time_demand_curve)
+                        - 2.72810544e-03 * np.cos(3 * omega * time_demand_curve)
+                        + 2.15704832e-03 * np.sin(3 * omega * time_demand_curve)
+                        - 5.15308835e-03 * np.cos(4 * omega * time_demand_curve)
+                        - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve)
+                )
         )
         self.demand_volume_flow_m3h = random.choice(demand_volume_flow_curve)
 
