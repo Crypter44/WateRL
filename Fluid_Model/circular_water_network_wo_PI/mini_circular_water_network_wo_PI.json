@@ -1,0 +1,35 @@
+{
+	"filename": "mini_circular_water_network_wo_PI",
+    "agents": {
+        "pump_1": {
+            "type": "pump",
+            "input_FMU": ["w_p_1"],
+            "output_FMU": ["V_flow_1", "p_rel_1", "P_pum_1"]
+        },
+        "valve_2": {
+            "type": "consumer",
+            "input_FMU": ["w_v_2"],
+            "output_FMU": ["V_flow_2", "p_rel_2"]
+        },
+        "valve_3": {
+            "type": "consumer",
+            "input_FMU": ["w_v_3"],
+            "output_FMU": ["V_flow_3", "p_rel_3"]
+        },
+        "pump_4": {
+            "type": "pump",
+            "input_FMU": ["w_p_4"],
+            "output_FMU": ["V_flow_4", "p_rel_4", "P_pum_4"]
+        },
+        "valve_5": {
+            "type": "consumer",
+            "input_FMU": ["w_v_5"],
+            "output_FMU": ["V_flow_5", "p_rel_5"]
+        },
+        "valve_6": {
+            "type": "consumer",
+            "input_FMU": ["w_v_6"],
+            "output_FMU": ["V_flow_6", "p_rel_6"]
+        }
+    }
+}
