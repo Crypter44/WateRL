@@ -1,13 +1,11 @@
 import time
 
-from mushroom_rl.core import Core
 from mushroom_rl.environments import DMControl
 from tqdm import tqdm
 
 from Mushroom.agents.ddpg import create_ddpg_agent, run_ddpg_training
 from Mushroom.better_mujoco_core import BetterMujocoCore
-from Mushroom.fluid_network_environments.simple_network_valve import SimpleNetworkValve
-from Mushroom.utils import plot_data
+from Mushroom.utils import plot
 from Mushroom.utils import set_seed
 
 # Parametrization
@@ -103,4 +101,4 @@ pbar.close()
 print(f"Training took {time.time() - t:.2f} seconds")
 
 # Plot the results
-plot_data(tuning_params1, tuning_params2, seeds, data, False)
+plot(tuning_params1, tuning_params2, seeds, data, False)

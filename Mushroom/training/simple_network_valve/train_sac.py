@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 from Mushroom.agents.sac import create_sac_agent, run_sac_training
 from Mushroom.fluid_network_environments.simple_network_valve import SimpleNetworkValve
-from Mushroom.utils import plot_data
+from Mushroom.utils import plot
 from Mushroom.utils import set_seed
 
 # Parametrization
@@ -95,4 +95,4 @@ for p1 in tuning_params1:
         data[f'{p1}-{p2}'] = current_data
         pbar.update(1)
 
-plot_data(tuning_params1, tuning_params2, seeds, data)
+plot(tuning_params1, tuning_params2, seeds, data)

@@ -66,6 +66,17 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         pump_colors = ['#1E90FF', '#00BFFF']
 
         for i in range(4):
+            ax2 = axs.flatten()[i].twinx()
+            ax2.plot(
+                results["time"],
+                results[f"water_network.u_v_{valves[i]}"],
+                label=f"Opening at v_{valves[i]}",
+                color='gray',
+                alpha=0.5,
+                linewidth=1,
+            )
+            ax2.set_ylabel("Opening [%]", color='gray')
+
             axs.flatten()[i].plot(
                 results["time"],
                 results[f"control_api.w_v_{valves[i]}"],
@@ -93,16 +104,17 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 label=f"Pump speed at p_{pumps[i]}",
                 color=pump_colors[i],
             )
-            axs.flatten()[i+5].set_xlabel("Time [s]")
-            axs.flatten()[i+5].set_ylabel("Rotational speed")
+            axs.flatten()[i + 5].set_xlabel("Time [s]")
+            axs.flatten()[i + 5].set_ylim((0, 1))
+            axs.flatten()[i + 5].set_ylabel("Rotational speed")
 
         fig.subplots_adjust(
             left=0.05,
             bottom=0.12,
             right=0.95,
             top=0.9,
-            hspace=0.25,
-            wspace=0.25
+            hspace=0.4,
+            wspace=0.4
         )
         fig.legend(loc="lower center", ncol=6)
         fig.suptitle(title)
@@ -110,7 +122,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         if save_path is None:
             fig.show()
         else:
-            fig.savefig(save_path+".png")
+            fig.savefig(save_path + ".png")
             plt.close(fig)
 
     def step(self, action):
@@ -150,5 +162,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         reward = 0
         for s, _ in sim_states:
             for i in range(4):
-                reward -= (s[i] - s[i + 4]) ** 2
+                reward -= 10 * (s[i] - s[i + 4]) ** 2
+            reward -= 0.1 * (s[8] + s[9])
+
         return reward

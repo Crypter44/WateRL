@@ -5,7 +5,8 @@ from tqdm import tqdm
 from Mushroom.agents.sac import create_sac_agent
 from Mushroom.fluid_network_environments.circular_network import CircularFluidNetwork
 from Mushroom.multi_agent_core import MultiAgentCore
-from Mushroom.utils import set_seed, plot_data, grid_search
+from Mushroom.plotting import plot_training_data
+from Mushroom.utils import set_seed, grid_search
 
 seed = 0
 
@@ -23,9 +24,10 @@ log_std_min = -20
 log_std_max = 2
 target_entropy = -5
 
-n_epochs = 30
+n_epochs = 2
 n_steps_learn = 400
 n_steps_eval = 400
+renders_on_completion = 10
 
 
 def train(p1, p2, seed, save_path):
@@ -54,9 +56,14 @@ def train(p1, p2, seed, save_path):
     core = MultiAgentCore(agent=agents, mdp=mdp)
 
     data = [compute_metrics(core.evaluate(n_steps=n_steps_eval, render=False, quiet=True))]
+    temp = [[core.agent[0]._alpha_np], [core.agent[1]._alpha_np]]
+    entropy = [
+        [core.agent[0].policy.entropy(core.mdp._current_state)],
+        [core.agent[1].policy.entropy(core.mdp._current_state)]
+    ]
 
     core.evaluate(n_steps=n_steps_eval, render=False, quiet=True)
-    core.mdp.render(save_path=save_path+f"Epoch_0")
+    core.mdp.render(save_path=save_path + f"Epoch_0")
 
     core.learn(
         n_steps=initial_replay_size,
@@ -71,15 +78,32 @@ def train(p1, p2, seed, save_path):
         data.append(compute_metrics(core.evaluate(n_steps=n_steps_eval, render=False, quiet=True)))
 
         core.evaluate(n_steps=n_steps_eval, render=False, quiet=True)
-        core.mdp.render(save_path=save_path+f"Epoch_{e + 1}")
+        core.mdp.render(save_path=save_path + f"Epoch_{e + 1}")
 
-    return np.array(data)
+        temp[0].append(core.agent[0]._alpha_np)
+        temp[1].append(core.agent[1]._alpha_np)
+        entropy[0].append(core.agent[0].policy.entropy(core.mdp._current_state))
+        entropy[1].append(core.agent[1].policy.entropy(core.mdp._current_state))
+
+    for i in range(renders_on_completion):
+        core.evaluate(n_episodes=1, quiet=True)
+        core.mdp.render(save_path=save_path + f"Final_{i}")
+
+    return {
+        "metrics": np.array(data),
+        "additional_data": {
+            "alpha 0": np.array(temp[0]),
+            "alpha 1": np.array(temp[1]),
+            "entropy 0": np.array(entropy[0]),
+            "entropy 1": np.array(entropy[1]),
+        }
+    }
 
 
-tuning_params1 = ["xxx"]
-tuning_params2 = ["xxx"]
+tuning_params1 = [1]
+tuning_params2 = [3]
 
-data = grid_search(
+data, path = grid_search(
     tuning_params1=tuning_params1,
     tuning_params2=tuning_params2,
     seeds=[seed],
@@ -87,10 +111,4 @@ data = grid_search(
     base_path="Plots/"
 )
 
-plot_data(
-    tuning_params1=tuning_params1,
-    tuning_params2=tuning_params2,
-    seeds=[seed],
-    data=data,
-    only_xy_plot=True
-)
+plot_training_data(data, path, plot_additional_data=True)

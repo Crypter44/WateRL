@@ -57,6 +57,8 @@ class ControlApiCircular(SimulationEntityWithAction):
                 + [p.speed_to_FMU for p in self.mas.pump_agents]
                 # volume flows at the pumps
                 + [self.get_parameter_value(f"V_flow_{i}") for i in [1, 4]]
+                # power consumption of the pumps
+                # TODO
         )
 
     def set_parameter(

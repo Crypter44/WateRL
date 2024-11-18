@@ -2,7 +2,7 @@ from mushroom_rl.core import Core
 
 from Mushroom.agents.ddpg import create_ddpg_agent, run_ddpg_training
 from Mushroom.fluid_network_environments.simple_network_valve import SimpleNetworkValve
-from Mushroom.utils import plot_data
+from Mushroom.utils import plot
 from Mushroom.utils import set_seed
 
 # Parametrization
@@ -86,4 +86,4 @@ for p1 in tuning_params1:
             data[f"{p1}-{p2}"][seed] = current_data
 
 # Plot the results
-plot_data(tuning_params1, tuning_params2, seeds, data)
+plot(tuning_params1, tuning_params2, seeds, data)
