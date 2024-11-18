@@ -4,9 +4,11 @@ from typing import Callable
 
 import numpy as np
 import torch
-from future.backports.datetime import datetime
+from datetime import datetime
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+
+from Mushroom.plotting import _plot_metrics_to_ax
 
 
 def set_seed(seed: int):
@@ -28,34 +30,17 @@ def plot_multiple_seeds(data: dict, title: str, multiple_seeds_per_plot=True, ra
     fig, ax = plt.subplots(rows, 1, figsize=(8 if multiple_seeds_per_plot else rows * 3, 8))
 
     if multiple_seeds_per_plot or len(data) == 1:
-        plot_to_ax(ax, data, title, range_alpha)
+        _plot_metrics_to_ax(ax, data, title, range_alpha)
     else:
         for i, (seed, metrics) in enumerate(data.items()):
             # Get the default color cycle
             color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-            plot_to_ax(ax[i], {seed: metrics}, title, range_alpha, color_cycle[i])
+            _plot_metrics_to_ax(ax[i], {seed: metrics}, title, range_alpha, color_cycle[i])
 
     return fig, ax
 
 
-def plot_to_ax(ax, data: dict, title: str, range_alpha=0.1, color=None):
-    for seed, metrics in data.items():
-        ax.plot(metrics[:, 2], label=f"Mean score, s={seed}", color=color)
-
-    for seed, metrics in data.items():
-        if color is not None:
-            ax.fill_between(np.arange(len(metrics)), metrics[:, 0], metrics[:, 1], alpha=range_alpha,
-                            label=f"Range, s={seed}", color=color)
-        else:
-            ax.fill_between(np.arange(len(metrics)), metrics[:, 0], metrics[:, 1], alpha=range_alpha,
-                            label=f"Range, s={seed}")
-    ax.set_title(title)
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Score")
-    ax.legend()
-
-
-def plot_data(tuning_params1, tuning_params2, seeds, data, only_xy_plot=False):
+def plot(tuning_params1, tuning_params2, seeds, data):
     # Plot the results
     fig, ax = plt.subplots(
         len(tuning_params1),
@@ -67,21 +52,14 @@ def plot_data(tuning_params1, tuning_params2, seeds, data, only_xy_plot=False):
     for p1 in tuning_params1:
         y = 0
         for p2 in tuning_params2:
-            if not only_xy_plot:
-                fig1, ax1 = plot_multiple_seeds(data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", True)
-                fig1.show()
-                if len(seeds) > 1:
-                    fig2, ax2 = plot_multiple_seeds(data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", False)
-                    fig2.show()
-
             if len(tuning_params1) == 1 and len(tuning_params2) == 1:
-                plot_to_ax(ax, data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
+                _plot_metrics_to_ax(ax, data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
             elif len(tuning_params1) == 1:
-                plot_to_ax(ax[y], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
+                _plot_metrics_to_ax(ax[y], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
             elif len(tuning_params2) == 1:
-                plot_to_ax(ax[x], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
+                _plot_metrics_to_ax(ax[x], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
             else:
-                plot_to_ax(ax[x][y], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
+                _plot_metrics_to_ax(ax[x][y], data[f"{p1}-{p2}"], f"p1={p1} p2={p2}", 0.1)
             y += 1
         x += 1
 
@@ -93,13 +71,14 @@ def grid_search(tuning_params1, tuning_params2, seeds, train: Callable, base_pat
     base_path += datetime.now().strftime("%y-%m-%d:%H-%M/")
     experiment_bar = tqdm(total=len(tuning_params1) * len(tuning_params2), unit='experiment')
     for p1 in tuning_params1:
+        data[p1] = {}
         for p2 in tuning_params2:
-            data[f"{p1}-{p2}"] = {}
+            data[p1][p2] = {}
             seed_bar = tqdm(seeds, unit='seed', leave=False)
             for seed in seed_bar:
                 set_seed(seed)
-                path = base_path+f"{p1}-{p2}/s{seed}/"
+                path = base_path + f"{p1}-{p2}/s{seed}/"
                 os.makedirs(path, exist_ok=True)
-                data[f"{p1}-{p2}"][seed] = train(p1, p2, seed, path)
+                data[p1][p2][seed] = train(p1, p2, seed, path)
             experiment_bar.update()
-    return data
+    return data, base_path
