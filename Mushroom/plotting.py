@@ -30,7 +30,6 @@ def plot_additional_data_to_ax(ax, data: dict, title: str, list_of_data_names_in
 def plot_training_data(
         plotting_data: dict,
         path: str,
-        multiple_seeds_per_plot: bool = True,
         plot_additional_data: bool = False,
 ):
     """
@@ -56,7 +55,6 @@ def plot_training_data(
 
     :param plotting_data: A dictionary containing the training data.
     :param path: The path to save the plot.
-    :param multiple_seeds_per_plot: Whether to plot multiple seeds on the same plot.
     :param plot_additional_data: Whether to plot additional data.
     :return: None
     """
@@ -64,8 +62,6 @@ def plot_training_data(
     p1s = list(plotting_data.keys())
     p2s = list(list(plotting_data.values())[0].keys())
     seeds = list(list(list(plotting_data.values())[0].values())[0].keys())
-
-    additional_data_names = list(plotting_data[p1s[0]][p2s[0]][seeds[0]]["additional_data"].keys())
 
     rows = len(p1s)
     cols = len(p2s)
@@ -102,6 +98,7 @@ def plot_training_data(
     plt.close(fig)
 
     if plot_additional_data:
+        additional_data_names = list(plotting_data[p1s[0]][p2s[0]][seeds[0]]["additional_data"].keys())
 
         for data_name in additional_data_names:
             fig, ax = plt.subplots(rows, cols, figsize=((cols + 2 * left_padding) * 5, (rows + 2 * bottom_padding) * 5))

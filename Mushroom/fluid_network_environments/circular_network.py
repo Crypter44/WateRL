@@ -33,7 +33,7 @@ with open(logging_config_path) as logging_config_json:
 
 
 class CircularFluidNetwork(AbstractFluidNetworkEnv):
-    def __init__(self, gamma: float):
+    def __init__(self, gamma: float, deviation_penalty: float = 10, power_penalty: float = 0.1):
         super().__init__(
             # 4 demands of the network, 4 resulting volume flows
             observation_space=spaces.Box(low=-10, high=10, shape=(8,)),
@@ -53,6 +53,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             gamma=gamma,
             horizon=200,
         )
+        self._deviation_penalty = deviation_penalty
+        self._power_penalty = power_penalty
         self._current_simulation_state = None
 
     def render(self, title=None, save_path=None):
@@ -162,7 +164,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         reward = 0
         for s, _ in sim_states:
             for i in range(4):
-                reward -= 10 * (s[i] - s[i + 4]) ** 2
-            reward -= 0.1 * (s[8] + s[9])
+                reward -= self._deviation_penalty * (s[i] - s[i + 4]) ** 2
+            reward -= self._power_penalty * (s[8] + s[9])
 
         return reward
