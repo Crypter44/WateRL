@@ -33,7 +33,7 @@ with open(logging_config_path) as logging_config_json:
 
 
 class CircularFluidNetwork(AbstractFluidNetworkEnv):
-    def __init__(self, gamma: float, deviation_penalty: float = 10, power_penalty: float = 0.1):
+    def __init__(self, gamma: float, power_penalty: float = 0.01):
         super().__init__(
             # 4 demands of the network, 4 resulting volume flows
             observation_space=spaces.Box(low=-10, high=10, shape=(8,)),
@@ -53,7 +53,6 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             gamma=gamma,
             horizon=200,
         )
-        self._deviation_penalty = deviation_penalty
         self._power_penalty = power_penalty
         self._current_simulation_state = None
 
@@ -161,10 +160,18 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             raise KeyError("The key 'control_api' was not found in the global state.")
 
     def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
+
+        def r_deviation(d):
+            return -d ** 2 / 1.3 ** 2 + 1
+
+        def r_power(p):
+            return 1 / 155 * (161 - p)
+
         reward = 0
         for s, _ in sim_states:
             for i in range(4):
-                reward -= self._deviation_penalty * (s[i] - s[i + 4]) ** 2
-            reward -= self._power_penalty * (s[8] + s[9])
+                reward += 0.25 * (1 - self._power_penalty) * r_deviation(s[i] - s[i + 4])
+            reward += 0.5 * self._power_penalty * r_power(s[12])
+            reward += 0.5 * self._power_penalty * r_power(s[13])
 
         return reward

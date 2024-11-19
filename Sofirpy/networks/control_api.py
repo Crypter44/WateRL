@@ -47,6 +47,7 @@ class ControlApiCircular(SimulationEntityWithAction):
         [4:8] volume flows 2, 3, 5, 6 at the valves, 1 and 4 are at the pumps
         [8:10] rotational speeds of the pumps
         [10:12] volume flows at the pumps
+        [12:14] power consumption of the pumps
         """
         return (
                 # demands of the valves
@@ -58,7 +59,7 @@ class ControlApiCircular(SimulationEntityWithAction):
                 # volume flows at the pumps
                 + [self.get_parameter_value(f"V_flow_{i}") for i in [1, 4]]
                 # power consumption of the pumps
-                # TODO
+                + [self.get_parameter_value(f"P_pum_{i}") for i in [1, 4]]
         )
 
     def set_parameter(
