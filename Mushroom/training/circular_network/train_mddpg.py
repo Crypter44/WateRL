@@ -35,7 +35,7 @@ n_steps_per_fit = 1
 def train(p1, p2, seed, save_path):
     set_seed(seed)
     # MDP
-    mdp = CircularFluidNetwork(gamma=gamma, power_penalty=p1, deviation_penalty=10)
+    mdp = CircularFluidNetwork(gamma=gamma, power_penalty=p1)
     agents = [create_ddpg_agent(
         mdp,
         n_features_actor=n_features,
@@ -98,7 +98,7 @@ def train(p1, p2, seed, save_path):
 
 
 training_data, path = grid_search(
-    [0, 1],
+    [0.05, 0.1],
     [None],
     [0],
     train,

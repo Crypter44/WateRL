@@ -73,7 +73,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 results[f"water_network.u_v_{valves[i]}"],
                 label=f"Opening at v_{valves[i]}",
                 color='gray',
-                alpha=0.5,
+                alpha=.9,
                 linewidth=1,
             )
             ax2.set_ylabel("Opening [%]", color='gray')
@@ -84,13 +84,14 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 label=f"Demand at v_{valves[i]}",
                 color=valve_colors[i],
                 linestyle='--',
-                linewidth=2,
+                linewidth=3,
             )
             axs.flatten()[i].plot(
                 results["time"],
                 results[f"water_network.V_flow_{valves[i]}"],
                 label=f"Volume flow at v_{valves[i]}",
                 color=valve_colors[i],
+                linewidth=2,
             )
             axs.flatten()[i].set_xlabel("Time [s]")
             axs.flatten()[i].set_ylabel("Volume flow [m³/h]")
@@ -104,7 +105,19 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 results[f"control_api.w_p_{pumps[i]}"],
                 label=f"Pump speed at p_{pumps[i]}",
                 color=pump_colors[i],
+                linewidth=2,
             )
+            ax2 = axs.flatten()[i + 5].twinx()
+            ax2.plot(
+                results["time"],
+                results[f"water_network.P_pum_{pumps[i]}"],
+                label=f"Power consumption of p_{pumps[i]}",
+                color='gray',
+                alpha=.9,
+                linewidth=1,
+            )
+            ax2.set_ylabel("Power consumption [W]", color='gray')
+            ax2.set_ylim((5, 165))
             axs.flatten()[i + 5].set_xlabel("Time [s]")
             axs.flatten()[i + 5].set_ylim((0, 1))
             axs.flatten()[i + 5].set_ylabel("Rotational speed")
@@ -117,7 +130,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             hspace=0.4,
             wspace=0.4
         )
-        fig.legend(loc="lower center", ncol=6)
+        fig.legend(loc="lower center", ncol=8, )
         fig.suptitle(title)
 
         if save_path is None:
@@ -162,7 +175,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
     def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
 
         def r_deviation(d):
-            return -d ** 2 / 1.3 ** 2 + 1
+            # return -d ** 2 / 1.3 ** 2 + 1
+            return np.exp(-4*d**2)
 
         def r_power(p):
             return 1 / 155 * (161 - p)

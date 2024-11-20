@@ -11,15 +11,15 @@ from Mushroom.utils import set_seed, grid_search
 seed = 0
 
 n_features_actor = 80
-lr_actor = 1e-3
+lr_actor = 1e-4
 n_features_critic = 80
-lr_critic = 6e-4
+lr_critic = 6e-5
 batch_size = 200
 initial_replay_size = 500
 max_replay_size = 10000
 warmup_transitions = 0
 tau = 0.005
-lr_alpha = 0.0005
+lr_alpha = 0.001
 log_std_min = -20
 log_std_max = 2
 target_entropy = -5
@@ -46,7 +46,7 @@ def train(p1, p2, seed, save_path):
             max_replay_size=max_replay_size,
             warmup_transitions=warmup_transitions,
             tau=tau,
-            lr_alpha=p2,
+            lr_alpha=lr_alpha,
             log_std_min=log_std_min,
             log_std_max=log_std_max,
             target_entropy=target_entropy,
@@ -100,15 +100,15 @@ def train(p1, p2, seed, save_path):
     }
 
 
-tuning_params1 = [0.1, 0.5, 1.0]
-tuning_params2 = [1e-3, 1e-4]
+tuning_params1 = [0.76]
+tuning_params2 = [None]
 
 data, path = grid_search(
     tuning_params1=tuning_params1,
     tuning_params2=tuning_params2,
     seeds=[seed],
     train=train,
-    base_path="Plots/SAC"
+    base_path="Plots/Test/"
 )
 
 plot_training_data(data, path, plot_additional_data=True)
