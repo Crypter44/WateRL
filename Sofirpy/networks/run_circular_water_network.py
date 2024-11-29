@@ -19,12 +19,44 @@ sim = ManualStepSimulator(
     verbose=True,
 )
 
-flow = 0.0
+speeds = np.array([0.0, 0.0])
+c = 0
 while not sim.is_done():
-    sim.do_simulation_step(np.array([flow, flow]))
-    flow += .1
+    sim.do_simulation_step(speeds)
+    if c < 10:
+        speeds += [0.1, 0.]
+        c += 1
 
 results = sim.get_results()
+
+print(f"Min power consumption of pump 4: {results['water_network.P_pum_4'].min()}")
+print(f"Max power consumption of pump 4: {results['water_network.P_pum_4'].max()}")
+print(f"Max flow through pump 4: {results['water_network.V_flow_4'].max()}")
+print(f"Min power consumption of pump 1: {results['water_network.P_pum_1'].min()}")
+print(f"Max power consumption of pump 1: {results['water_network.P_pum_1'].max()}")
+print(f"Max flow through pump 1: {results['water_network.V_flow_1'].max()}")
+
+print(f"Max flow through valves: 2: "
+      f"{results['water_network.V_flow_2'].max()}, "
+      f"3: {results['water_network.V_flow_3'].max()}, "
+      f"5: {results['water_network.V_flow_5'].max()}, "
+      f"6: {results['water_network.V_flow_6'].max()}"
+      )
+
+print(f"Max flow sum: {results['water_network.V_flow_2'].max() + results['water_network.V_flow_3'].max() + results['water_network.V_flow_5'].max() + results['water_network.V_flow_6'].max()}")
+
+fig, ax = plt.subplots()
+ax.plot(
+    results["time"],
+    results["water_network.P_pum_4"],
+)
+ax.plot(
+    results["time"],
+    results["water_network.P_pum_1"],
+)
+ax.set_title("PUMP POWER")
+fig.show()
+quit(0)
 
 fig, ax = plt.subplots()
 ax.plot(

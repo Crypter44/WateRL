@@ -33,8 +33,8 @@ with open(logging_config_path) as logging_config_json:
 
 
 class CircularFluidNetwork(AbstractFluidNetworkEnv):
-    def __init__(self, gamma: float, power_penalty: float = 0.01):
-        super().__init__(
+    def __init__(
+            self,
             # 4 demands of the network, 4 resulting volume flows
             observation_space=spaces.Box(low=-10, high=10, shape=(8,)),
             # 2 rotational speeds of the pumps
@@ -50,94 +50,37 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 get_units=False,
                 verbose=False,
             ),
-            gamma=gamma,
             horizon=200,
+            gamma: float = 0.99,
+            power_penalty: float = 0.01,
+    ):
+        super().__init__(
+            observation_space=observation_space,
+            action_space=action_space,
+            fluid_network_simulator=fluid_network_simulator,
+            horizon=horizon,
+            gamma=gamma,
         )
         self._power_penalty = power_penalty
         self._current_simulation_state = None
+        self.actions = []
 
     def render(self, title=None, save_path=None):
         results = self.sim.get_results()
-
-        fig, axs = plt.subplots(2, 4, figsize=(20, 10))
-
         valves = [2, 3, 5, 6]
-        valve_colors = ['#FFA500', '#FF8C00', '#FF7F50', '#FF6347']
         pumps = [1, 4]
-        pump_colors = ['#1E90FF', '#00BFFF']
-
-        for i in range(4):
-            ax2 = axs.flatten()[i].twinx()
-            ax2.plot(
-                results["time"],
-                results[f"water_network.u_v_{valves[i]}"],
-                label=f"Opening at v_{valves[i]}",
-                color='gray',
-                alpha=.9,
-                linewidth=1,
-            )
-            ax2.set_ylabel("Opening [%]", color='gray')
-
-            axs.flatten()[i].plot(
-                results["time"],
-                results[f"control_api.w_v_{valves[i]}"],
-                label=f"Demand at v_{valves[i]}",
-                color=valve_colors[i],
-                linestyle='--',
-                linewidth=3,
-            )
-            axs.flatten()[i].plot(
-                results["time"],
-                results[f"water_network.V_flow_{valves[i]}"],
-                label=f"Volume flow at v_{valves[i]}",
-                color=valve_colors[i],
-                linewidth=2,
-            )
-            axs.flatten()[i].set_xlabel("Time [s]")
-            axs.flatten()[i].set_ylabel("Volume flow [m³/h]")
-
-        axs.flatten()[4].set_visible(False)
-        axs.flatten()[7].set_visible(False)
-
-        for i in range(2):
-            axs.flatten()[i + 5].plot(
-                results["time"],
-                results[f"control_api.w_p_{pumps[i]}"],
-                label=f"Pump speed at p_{pumps[i]}",
-                color=pump_colors[i],
-                linewidth=2,
-            )
-            ax2 = axs.flatten()[i + 5].twinx()
-            ax2.plot(
-                results["time"],
-                results[f"water_network.P_pum_{pumps[i]}"],
-                label=f"Power consumption of p_{pumps[i]}",
-                color='gray',
-                alpha=.9,
-                linewidth=1,
-            )
-            ax2.set_ylabel("Power consumption [W]", color='gray')
-            ax2.set_ylim((5, 165))
-            axs.flatten()[i + 5].set_xlabel("Time [s]")
-            axs.flatten()[i + 5].set_ylim((0, 1))
-            axs.flatten()[i + 5].set_ylabel("Rotational speed")
-
-        fig.subplots_adjust(
-            left=0.05,
-            bottom=0.12,
-            right=0.95,
-            top=0.9,
-            hspace=0.4,
-            wspace=0.4
+        self.plotValveAndPumpData(
+            time=results["time"],
+            valves=valves,
+            valve_openings=[results[f"control_api.w_v_{v}"] for v in valves],
+            valve_demands=[results[f"control_api.demand_v_{v}"] for v in valves],
+            valve_flows=[results[f"water_network.V_flow_{v}"] for v in valves],
+            pumps=pumps,
+            pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
+            pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
+            title=title,
+            save_path=save_path
         )
-        fig.legend(loc="lower center", ncol=8, )
-        fig.suptitle(title)
-
-        if save_path is None:
-            fig.show()
-        else:
-            fig.savefig(save_path + ".png")
-            plt.close(fig)
 
     def step(self, action):
         # clip action to action space
@@ -152,7 +95,12 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
 
         self._current_simulation_state = simulation_states[-1]
         self._current_state, absorbing = self._get_current_state()
+        self.actions.append(action)
         return self._current_state, reward, absorbing, {}
+
+    def reset(self, state=None):
+        self.actions = []
+        return super().reset(state)
 
     def _get_current_state(self):
         """
@@ -173,19 +121,156 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             raise KeyError("The key 'control_api' was not found in the global state.")
 
     def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
+        return self._bound_reward(state, action, sim_states)
 
-        def r_deviation(d):
-            # return -d ** 2 / 1.3 ** 2 + 1
-            return np.exp(-4*d**2)
-
-        def r_power(p):
-            return 1 / 155 * (161 - p)
-
+    def _unbound_summed_squared_error(self, state: np.ndarray, action: np.ndarray, sim_states: list):
         reward = 0
-        for s, _ in sim_states:
-            for i in range(4):
-                reward += 0.25 * (1 - self._power_penalty) * r_deviation(s[i] - s[i + 4])
-            reward += 0.5 * self._power_penalty * r_power(s[12])
-            reward += 0.5 * self._power_penalty * r_power(s[13])
+        for s, _ in sim_states[:]:
+            for i in range(4):  # loop over 4 valves
+                demand = s[i]
+                volume_flow = s[i + 4]
+                reward -= 10 * (demand - volume_flow) ** 2
+            reward -= self._power_penalty * (s[12] + s[13])
 
         return reward
+
+    def _bound_reward(self, state: np.ndarray, action: np.ndarray, sim_states: list):
+        def r_deviation(d):
+            # return -d ** 2 / 1.3 ** 2 + 1
+            # return 0.9 * np.exp(-40*d**2) + 0.1 * np.exp(-2*d**2)
+            return np.exp(-500 * (d - .1) ** 2)
+
+        def r_power(p):
+            # return 1 / 187 * (193 - p)
+
+            b = 0.02
+            a = 1 / (np.exp(-6 * b) - np.exp(-193 * b))
+            c = -a * np.exp(-193 * b)
+            return a * np.exp(-b * p) + c
+
+        reward = 0
+        for s, _ in sim_states[:]:
+            for i in range(4):
+                reward += 0.25 * (1 - self._power_penalty) * r_deviation(s[i] - s[i + 4])
+            reward += 0.5 * self._power_penalty * (1 - s[12])  # TODO change to actual power draw, if sim is fixed
+            reward += 0.5 * self._power_penalty * (1 - s[13])  # TODO change to actual power draw, if sim is fixed
+
+        return reward
+
+    def plotValveAndPumpData(
+            self,
+            time,
+            valves,
+            valve_openings,
+            valve_demands,
+            valve_flows,
+            pumps,
+            pump_speeds,
+            pump_powers,
+            pump_actions=None,
+            title=None,
+            save_path=None
+    ):
+        fig, axs = plt.subplots(2, 4, figsize=(20, 10))
+        valve_colors = ['#FFA500', '#FF8C00', '#FF7F50', '#FF6347']
+        pump_colors = ['#1E90FF', '#00BFFF']
+
+        for i in range(4):
+            ax2 = axs.flatten()[i].twinx()
+            ax2.plot(
+                time,
+                valve_openings[i],
+                label=f"Opening at v_{valves[i]}",
+                color='gray',
+                alpha=.9,
+                linewidth=1,
+            )
+            ax2.set_ylabel("Opening [%]", color='gray')
+
+            axs.flatten()[i].plot(
+                time,
+                valve_demands[i],
+                label=f"Demand at v_{valves[i]}",
+                color=valve_colors[i],
+                linestyle='--',
+                linewidth=3,
+            )
+            axs.flatten()[i].plot(
+                time,
+                valve_flows[i],
+                label=f"Volume flow at v_{valves[i]}",
+                color=valve_colors[i],
+                linewidth=2,
+            )
+            axs.flatten()[i].set_xlabel("Time [s]")
+            axs.flatten()[i].set_ylabel("Volume flow [m³/h]")
+
+        axs.flatten()[4].set_visible(False)
+        axs.flatten()[7].set_visible(False)
+
+        for i in range(2):
+            axs.flatten()[i + 5].plot(
+                time,
+                pump_speeds[i],
+                label=f"Pump speed at p_{pumps[i]}",
+                color=pump_colors[i],
+                linewidth=2,
+                zorder=0
+            )
+
+            if pump_actions is not None:
+                axs.flatten()[i + 5].scatter(
+                    range(0, len(pump_actions) * 10, 10),
+                    np.array(pump_actions)[:, i],
+                    label=f"Action p_{pumps[i]}",
+                    color=pump_colors[i],
+                    edgecolors='black',
+                    s=7,
+                    linewidths=0.5,
+                    zorder=2
+                )
+            ax2 = axs.flatten()[i + 5].twinx()
+            ax2.plot(
+                time,
+                pump_powers[i],
+                label=f"Power consumption of p_{pumps[i]}",
+                color='gray',
+                alpha=.9,
+                linewidth=1,
+                zorder=1
+            )
+            ax2.set_ylabel("Power consumption [W]", color='gray')
+            ax2.set_ylim((0, 200))
+            axs.flatten()[i + 5].set_xlabel("Time [s]")
+            axs.flatten()[i + 5].set_ylim((0, 1))
+            axs.flatten()[i + 5].set_ylabel("Rotational speed")
+
+            min_power = np.min(pump_powers[i])
+            max_power = np.max(pump_powers[i])
+            min_time = time[np.argmin(pump_powers[i])]
+            max_time = time[np.argmax(pump_powers[i])]
+
+            # Add annotations for min and max power draw
+            ax2.annotate(f'{min_power:.2f} W', xy=(min_time, min_power), xytext=(min_time + 10, min_power + 10),
+                         arrowprops=dict(arrowstyle='-', color='green', linewidth=1.5), color='green',
+                         horizontalalignment='left', fontsize=8, alpha=0.8)
+            ax2.annotate(f'{max_power:.2f} W', xy=(max_time, max_power), xytext=(max_time - 10, max_power - 10),
+                         arrowprops=dict(arrowstyle='-', color='red', linewidth=1.5), color='red',
+                         horizontalalignment='right', fontsize=8, alpha=0.8)
+
+        fig.subplots_adjust(
+            left=0.05,
+            bottom=0.12,
+            right=0.95,
+            top=0.9,
+            hspace=0.4,
+            wspace=0.4
+        )
+        fig.legend(loc="lower center", ncol=10 if pump_actions is not None else 8)
+        fig.suptitle(title)
+
+        if save_path is None:
+            fig.show()
+        else:
+            fig.savefig(save_path + ".png")
+            plt.close(fig)

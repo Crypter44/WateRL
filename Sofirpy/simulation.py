@@ -57,8 +57,10 @@ class ManualStepSimulator(Simulator):
     ):
         """Initialize the simulator."""
 
-        # Set the temporary directory for the FMUs, since fmpy does not allow to set it and creates a data leak otherwise
+        # Set the temporary directory for the FMUs, since fmpy creates a data leak otherwise
         self.tmp_dir = os.path.abspath("./fmu_tmp")
+        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        logging.info("Cleared temporary directory.")
         tempfile.tempdir = self.tmp_dir
         os.makedirs(self.tmp_dir, exist_ok=True)
 

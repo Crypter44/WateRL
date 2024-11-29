@@ -3,7 +3,7 @@ from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
 from Mushroom.agents.sac import create_sac_agent
-from Mushroom.fluid_network_environments.circular_network import CircularFluidNetwork
+from Mushroom.fluid_network_environments.circular_network_no_pi import CircularFluidNetworkWithoutPI
 from Mushroom.multi_agent_core import MultiAgentCore
 from Mushroom.plotting import plot_training_data
 from Mushroom.utils import set_seed, grid_search
@@ -11,9 +11,9 @@ from Mushroom.utils import set_seed, grid_search
 seed = 0
 
 n_features_actor = 80
-lr_actor = 1e-4
+lr_actor = 2e-5
 n_features_critic = 80
-lr_critic = 2e-4
+lr_critic = 4e-5
 batch_size = 200
 initial_replay_size = 500
 max_replay_size = 10000
@@ -33,7 +33,7 @@ renders_on_completion = 50
 def train(p1, p2, seed, save_path):
     set_seed(seed)
 
-    mdp = CircularFluidNetwork(gamma=0.99, power_penalty=p1)
+    mdp = CircularFluidNetworkWithoutPI(gamma=0.99, power_penalty=p1)
     agents = [
         create_sac_agent(
             mdp,
@@ -50,7 +50,7 @@ def train(p1, p2, seed, save_path):
             log_std_min=log_std_min,
             log_std_max=log_std_max,
             target_entropy=target_entropy,
-        ) for _ in range(2)
+        ) for _ in range(6)
     ]
 
     core = MultiAgentCore(agent=agents, mdp=mdp)
@@ -67,13 +67,13 @@ def train(p1, p2, seed, save_path):
 
     core.learn(
         n_steps=initial_replay_size,
-        n_steps_per_fit_per_agent=[initial_replay_size, initial_replay_size],
+        n_steps_per_fit_per_agent=[initial_replay_size] * 6,
         quiet=True
     )
 
     epochbar = tqdm(range(n_epochs), unit='epoch', leave=False)
     for e in epochbar:
-        core.learn(n_steps=n_steps_learn, n_steps_per_fit_per_agent=[1, 1], quiet=True)
+        core.learn(n_steps=n_steps_learn, n_steps_per_fit_per_agent=[1] * 6, quiet=True)
 
         data.append(compute_metrics(core.evaluate(n_steps=n_steps_eval, render=False, quiet=True)))
 
@@ -100,7 +100,7 @@ def train(p1, p2, seed, save_path):
     }
 
 
-tuning_params1 = [1]
+tuning_params1 = [0]
 tuning_params2 = [None]
 
 data, path = grid_search(

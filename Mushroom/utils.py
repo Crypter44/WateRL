@@ -68,7 +68,7 @@ def plot(tuning_params1, tuning_params2, seeds, data):
 
 def grid_search(tuning_params1, tuning_params2, seeds, train: Callable, base_path):
     data = {}
-    base_path += datetime.now().strftime("%y-%m-%d:%H-%M/")
+    base_path += datetime.now().strftime("%y-%m-%d__%H:%M/")
     experiment_bar = tqdm(total=len(tuning_params1) * len(tuning_params2), unit='experiment')
     for p1 in tuning_params1:
         data[p1] = {}
