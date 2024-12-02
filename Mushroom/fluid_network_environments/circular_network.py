@@ -72,7 +72,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self.plotValveAndPumpData(
             time=results["time"],
             valves=valves,
-            valve_openings=[results[f"control_api.w_v_{v}"] for v in valves],
+            valve_openings=[results[f"water_network.u_v_{v}"] for v in valves],
             valve_demands=[results[f"control_api.demand_v_{v}"] for v in valves],
             valve_flows=[results[f"water_network.V_flow_{v}"] for v in valves],
             pumps=pumps,
@@ -152,8 +152,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         for s, _ in sim_states[:]:
             for i in range(4):
                 reward += 0.25 * (1 - self._power_penalty) * r_deviation(s[i] - s[i + 4])
-            reward += 0.5 * self._power_penalty * (1 - s[12])  # TODO change to actual power draw, if sim is fixed
-            reward += 0.5 * self._power_penalty * (1 - s[13])  # TODO change to actual power draw, if sim is fixed
+            reward += 0.5 * self._power_penalty * (1 - s[16])  # TODO change to actual power draw, if sim is fixed
+            reward += 0.5 * self._power_penalty * (1 - s[17])  # TODO change to actual power draw, if sim is fixed
 
         return reward
 

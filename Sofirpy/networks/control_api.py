@@ -56,7 +56,7 @@ class ControlApiCircular(SimulationEntityWithAction):
                 # resulting volume flows at the valves, 1 and 4 are at the pumps
                 + [self.get_parameter_value(f"V_flow_{i}") for i in [2, 3, 5, 6]]
                 # opening of the valves
-                + [self.get_parameter_value(f"w_v_{i}") for i in [2, 3, 5, 6]]
+                + [self.get_parameter_value(f"u_v_{i}") for i in [2, 3, 5, 6]]
                 # rotational speeds of the pumps
                 + [p.speed_to_FMU for p in self.mas.pump_agents]
                 # volume flows at the pumps
