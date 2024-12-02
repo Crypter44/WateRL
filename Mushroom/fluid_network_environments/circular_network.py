@@ -69,7 +69,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         results = self.sim.get_results()
         valves = [2, 3, 5, 6]
         pumps = [1, 4]
-        self.plotValveAndPumpData(
+        self.plot_valve_and_pump_data(
             time=results["time"],
             valves=valves,
             valve_openings=[results[f"water_network.u_v_{v}"] for v in valves],
@@ -78,6 +78,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pumps=pumps,
             pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
             pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
+            pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
             title=title,
             save_path=save_path
         )
@@ -138,7 +139,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         def r_deviation(d):
             # return -d ** 2 / 1.3 ** 2 + 1
             # return 0.9 * np.exp(-40*d**2) + 0.1 * np.exp(-2*d**2)
-            return np.exp(-500 * (d - .1) ** 2)
+            # return np.exp(-500 * (d - .1) ** 2)
+            return np.exp(-4 * d ** 2)
 
         def r_power(p):
             # return 1 / 187 * (193 - p)
@@ -150,17 +152,19 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
 
         reward = 0
         for s, _ in sim_states[:]:
-            # for i in range(4):
-            #     reward += 0.25 * (1 - self._power_penalty) * r_deviation(s[i] - s[i + 4])
-            # reward += 0.5 * self._power_penalty * (1 - s[12])  # TODO change to actual power draw, if sim is fixed
-            # reward += 0.5 * self._power_penalty * (1 - s[13])  # TODO change to actual power draw, if sim is fixed
-            reward -= 0.5 * self._power_penalty *  s[16]  # TODO change to actual power draw, if sim is fixed
-            reward -= 0.5 * self._power_penalty *  s[17]   # TODO change to actual power draw, if sim is fixed
+            tmp = 0
+            for i in range(4):
+                tmp += 0.25 * (1 - self._power_penalty) * r_deviation(s[i] - s[i + 4])
+            tmp += 0.5 * self._power_penalty * (r_power(s[16]))  # TODO change to actual power draw, if sim is fixed
+            tmp += 0.5 * self._power_penalty * (r_power(s[17]))  # TODO change to actual power draw, if sim is fixed
+            # if s[14] < 0 or s[15] < 0:
+            #     tmp = 0
+            reward += tmp
 
         return reward
 
-    def plotValveAndPumpData(
-            self,
+    @staticmethod
+    def plot_valve_and_pump_data(
             time,
             valves,
             valve_openings,
@@ -169,6 +173,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pumps,
             pump_speeds,
             pump_powers,
+            pump_flows,
             pump_actions=None,
             title=None,
             save_path=None
@@ -206,9 +211,6 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             )
             axs.flatten()[i].set_xlabel("Time [s]")
             axs.flatten()[i].set_ylabel("Volume flow [m³/h]")
-
-        axs.flatten()[4].set_visible(False)
-        axs.flatten()[7].set_visible(False)
 
         for i in range(2):
             axs.flatten()[i + 5].plot(
@@ -260,6 +262,32 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                          arrowprops=dict(arrowstyle='-', color='red', linewidth=1.5), color='red',
                          horizontalalignment='right', fontsize=8, alpha=0.8)
 
+            ax = axs.flatten()[4 + 3 * i]
+            ax.plot(
+                time,
+                pump_flows[i],
+                label=f"Volume flow at p_{pumps[i]}",
+                color=pump_colors[i],
+                linewidth=2,
+                zorder=2
+            )
+            ax.fill_between(
+                time,
+                pump_flows[i],
+                where=(pump_flows[i] < 0),
+                color='red',
+                alpha=0.3,
+                label='Invalid (negative)'
+            )
+            ax.plot(
+                time,
+                np.zeros_like(time),
+                color='red',
+                linestyle='--',
+                linewidth=1,
+                zorder=1
+            )
+
         fig.subplots_adjust(
             left=0.05,
             bottom=0.12,
@@ -268,7 +296,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             hspace=0.4,
             wspace=0.4
         )
-        fig.legend(loc="lower center", ncol=10 if pump_actions is not None else 8)
+        fig.legend(loc="lower center", ncol=12 if pump_actions is not None else 10)
         fig.suptitle(title)
 
         if save_path is None:

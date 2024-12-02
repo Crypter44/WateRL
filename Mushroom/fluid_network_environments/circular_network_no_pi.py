@@ -62,7 +62,7 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
         results = self.sim.get_results()
         valves = [2, 3, 5, 6]
         pumps = [1, 4]
-        self.plotValveAndPumpData(
+        self.plot_valve_and_pump_data(
             results["time"],
             valves=valves,
             valve_openings=[results[f"control_api.w_v_{v}"] for v in valves],

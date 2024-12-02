@@ -8,12 +8,13 @@ from Mushroom.multi_agent_core import MultiAgentCore
 from Mushroom.plotting import plot_training_data
 from Mushroom.utils import set_seed, grid_search
 
+# PARAMS
 seed = 0
 
 n_features_actor = 80
 lr_actor = 1e-4
 n_features_critic = 80
-lr_critic = 2e-4
+lr_critic = 6e-5
 batch_size = 200
 initial_replay_size = 500
 max_replay_size = 10000
@@ -28,6 +29,7 @@ n_epochs = 30
 n_steps_learn = 400
 n_steps_eval = 600
 renders_on_completion = 50
+# END_PARAMS
 
 
 def train(p1, p2, seed, save_path):
@@ -104,6 +106,7 @@ tuning_params1 = [1]
 tuning_params2 = [None]
 
 data, path = grid_search(
+    file_to_read_parameters_from=__file__,
     tuning_params1=tuning_params1,
     tuning_params2=tuning_params2,
     seeds=[seed],

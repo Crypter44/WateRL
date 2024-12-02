@@ -117,6 +117,7 @@ class ConsumerAgent(Agent):
                 )
         )
         self.demand_volume_flow_m3h = random.choice(demand_volume_flow_curve)
+        self.output_to_FMU[list(self.output_to_FMU.keys())[1]] = self.demand_volume_flow_m3h
 
 
 class PumpAgent(Agent):
