@@ -1,92 +1,23 @@
-Log-file of program ./dymosim
-(generated: Fri Nov 15 11:48:57 2024)
-
-dymosim started
-... "wrapper_mini_circular_water_network" simulating
-... "dsin.txt" loading (dymosim input file)
-... "wrapper_mini_circular_water_network.mat" creating (simulation result file)
-
-Integration started at T = 0 using integration method DASSL
-(DAE multi-step solver (dassl/dasslrt of Petzold modified by Dassault Systemes))
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.4832069251553002
-  Tag: simulation.nonlinear[1]
-  For debugging information enable
-  Simulation/Setup/Debug/Nonlinear solver diagnostics/Detailed logging of failed nonlinear solutions.
-Solver will attempt to handle this problem.
+Model: wrapper_mini_circular_water_network
+Integration started at 0 using integration method:
+cvode from sundials
 
 
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.4766756176620567
-  Tag: simulation.nonlinear[1]
-Solver will attempt to handle this problem.
+Integration terminated successfully at T = 100
+   CPU-time for integration                  : 0.045 seconds
+   CPU-time for initialization               : 0.001 seconds
+   Number of result points                   : 510
+   Number of grid points                     : 501
+   Number of accepted steps                  : 228
+   Number of rejected steps                  : 6
+   Number of f-evaluations (dynamics)        : 316
+   Number of non-linear iteration            : 288
+   Number of non-linear convergence failures : 0
+   Number of Jacobian-evaluations            : 9
+   Number of crossing function evaluations   : 763
+   Number of model time events               : 3
+   Number of state events                    : 3
+   Number of step events                     : 0
+   Maximum integration order                 : 4
 
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.473409963915435
-  Tag: simulation.nonlinear[1]
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.4685114832955024
-  Tag: simulation.nonlinear[1]
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.4684702804577396
-  Tag: simulation.nonlinear[1]
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.4681749621343519
-  Tag: simulation.nonlinear[1]
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.4688738206417187
-  Tag: simulation.nonlinear[1]
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.4686838325203393
-  Tag: simulation.nonlinear[1]
-Trying homotopy
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 0.4686838325203393
-  Tag: simulation.nonlinear[1]
-
-Integration terminated before reaching "StopTime" at T = 0.469
-
-Final values of states and state derivatives:
-State                                            ,      State value, Derivative value
-mini_circular_water_network_test1.pump_1.medium.T,           293.15,      0.000148795
-mini_circular_water_network_test1.pump_4.medium.T,           293.15,      0.000151323
-mini_circular_water_network_test1.PI_2.I.y       ,         0.913224,          1.10958
-mini_circular_water_network_test1.PI_3.I.y       ,         0.911302,          1.10681
-mini_circular_water_network_test1.PI_5.I.y       ,            1.376,           2.6271
-mini_circular_water_network_test1.PI_6.I.y       ,          2.19998,          4.89044
-
-   CPU-time for integration                : 0.053 seconds
-   CPU-time for one grid interval          : 2.21 milliseconds
-   CPU-time for initialization             : 0.004 seconds
-   Number of result points                 : 30
-   Number of grid points                   : 25
-   Number of accepted steps                : 50
-   Number of f-evaluations (dynamics)      : 92
-   Number of crossing function evaluations : 79
-   Number of Jacobian-evaluations          : 22
-   Number of model time events             : 0
-   Number of input time events             : 0
-   Number of state events                  : 3
-   Number of step events                   : 0
-   Minimum integration stepsize            : 1.19e-05
-   Maximum integration stepsize            : 0.0292
-   Maximum integration order               : 4
-Calling terminal section
-... "dsfinal.txt" creating (final states)
-
-... Error message from dymosim
-
-ERROR: The simulation of wrapper_mini_circular_water_network FAILED
-
+SUCCESSFUL simulation of wrapper_mini_circular_water_network
