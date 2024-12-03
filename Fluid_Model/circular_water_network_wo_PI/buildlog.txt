@@ -1,0 +1,11 @@
+ 
+Compiling and linking the model (Visual C++). 
+ 
+dsmodel.c
+dsmodel.c(3798): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
+dsmodel.c(4226): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
+dsmodel.c(9566): warning C4018: "<": Konflikt zwischen "signed" und "unsigned"
+   Bibliothek "dymosim.lib" und Objekt "dymosim.exp" werden erstellt.
+ 
+Successful generation of Dymosim. 
+ 
