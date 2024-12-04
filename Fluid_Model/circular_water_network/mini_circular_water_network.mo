@@ -253,14 +253,14 @@ model mini_circular_water_network
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{-136,218},{-156,198}})));
 
-  Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_4(redeclare package Medium
-      = Medium) annotation (Placement(transformation(
+  Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_4(redeclare package Medium =
+        Medium) annotation (Placement(transformation(
         extent={{-10,10},{10,-10}},
         rotation=-90,
         origin={88,278})));
 
-  Modelica.Fluid.Sensors.RelativePressure pressure_4(redeclare package Medium
-      = Medium) annotation (Placement(transformation(
+  Modelica.Fluid.Sensors.RelativePressure pressure_4(redeclare package Medium =
+        Medium) annotation (Placement(transformation(
         extent={{-10,10},{10,-10}},
         rotation=90,
         origin={42,244})));
@@ -453,9 +453,9 @@ model mini_circular_water_network
         extent={{-10,-10},{10,10}},
         rotation=90,
         origin={96,320})));
-  Modelica.Blocks.Nonlinear.FixedDelay fixedDelay(delayTime=0.1)
+  Modelica.Blocks.Nonlinear.FixedDelay fixedDelay(delayTime=1)
     annotation (Placement(transformation(extent={{-150,-52},{-130,-32}})));
-  Modelica.Blocks.Nonlinear.FixedDelay fixedDelay1(delayTime=0.1)
+  Modelica.Blocks.Nonlinear.FixedDelay fixedDelay1(delayTime=1)
     annotation (Placement(transformation(extent={{176,-100},{196,-80}})));
   Modelica.Blocks.Nonlinear.FixedDelay fixedDelay2(delayTime=0.1)
     annotation (Placement(transformation(extent={{292,118},{272,138}})));

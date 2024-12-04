@@ -1,6 +1,6 @@
 # version script generated during FMU export and used when building shared object
 
-mini_circular_water_network {
+TestCase {
 
    global:
    # FMI 2

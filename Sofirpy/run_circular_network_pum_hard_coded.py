@@ -11,7 +11,7 @@ dir_path = Path(__file__).parent
 
 # %% setup simulation
 
-fmu_dir_path = dir_path.parent / "Fluid_Model" / "circular_water_network_fix"
+fmu_dir_path = dir_path.parent / "Fluid_Model" / "circular_water_network"
 fmu_path = fmu_dir_path / "mini_circular_water_network.fmu"
 
 connections_config = {
@@ -137,8 +137,6 @@ parameters_to_log = {
         "p_rel_5",
         "V_flow_6",
         "p_rel_6",
-        "y",
-        "y1",
     ],
     "control_api": ["w_p_1", "w_v_2", "w_v_3", "w_p_4", "w_v_5", "w_v_6"],
 }
@@ -201,7 +199,12 @@ class Controler(SimulationEntity):
         self.outputs["w_v_5"] = 0.5
         self.outputs["w_v_6"] = 0.5
 
-        self.outputs["w_p_4"] = 0
+        if time < 50:
+            self.outputs["w_p_4"] = 0.9
+        elif time < 60:
+            self.outputs["w_p_4"] = 0.005
+        elif time > 70:
+            self.outputs["w_p_4"] = 0.9
 
     def set_parameter(
         self, parameter_name: str, parameter_value: float
@@ -276,15 +279,26 @@ ax2.spines["right"].set_visible(True)
 
 # %%
 fig, ax = plt.subplots()
-ax.plot(
-    results["time"],
-    results["water_network.y"],
-    lw=1.5,
-)
+ax2 = ax.twinx()
 
-fig, ax = plt.subplots()
 ax.plot(
     results["time"],
-    results["water_network.y1"],
+    results["water_network.V_flow_4"],
     lw=1.5,
+    path_effects=[
+        pe.Stroke(linewidth=2.5, foreground=[77 / 255, 73 / 255, 67 / 255]),
+        pe.Normal(),
+    ],
+    c=[253 / 255, 202 / 255, 0 / 255],
 )
+ax2.plot(
+    results["time"],
+    results["control_api.w_p_4"],
+    lw=1.5,
+    markersize=8,
+    c=[0 / 255, 78 / 255, 115 / 255],
+)
+ax.set_xlabel("TIME in s")
+ax.set_ylabel("VOLUME FLOW in m$^3$/h")
+ax2.set_ylabel("PUMP ROTATIONAL SPEED in %", c=[0 / 255, 78 / 255, 115 / 255])
+ax2.spines["right"].set_visible(True)
