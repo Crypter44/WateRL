@@ -303,11 +303,11 @@ ax.set_ylabel("VOLUME FLOW in m$^3$/h")
 ax2.set_ylabel("PUMP ROTATIONAL SPEED in %", c=[0 / 255, 78 / 255, 115 / 255])
 ax2.spines["right"].set_visible(True)
 
-#%%
+# %%
 fig, ax = plt.subplots()
 ax2 = ax.twinx()
 
 ax.plot(
     results["time"],
-    results["water_network.V_flow_4"],
+    results["water_network.V_flow_6"],
 )
