@@ -143,22 +143,28 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             return np.exp(-4 * d ** 2)
 
         def r_power(p):
-            # return 1 / 187 * (193 - p)
-
-            b = 0.02
-            a = 1 / (np.exp(-6 * b) - np.exp(-193 * b))
-            c = -a * np.exp(-193 * b)
-            return a * np.exp(-b * p) + c
+            return 1 / 187 * (193 - p)
+            #
+            # b = 0.005
+            # a = 1 / (np.exp(-6 * b) - np.exp(-193 * b))
+            # c = -a * np.exp(-193 * b)
+            # return a * np.exp(-b * p) + c
 
         reward = 0
         for s, _ in sim_states[:]:
             tmp = 0
             for i in range(4):
                 tmp += 0.25 * (1 - self._power_penalty) * r_deviation(s[i] - s[i + 4])
+
             tmp += 0.5 * self._power_penalty * (r_power(s[16]))  # TODO change to actual power draw, if sim is fixed
             tmp += 0.5 * self._power_penalty * (r_power(s[17]))  # TODO change to actual power draw, if sim is fixed
-            # if s[14] < 0 or s[15] < 0:
-            #     tmp = 0
+
+            # tmp += 0.5 * self._power_penalty * (1-s[12])
+            # tmp += 0.5 * self._power_penalty * (1-s[13])
+
+            if s[14] < 0 or s[15] < 0:
+                return -10
+
             reward += tmp
 
         return reward
@@ -304,3 +310,4 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         else:
             fig.savefig(save_path + ".png")
             plt.close(fig)
+

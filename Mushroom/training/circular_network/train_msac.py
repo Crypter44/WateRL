@@ -14,7 +14,7 @@ seed = 0
 n_features_actor = 80
 lr_actor = 1e-4
 n_features_critic = 80
-lr_critic = 6e-5
+lr_critic = 2e-4
 batch_size = 200
 initial_replay_size = 500
 max_replay_size = 10000
@@ -22,7 +22,7 @@ warmup_transitions = 0
 tau = 0.005
 lr_alpha = 0.001
 log_std_min = -20
-log_std_max = 2
+log_std_max = np.log(2)
 target_entropy = -5
 
 n_epochs = 30
@@ -111,7 +111,7 @@ data, path = grid_search(
     tuning_params2=tuning_params2,
     seeds=[seed],
     train=train,
-    base_path="Plots/SAC/"
+    base_path="Plots/SAC/",
 )
 
 plot_training_data(data, path, plot_additional_data=True)

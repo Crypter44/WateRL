@@ -51,7 +51,7 @@ class ControlApiCircular(SimulationEntityWithAction):
         [16:18] power consumption of the pumps
         """
         state = (
-            # demands of the valves
+                # demands of the valves
                 [c.demand_volume_flow_m3h for c in self.mas.consumer_agents]
                 # resulting volume flows at the valves, 1 and 4 are at the pumps
                 + [self.get_parameter_value(f"V_flow_{i}") for i in [2, 3, 5, 6]]
@@ -142,7 +142,7 @@ class ControlApiCircularNoPI(ControlApiCircular):
         [16:18] power consumption of the pumps
         """
         state = (
-            # demands of the valves
+                # demands of the valves
                 [c.demand_volume_flow_m3h for c in self.mas.consumer_agents]
                 # resulting volume flows at the valves, 1 and 4 are at the pumps
                 + [self.get_parameter_value(f"V_flow_{i}") for i in [2, 3, 5, 6]]
