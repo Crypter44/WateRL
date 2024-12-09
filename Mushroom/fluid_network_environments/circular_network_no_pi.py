@@ -71,6 +71,7 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
             pumps=pumps,
             pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
             pump_powers=[results[f"water_network.V_flow_{p}"] for p in pumps],
+            pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
             title=title,
             save_path=save_path,
         )

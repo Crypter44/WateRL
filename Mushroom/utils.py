@@ -74,12 +74,12 @@ def grid_search(file_to_read_parameters_from, tuning_params1, tuning_params2, se
     with open(file_to_read_parameters_from, 'r') as f:
         code = f.read()
         # remove everything outside # PARAMS and # END_PARAMS
-        try:
-            code = code[code.find("# PARAMS") + 8:code.find("# END_PARAMS")]
-            with open(base_path + 'params.txt', 'w') as f2:
-                f2.write(code)
-        except ValueError:
-            raise ValueError("Could not find # PARAMS and # END_PARAMS in the file.")
+        begin, end = code.find("# PARAMS") + 8, code.find("# END_PARAMS")
+        if begin == -1 or end == -1:
+            raise ValueError("Parameters not found in file!")
+        code = code[begin:end]
+        with open(base_path + 'params.txt', 'w') as f2:
+            f2.write(code)
 
     experiment_bar = tqdm(total=len(tuning_params1) * len(tuning_params2), unit='experiment')
     for p1 in tuning_params1:

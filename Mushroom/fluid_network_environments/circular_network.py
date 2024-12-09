@@ -53,6 +53,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             horizon=200,
             gamma: float = 0.99,
             power_penalty: float = 0.01,
+            penalize_negative_flow: bool = False,
     ):
         super().__init__(
             observation_space=observation_space,
@@ -62,6 +63,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             gamma=gamma,
         )
         self._power_penalty = power_penalty
+        self._penalize_negative_flow = penalize_negative_flow
         self._current_simulation_state = None
         self.actions = []
 
@@ -162,7 +164,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             # tmp += 0.5 * self._power_penalty * (1-s[12])
             # tmp += 0.5 * self._power_penalty * (1-s[13])
 
-            if s[14] < 0 or s[15] < 0:
+            if self._penalize_negative_flow and (s[14] < 0 or s[15] < 0):
                 return -10
 
             reward += tmp
@@ -293,6 +295,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 linewidth=1,
                 zorder=1
             )
+            ax.set_xlabel("Time [s]")
+            ax.set_ylabel("Volume flow [m³/h]")
 
         fig.subplots_adjust(
             left=0.05,

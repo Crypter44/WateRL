@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from Mushroom.fluid_network_environments.circular_network_no_pi import fmu_paths, model_classes, connections_config, \
-    parameters_to_log, connections_config_path
+    parameters_to_log
 from Sofirpy.simulation import ManualStepSimulator
 
 sim = ManualStepSimulator(
@@ -22,8 +22,8 @@ c = 0
 while not sim.is_done():
     actions = np.array(
         [
-            -0.1,  # pump 1
-            -0.1,  # pump 4
+            0 + c,  # pump 1
+            0 + c,  # pump 4
             1.0,  # valve 2
             1.0,  # valve 3
             1.0,  # valve 5

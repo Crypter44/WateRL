@@ -35,7 +35,7 @@ renders_on_completion = 50
 def train(p1, p2, seed, save_path):
     set_seed(seed)
 
-    mdp = CircularFluidNetwork(gamma=0.99, power_penalty=p1)
+    mdp = CircularFluidNetwork(gamma=0.99, power_penalty=1.0, penalize_negative_flow=p1)
     agents = [
         create_sac_agent(
             mdp,
@@ -102,7 +102,7 @@ def train(p1, p2, seed, save_path):
     }
 
 
-tuning_params1 = [1]
+tuning_params1 = [True, False]
 tuning_params2 = [None]
 
 data, path = grid_search(
