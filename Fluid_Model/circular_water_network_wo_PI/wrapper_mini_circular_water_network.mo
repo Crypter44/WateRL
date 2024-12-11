@@ -2,13 +2,13 @@ within ;
 model wrapper_mini_circular_water_network
   Modelica.Blocks.Sources.Step step_6(height=1)
     annotation (Placement(transformation(extent={{-16,-32},{4,-12}})));
-  Modelica.Blocks.Sources.Step pump_1(height=0.7)
+  Modelica.Blocks.Sources.Step pump_1(height=1)
     annotation (Placement(transformation(extent={{-58,0},{-38,20}})));
   Modelica.Blocks.Sources.Step valve_2(height=1)
     annotation (Placement(transformation(extent={{-88,22},{-68,42}})));
   Modelica.Blocks.Sources.Step valve_3(height=1)
     annotation (Placement(transformation(extent={{-60,48},{-40,68}})));
-  Modelica.Blocks.Sources.Step pump_4(height=0.7)
+  Modelica.Blocks.Sources.Step pump_4(height=1)
     annotation (Placement(transformation(extent={{90,58},{70,78}})));
   Modelica.Blocks.Sources.Step step5(height=1)
     annotation (Placement(transformation(extent={{94,20},{74,40}})));
