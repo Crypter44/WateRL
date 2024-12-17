@@ -169,7 +169,7 @@ model mini_circular_water_network
   Modelica.Fluid.Pipes.StaticPipe pipe_1(
     allowFlowReversal=true,
     length=80,
-    diameter(displayUnit="m") = 0.05,
+    diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium,
     height_ab=0)
     annotation (Placement(transformation(
@@ -180,14 +180,14 @@ model mini_circular_water_network
   Modelica.Fluid.Pipes.StaticPipe pipe_2(
     allowFlowReversal=true,
     length=20,
-    diameter(displayUnit="m") = 0.05,
+    diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{-38,28},{-58,48}})));
 
   Modelica.Fluid.Pipes.StaticPipe pipe_3(
     allowFlowReversal=true,
     length=20,
-    diameter(displayUnit="m") = 0.05,
+    diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=90,
@@ -196,28 +196,28 @@ model mini_circular_water_network
   Modelica.Fluid.Pipes.StaticPipe pipe_4(
     allowFlowReversal=true,
     length=20,
-    diameter(displayUnit="m") = 0.05,
+    diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{-56,166},{-76,186}})));
 
   Modelica.Fluid.Pipes.StaticPipe pipe_5(
     allowFlowReversal=true,
     length=80,
-    diameter(displayUnit="m") = 0.05,
+    diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium,
     height_ab=0)
     annotation (Placement(transformation(extent={{60,176},{40,196}})));
   Modelica.Fluid.Pipes.StaticPipe pipe_6(
     allowFlowReversal=true,
     length=20,
-    diameter(displayUnit="m") = 0.05,
+    diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{40,128},{60,148}})));
 
   Modelica.Fluid.Pipes.StaticPipe pipe_7(
     allowFlowReversal=true,
     length=20,
-    diameter(displayUnit="m") = 0.05,
+    diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{9,-11},{-9,11}},
         rotation=90,
@@ -226,7 +226,7 @@ model mini_circular_water_network
   Modelica.Fluid.Pipes.StaticPipe pipe_8(
     allowFlowReversal=true,
     length=20,
-    diameter(displayUnit="m") = 0.05,
+    diameter(displayUnit="m") = 0.025,
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{40,-10},{60,10}})));
 
@@ -253,14 +253,14 @@ model mini_circular_water_network
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{-136,218},{-156,198}})));
 
-  Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_4(redeclare package Medium
-      = Medium) annotation (Placement(transformation(
+  Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_4(redeclare package Medium =
+        Medium) annotation (Placement(transformation(
         extent={{-10,10},{10,-10}},
         rotation=-90,
         origin={88,278})));
 
-  Modelica.Fluid.Sensors.RelativePressure pressure_4(redeclare package Medium
-      = Medium) annotation (Placement(transformation(
+  Modelica.Fluid.Sensors.RelativePressure pressure_4(redeclare package Medium =
+        Medium) annotation (Placement(transformation(
         extent={{-10,10},{10,-10}},
         rotation=90,
         origin={42,244})));
