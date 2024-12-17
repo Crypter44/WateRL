@@ -2,20 +2,22 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from mushroom_rl.algorithms.actor_critic import DDPG
-from mushroom_rl.policy import OrnsteinUhlenbeckPolicy
 from mushroom_rl.utils.dataset import compute_metrics
 from torch import nn, optim
 from tqdm import tqdm
 
+from Mushroom.agents.sigma_decay_policies import OUPolicyWithNoiseDecay, UnivariateGaussianPolicy
+
 
 # Define the neural networks for the actor and the critic
 class CriticNetwork(nn.Module):
-    def __init__(self, input_shape, output_shape, n_features, **kwargs):
+    def __init__(self, input_shape, output_shape, n_features, agent_idx=-1, **kwargs):
         super().__init__()
 
         n_input = input_shape[-1]
         n_output = output_shape[0]
 
+        self._agent_idx = agent_idx
         self._h1 = nn.Linear(n_input, n_features)
         self._h2 = nn.Linear(n_features, n_features)
         self._h3 = nn.Linear(n_features, n_output)
@@ -28,6 +30,9 @@ class CriticNetwork(nn.Module):
                                 gain=nn.init.calculate_gain('linear'))
 
     def forward(self, state, action):
+        if self._agent_idx != -1:
+            state = state[self._agent_idx]
+            action = action[self._agent_idx]
         state_action = torch.cat((state.float(), action.float()), dim=1)
         features1 = F.relu(self._h1(state_action))
         features2 = F.relu(self._h2(features1))
@@ -37,12 +42,13 @@ class CriticNetwork(nn.Module):
 
 
 class ActorNetwork(nn.Module):
-    def __init__(self, input_shape, output_shape, n_features, **kwargs):
+    def __init__(self, input_shape, output_shape, n_features, agent_idx=-1, **kwargs):
         super(ActorNetwork, self).__init__()
 
         n_input = input_shape[-1]
         n_output = output_shape[0]
 
+        self._agent_idx = agent_idx
         self._h1 = nn.Linear(n_input, n_features)
         self._h2 = nn.Linear(n_features, n_features)
         self._h3 = nn.Linear(n_features, n_output)
@@ -55,16 +61,19 @@ class ActorNetwork(nn.Module):
                                 gain=nn.init.calculate_gain('sigmoid'))
 
     def forward(self, state):
+        if self._agent_idx != -1:
+            state = state[self._agent_idx]
         features1 = F.relu(self._h1(torch.squeeze(state, 1).float()))
         features2 = F.relu(self._h2(features1))
-        a = F.tanh(self._h3(features2))
-        # change to sigmoid for fluid network
+        a = F.sigmoid(self._h3(features2))
+        a = a * (self.mdp.info.action_space.high - self.mdp.info.action_space.low) + self.mdp.info.action_space.low
 
         return a
 
 
 def create_ddpg_agent(
         mdp,
+        agent_idx=-1,
         n_features_actor=80,
         lr_actor=1e-4,
         n_features_critic=80,
@@ -74,6 +83,8 @@ def create_ddpg_agent(
         max_replay_size=5000,
         tau=0.001,
         sigma=0.2,
+        target_sigma=0.001,
+        sigma_transition_length=1,
         theta=0.15,
         dt=1e-2
 ):
@@ -82,7 +93,8 @@ def create_ddpg_agent(
     actor_params = dict(network=ActorNetwork,
                         n_features=n_features_actor,
                         input_shape=actor_input_shape,
-                        output_shape=mdp.info.action_space.shape)
+                        output_shape=mdp.info.action_space.shape,
+                        agent_idx=agent_idx)
 
     actor_optimizer = {'class': optim.Adam,
                        'params': {'lr': lr_actor}}  # not so big of a difference to critic
@@ -94,11 +106,18 @@ def create_ddpg_agent(
                          loss=F.mse_loss,
                          n_features=n_features_critic,
                          input_shape=critic_input_shape,
-                         output_shape=(1,))
+                         output_shape=(1,),
+                         agent_idx=agent_idx)
 
     # Policy
-    policy_class = OrnsteinUhlenbeckPolicy
-    policy_params = dict(sigma=np.ones(1) * sigma, theta=theta, dt=dt)
+    # policy_class = OUPolicyWithNoiseDecay
+    # policy_params = dict(initial_sigma=sigma, target_sigma=target_sigma,
+    #                      updates_till_target_reached=sigma_transition_length,
+    #                      theta=theta, dt=dt)
+
+    policy_class = UnivariateGaussianPolicy
+    policy_params = dict(initial_sigma=sigma, target_sigma=target_sigma,
+                         updates_till_target_reached=sigma_transition_length)
 
     # Agent
     return DDPG(mdp.info, policy_class, policy_params,

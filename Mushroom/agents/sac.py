@@ -10,13 +10,15 @@ from tqdm import tqdm
 
 
 class ActorMuNetwork(nn.Module):
-    def __init__(self, input_shape, output_shape, n_features, **kwargs):
+    def __init__(self, input_shape, output_shape, n_features, log, agent_idx=-1, **kwargs, ):
         super(ActorMuNetwork, self).__init__()
 
+        self._agent_idx = agent_idx
         # Layers
         self.fc1 = nn.Linear(input_shape[-1], n_features)
         self.fc2 = nn.Linear(n_features, n_features)
         self.mu = nn.Linear(n_features, output_shape[0])
+        self.log = log
 
         # Initialization
         nn.init.xavier_uniform_(
@@ -33,23 +35,30 @@ class ActorMuNetwork(nn.Module):
         )
 
     def forward(self, state):
+        if self._agent_idx != -1:
+            state = state[self._agent_idx]
         state = torch.squeeze(state, 1).float()
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
         # we choose linear again, since SAC already applies a tanh activation bounded to the action space
         mu = self.mu(x)
+        self.log.append(mu.detach().numpy()[0])
+        self.log[-1] = np.tanh(self.log[-1]) * 0.5 + 0.5
 
         return mu
 
 
 class ActorSigmaNetwork(nn.Module):
-    def __init__(self, input_shape, output_shape, n_features, **kwargs):
+    def __init__(self, input_shape, output_shape, n_features, log, agent_idx=-1, **kwargs):
         super(ActorSigmaNetwork, self).__init__()
 
+        self._agent_idx = agent_idx
         # Layers
         self.fc1 = nn.Linear(input_shape[-1], n_features)
         self.fc2 = nn.Linear(n_features, n_features)
         self.fc3 = nn.Linear(n_features, output_shape[0])
+
+        self.log = log
 
         # Initialization
         nn.init.xavier_uniform_(
@@ -66,6 +75,8 @@ class ActorSigmaNetwork(nn.Module):
         )
 
     def forward(self, state):
+        if self._agent_idx != -1:
+            state = state[self._agent_idx]
         state = torch.squeeze(state, 1).float()
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
@@ -73,13 +84,17 @@ class ActorSigmaNetwork(nn.Module):
         # since the output is considered as the log of the variance,
         # and therefore it can be any real number
         sigma = self.fc3(x)
+        self.log.append(sigma.detach().numpy()[0])
+        self.log[-1] = np.exp(self.log[-1])
 
         return sigma
 
 
 class CriticNetwork(nn.Module):
-    def __init__(self, input_shape, output_shape, n_features, **kwargs):
+    def __init__(self, input_shape, output_shape, n_features, agent_idx=-1, **kwargs):
         super(CriticNetwork, self).__init__()
+
+        self._agent_idx = agent_idx
 
         # Layers
         self.fc1 = nn.Linear(input_shape[-1], n_features)
@@ -101,6 +116,9 @@ class CriticNetwork(nn.Module):
         )
 
     def forward(self, state, action):
+        if self._agent_idx != -1:
+            state = state[self._agent_idx]
+            action = action[self._agent_idx]
         x = torch.cat((state.float(), action.float()), 1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -121,24 +139,31 @@ def create_sac_agent(
         warmup_transitions,
         tau,
         lr_alpha,
+        agent_idx=-1,
         log_std_min=-20,
         log_std_max=2,
         target_entropy=None,
         critic_fit_params=None
 ):
 
+    log_mu = []
+    log_sigma = []
     actor_mu_params = dict(
         network=ActorMuNetwork,
         input_shape=mdp.info.observation_space.shape,
         output_shape=mdp.info.action_space.shape,
-        n_features=n_features_actor
+        n_features=n_features_actor,
+        log=log_mu,
+        agent_idx=agent_idx,
     )
 
     actor_sigma_params = dict(
         network=ActorSigmaNetwork,
         input_shape=mdp.info.observation_space.shape,
         output_shape=mdp.info.action_space.shape,
-        n_features=n_features_actor
+        n_features=n_features_actor,
+        log=log_sigma,
+        agent_idx=agent_idx,
     )
 
     optimizer = {
@@ -156,6 +181,7 @@ def create_sac_agent(
             'params': {'lr': lr_critic}
         },
         'loss': F.mse_loss,
+        'agent_idx': agent_idx,
     }
 
     return SAC(
@@ -174,7 +200,7 @@ def create_sac_agent(
         log_std_max,
         target_entropy,
         critic_fit_params
-    )
+    ), log_mu, log_sigma
 
 
 def run_sac_training(
