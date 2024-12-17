@@ -168,7 +168,7 @@ model mini_circular_water_network_wo_PI
 
   Modelica.Fluid.Pipes.StaticPipe pipe_1(
     allowFlowReversal=true,
-    length=20,
+    length=80,
     diameter(displayUnit="m") = 0.05,
     redeclare package Medium = Medium,
     height_ab=0)
