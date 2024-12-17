@@ -408,7 +408,7 @@ model mini_circular_water_network
   Modelica.Blocks.Interfaces.RealInput w_v_3
     "Connector of Real input signal to be converted"
     annotation (Placement(transformation(extent={{-212,132},{-172,172}})));
-  Modelica.Blocks.Interfaces.RealInput w_v_4
+  Modelica.Blocks.Interfaces.RealInput w_v_5
     "Connector of Real input signal to be converted" annotation (Placement(
         transformation(
         extent={{-20,-20},{20,20}},
@@ -617,7 +617,7 @@ equation
     annotation (Line(points={{-156,8},{-156,-4},{-190,-4}}, color={0,0,127}));
   connect(to_m3s.u, w_v_3) annotation (Line(points={{-164,166},{-164,152},{-192,
           152}}, color={0,0,127}));
-  connect(to_m3s_5.u, w_v_4)
+  connect(to_m3s_5.u,w_v_5)
     annotation (Line(points={{278,122},{326,122}}, color={0,0,127}));
   connect(to_m3s_6.u, w_v_6)
     annotation (Line(points={{276,-58},{320,-58}}, color={0,0,127}));
