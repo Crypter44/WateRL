@@ -34,10 +34,10 @@ with open(logging_config_path) as logging_config_json:
 class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
     def __init__(
             self,
-            observation_space=spaces.Box(low=-10, high=10, shape=(8,)),
+            observation_space=spaces.Box(low=-10, high=10, shape=(4,)),
             action_space=spaces.Box(low=0, high=1, shape=(1,)),
             fluid_network_simulator=ManualStepSimulator(
-                stop_time=200,
+                stop_time=50,
                 step_size=1,
                 fmu_paths=fmu_paths,
                 model_classes=model_classes,
@@ -49,6 +49,7 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
             ),
             gamma: float = 0.99,
             power_penalty: float = 0.01,
+            penalize_negative_flow: bool = False,
     ):
         super().__init__(
             observation_space=observation_space,
@@ -56,6 +57,8 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
             fluid_network_simulator=fluid_network_simulator,
             gamma=gamma,
             power_penalty=power_penalty,
+            penalize_negative_flow=penalize_negative_flow,
+            horizon=50,
         )
 
     def render(self, title=None, save_path=None):
@@ -75,6 +78,19 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
             title=title,
             save_path=save_path,
         )
+
+    def _get_current_state(self):
+        """
+        Return the observable state of the environment.
+        """
+        state, absorbing = self._get_current_simulation_state()
+        return state[:4].reshape((4, 1)), absorbing
+
+    def local_observation_space(self, agent_index: int):
+        return spaces.Box(low=-10, high=10, shape=(1,))
+
+    def local_action_space(self, agent_index: int):
+        return spaces.Box(low=0, high=1, shape=(1,))
 
     def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
         return self._bound_reward(state, action, sim_states)

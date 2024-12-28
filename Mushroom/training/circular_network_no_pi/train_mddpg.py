@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 from Mushroom.agents.ddpg import create_ddpg_agent
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
-from Mushroom.fluid_network_environments.circular_network import CircularFluidNetwork
+from Mushroom.fluid_network_environments.circular_network_no_pi import CircularFluidNetworkWithoutPI
 from Mushroom.multi_agent_core import MultiAgentCore
 from Mushroom.plotting import plot_training_data
 from Mushroom.utils import set_seed, parametrized_training
@@ -30,12 +30,12 @@ sigma_transition_length = 30
 theta = 0.15
 dt = 1e-2
 
-n_epochs = 20
+n_epochs = 40
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
 
-num_agents = 2
+num_agents = 4
 power_penalty = 0.0
 
 # END_PARAMS
@@ -45,10 +45,10 @@ power_penalty = 0.0
 def train(p1, p2, seed, save_path):
     set_seed(seed)
     # MDP
-    mdp = CircularFluidNetwork(gamma=gamma, power_penalty=0.0, penalize_negative_flow=False)
+    mdp = CircularFluidNetworkWithoutPI(gamma=gamma, power_penalty=0.0, penalize_negative_flow=False)
     agents = [create_ddpg_agent(
         mdp,
-        agent_idx=-1,
+        agent_idx=i,
         n_features_actor=n_features,
         lr_actor=lr_actor,
         n_features_critic=n_features,

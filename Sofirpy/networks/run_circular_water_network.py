@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from Mushroom.fluid_network_environments.circular_network import fmu_paths, model_classes, connections_config, \
-    parameters_to_log
+    parameters_to_log, CircularFluidNetwork
 from Sofirpy.simulation import ManualStepSimulator
 
 sim = ManualStepSimulator(
@@ -19,13 +19,10 @@ sim = ManualStepSimulator(
     verbose=True,
 )
 
-speeds = np.array([0.0, 0.0])
+speeds = np.array([1.0, 1.0])
 c = 0
 while not sim.is_done():
     sim.do_simulation_step(speeds)
-    if c < 10:
-        speeds += [0.1, 0.]
-        c += 1
 
 results = sim.get_results()
 
@@ -45,17 +42,21 @@ print(f"Max flow through valves: 2: "
 
 print(f"Max flow sum: {results['water_network.V_flow_2'].max() + results['water_network.V_flow_3'].max() + results['water_network.V_flow_5'].max() + results['water_network.V_flow_6'].max()}")
 
-fig, ax = plt.subplots()
-ax.plot(
-    results["time"],
-    results["water_network.P_pum_4"],
+valves = [2, 3, 5, 6]
+pumps = [1, 4]
+
+CircularFluidNetwork.plot_valve_and_pump_data(
+    time=results["time"],
+    valves=valves,
+    valve_openings=[results[f"water_network.u_v_{v}"] for v in valves],
+    valve_demands=[results[f"control_api.demand_v_{v}"] for v in valves],
+    valve_flows=[results[f"water_network.V_flow_{v}"] for v in valves],
+    pumps=pumps,
+    pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
+    pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
+    pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
+    title="/",
 )
-ax.plot(
-    results["time"],
-    results["water_network.P_pum_1"],
-)
-ax.set_title("PUMP POWER")
-fig.show()
 quit(0)
 
 fig, ax = plt.subplots()

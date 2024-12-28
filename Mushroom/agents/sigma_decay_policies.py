@@ -71,14 +71,16 @@ class UnivariateGaussianPolicy(GaussianPolicy):
 
 
 def set_noise_for_all(agents, active):
-    if active:
-        for a in [agents]:
-            a.policy.reactivate_noise()
-    else:
-        for a in [agents]:
-            a.policy.deactivate_noise()
+    # Ensure agents is always iterable
+    for agent in (agents if hasattr(agents, '__iter__') and not isinstance(agents, (str, bytes)) else [agents]):
+        if active:
+            agent.policy.reactivate_noise()
+        else:
+            agent.policy.deactivate_noise()
 
 
 def update_sigma_for_all(agents):
-    for a in [agents]:
-        a.policy.update_sigma()
+    # Ensure agents is always iterable
+    for agent in (agents if hasattr(agents, '__iter__') and not isinstance(agents, (str, bytes)) else [agents]):
+        agent.policy.update_sigma()
+

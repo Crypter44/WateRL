@@ -66,7 +66,14 @@ def plot(tuning_params1, tuning_params2, seeds, data):
     fig.show()
 
 
-def grid_search(file_to_read_parameters_from, tuning_params1, tuning_params2, seeds, train: Callable, base_path):
+def parametrized_training(
+        file_to_read_parameters_from,
+        tuning_params1,
+        tuning_params2,
+        seeds,
+        train: Callable,
+        base_path,
+):
     data = {}
     base_path += datetime.now().strftime("%y-%m-%d__%H:%M/")
 

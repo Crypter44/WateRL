@@ -142,7 +142,17 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             # return -d ** 2 / 1.3 ** 2 + 1
             # return 0.9 * np.exp(-40*d**2) + 0.1 * np.exp(-2*d**2)
             # return np.exp(-500 * (d - .1) ** 2)
-            return np.exp(-4 * d ** 2)
+            # return np.exp(-250 * d ** 2)
+            # return np.exp(-10 * np.abs(d))
+            smoothness = 0.0001
+
+            bound = 0.05
+            value_at_bound = 0.1
+
+            b = np.log(value_at_bound) / (np.sqrt(smoothness) - np.sqrt(smoothness + bound ** 2))
+            a = np.exp(b * np.sqrt(smoothness))
+
+            return a * np.exp(-b * np.sqrt(d ** 2 + smoothness))
 
         def r_power(p):
             return 1 / 187 * (193 - p)
@@ -152,11 +162,20 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             # c = -a * np.exp(-193 * b)
             # return a * np.exp(-b * p) + c
 
+        # return -(abs(0.25 - float(action[2]))) * 10
+        num_valves = 4
+
         reward = 0
-        for s, _ in sim_states[:]:
+        sim_states_to_use = sim_states[:]
+        for s, _ in sim_states_to_use:
             tmp = 0
-            for i in range(4):
-                tmp += 0.25 * (1 - self._power_penalty) * r_deviation(s[i] - s[i + 4])
+            for i in range(num_valves):
+                tmp += (
+                        1 / num_valves
+                        * 1 / len(sim_states_to_use)
+                        * (1 - self._power_penalty)
+                        * r_deviation(s[i] - s[i + 4])
+                )
 
             tmp += 0.5 * self._power_penalty * (r_power(s[16]))  # TODO change to actual power draw, if sim is fixed
             tmp += 0.5 * self._power_penalty * (r_power(s[17]))  # TODO change to actual power draw, if sim is fixed
@@ -201,6 +220,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 linewidth=1,
             )
             ax2.set_ylabel("Opening [%]", color='gray')
+            ax2.set_ylim(0, 1)
 
             axs.flatten()[i].plot(
                 time,
@@ -314,4 +334,3 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         else:
             fig.savefig(save_path + ".png")
             plt.close(fig)
-

@@ -1,10 +1,12 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from mushroom_rl.core import Environment, MDPInfo
+from mushroom_rl.core import MDPInfo
 from mushroom_rl.utils import spaces
 
+from Mushroom.fluid_network_environments.fluid_network_environment import AbstractEnvironment
 
-class ConstantValueEnv(Environment):
+
+class ConstantValueEnv(AbstractEnvironment):
     def __init__(
             self,
             value,
@@ -16,7 +18,8 @@ class ConstantValueEnv(Environment):
             state_max=10,
             action_min=0,
             action_max=1,
-            reward_fn=None
+            reward_fn=None,
+            num_agents=1,
     ):
         self._value = value
         self._start_state = start_state
@@ -27,6 +30,7 @@ class ConstantValueEnv(Environment):
         self._state_max = state_max
         self._action_min = action_min
         self._action_max = action_max
+        self._num_agents = num_agents
 
         if reward_fn is None:
             raise ValueError("reward_fn must be provided")
@@ -57,7 +61,7 @@ class ConstantValueEnv(Environment):
             self._state = np.random.uniform(self._state_min, self._state_max, self._state_length)
         self._state_log = [self._state]
         self._action_log = []
-        return self._state
+        return self._state.repeat(2).reshape((2, self._state_length))
 
     def step(self, action):
         action = np.clip(action, self._action_min, self._action_max)
@@ -66,7 +70,7 @@ class ConstantValueEnv(Environment):
         self._state_log.append(self._state)
         self._action_log.append(action)
         reward = self._reward_fn(action)
-        return self._state, reward, False, {}
+        return self._state.repeat(2).reshape((2, self._state_length)), reward, False, {}
 
     def render(self, save_path=None):
         fig, ax = plt.subplots(1, 3, figsize=(18, 6))
@@ -79,17 +83,17 @@ class ConstantValueEnv(Environment):
 
         action_plot = ax[1]
         action_plot.set_title("Action")
-        action_plot.plot([a[0] for a in self._action_log], alpha=0.5, color='blue')
         action_plot.set_ylim((self._action_min-0.25, self._action_max+0.25))
-        action_plot.plot([self._value]*len(self._action_log), alpha=0.5, color='red', linestyle='--')
-        
-        # Calculate min and max action values
-        min_action = min(a[0] for a in self._action_log)
-        max_action = max(a[0] for a in self._action_log)
-        
-        # Add labels for min and max
-        action_plot.text(len(self._action_log), min_action, f'{min_action:.3f}', color='green', va='center', ha='right')
-        action_plot.text(len(self._action_log), max_action, f'{max_action:.3f}', color='red', va='center', ha='right')
+        for i in range(self._num_agents):
+            action_plot.plot([a[i] for a in self._action_log], alpha=0.5)
+
+            # Calculate min and max action values
+            min_action = min(float(a[i]) for a in self._action_log)
+            max_action = max(float(a[i]) for a in self._action_log)
+
+            # Add labels for min and max
+            action_plot.text(np.argmin(self._action_log), min_action - 0.05, f'{min_action:.3f}', color='green', va='center', ha='right')
+            action_plot.text(np.argmax(self._action_log), max_action + 0.05, f'{max_action:.3f}', color='red', va='center', ha='right')
 
         reward_plot = ax[2]
         reward_plot.set_title("Reward")
@@ -97,3 +101,9 @@ class ConstantValueEnv(Environment):
 
         fig.savefig(save_path)
         plt.close(fig)
+
+    def local_observation_space(self, agent_index: int):
+        return spaces.Box(low=self._state_min, high=self._state_max, shape=(self._state_length,))
+
+    def local_action_space(self, agent_index: int):
+        return spaces.Box(low=self._action_min, high=self._action_max, shape=(1,))

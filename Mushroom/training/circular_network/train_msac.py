@@ -6,7 +6,7 @@ from Mushroom.agents.sac import create_sac_agent
 from Mushroom.fluid_network_environments.circular_network import CircularFluidNetwork
 from Mushroom.multi_agent_core import MultiAgentCore
 from Mushroom.plotting import plot_training_data
-from Mushroom.utils import set_seed, grid_search
+from Mushroom.utils import set_seed, parametrized_training
 
 # PARAMS
 seed = 0
@@ -105,7 +105,7 @@ def train(p1, p2, seed, save_path):
 tuning_params1 = [True, False]
 tuning_params2 = [None]
 
-data, path = grid_search(
+data, path = parametrized_training(
     file_to_read_parameters_from=__file__,
     tuning_params1=tuning_params1,
     tuning_params2=tuning_params2,

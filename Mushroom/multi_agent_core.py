@@ -337,11 +337,10 @@ class MultiAgentCore(Core):
                 self._current_episodes_counter_per_agent += 1
                 episodes_progress_bar.update(1)
 
-            for idx_agent, dataset in enumerate(dataset_per_agent):
-                # TODO ?
-                s = list(sample)
-                s[1] = s[1][idx_agent]
-                dataset.append(tuple(s))
+            [
+                dataset.append(sample)
+                for idx_agent, dataset in enumerate(dataset_per_agent)
+            ]
 
             for idx_agent, fit_condition in enumerate(fit_condition_per_agent):
                 if fit_condition():

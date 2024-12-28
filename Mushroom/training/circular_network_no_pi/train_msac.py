@@ -6,14 +6,15 @@ from Mushroom.agents.sac import create_sac_agent
 from Mushroom.fluid_network_environments.circular_network_no_pi import CircularFluidNetworkWithoutPI
 from Mushroom.multi_agent_core import MultiAgentCore
 from Mushroom.plotting import plot_training_data
-from Mushroom.utils import set_seed, grid_search
+from Mushroom.utils import set_seed, parametrized_training
 
+# PARAMS
 seed = 0
 
 n_features_actor = 80
-lr_actor = 2e-5
+lr_actor = 2e-6
 n_features_critic = 80
-lr_critic = 4e-5
+lr_critic = 4e-6
 batch_size = 200
 initial_replay_size = 500
 max_replay_size = 10000
@@ -21,19 +22,20 @@ warmup_transitions = 0
 tau = 0.005
 lr_alpha = 0.001
 log_std_min = -20
-log_std_max = 2
+log_std_max = np.log(1)
 target_entropy = -5
 
 n_epochs = 30
 n_steps_learn = 400
 n_steps_eval = 600
 renders_on_completion = 50
+# END_PARAMS
 
 
 def train(p1, p2, seed, save_path):
     set_seed(seed)
 
-    mdp = CircularFluidNetworkWithoutPI(gamma=0.99, power_penalty=p1)
+    mdp = CircularFluidNetworkWithoutPI(gamma=0.99, power_penalty=0)
     agents = [
         create_sac_agent(
             mdp,
@@ -100,10 +102,11 @@ def train(p1, p2, seed, save_path):
     }
 
 
-tuning_params1 = [0]
+tuning_params1 = [None]
 tuning_params2 = [None]
 
-data, path = grid_search(
+data, path = parametrized_training(
+    __file__,
     tuning_params1=tuning_params1,
     tuning_params2=tuning_params2,
     seeds=[seed],

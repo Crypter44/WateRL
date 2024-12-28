@@ -7,7 +7,24 @@ from mushroom_rl.utils import spaces
 from Sofirpy.simulation import ManualStepSimulator
 
 
-class AbstractFluidNetworkEnv(Environment):
+class AbstractEnvironment(Environment):
+    def __init__(self, mdp_info: MDPInfo):
+        super().__init__(mdp_info)
+
+    def local_observation_space(self, agent_index: int):
+        if agent_index == -1:
+            return self._mdp_info.observation_space
+        else:
+            raise ValueError("Only one agent is supported in this environment.")
+
+    def local_action_space(self, agent_index: int):
+        if agent_index == -1:
+            return self._mdp_info.action_space
+        else:
+            raise ValueError("Only one agent is supported in this environment.")
+
+
+class AbstractFluidNetworkEnv(AbstractEnvironment):
     def __init__(
             self,
             observation_space: spaces.Box,
@@ -49,8 +66,4 @@ class AbstractFluidNetworkEnv(Environment):
 
     @abstractmethod
     def _get_current_state(self):
-        pass
-
-    @abstractmethod
-    def _reward_fun(self, state: np.ndarray, action: np.ndarray, new_state: np.ndarray):
         pass

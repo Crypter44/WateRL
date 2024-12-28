@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 
-from Sofirpy.networks.agents_shared_space import SharedSpace
+from Sofirpy.networks.agents_shared_space import SharedSpace, SharedSpaceWithoutPi
 from Sofirpy.simulation import SimulationEntityWithAction
 
 
@@ -127,7 +127,7 @@ class ControlApiCircularNoPI(ControlApiCircular):
             agent_config_json.close()
 
         # create multi-agent system
-        self.mas = SharedSpace(project_directory=self.project_dir)
+        self.mas = SharedSpaceWithoutPi(project_directory=self.project_dir)
         self.mas.add_agents_from_file(agents_config_data)
 
     def get_state(self):

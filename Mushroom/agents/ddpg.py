@@ -6,7 +6,7 @@ from mushroom_rl.utils.dataset import compute_metrics
 from torch import nn, optim
 from tqdm import tqdm
 
-from Mushroom.agents.sigma_decay_policies import OUPolicyWithNoiseDecay, UnivariateGaussianPolicy
+from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
 
 
 # Define the neural networks for the actor and the critic
@@ -31,8 +31,10 @@ class CriticNetwork(nn.Module):
 
     def forward(self, state, action):
         if self._agent_idx != -1:
-            state = state[self._agent_idx]
-            action = action[self._agent_idx]
+            if state.ndim == 3:
+                state = state[:, self._agent_idx, :]
+        if action.ndim == 3:
+            action = action[:, self._agent_idx, :]
         state_action = torch.cat((state.float(), action.float()), dim=1)
         features1 = F.relu(self._h1(state_action))
         features2 = F.relu(self._h2(features1))
@@ -45,13 +47,13 @@ class ActorNetwork(nn.Module):
     def __init__(self, input_shape, output_shape, n_features, agent_idx=-1, **kwargs):
         super(ActorNetwork, self).__init__()
 
-        n_input = input_shape[-1]
-        n_output = output_shape[0]
+        self._n_input = input_shape[-1]
+        self._n_output = output_shape[0]
 
         self._agent_idx = agent_idx
-        self._h1 = nn.Linear(n_input, n_features)
+        self._h1 = nn.Linear(self._n_input, n_features)
         self._h2 = nn.Linear(n_features, n_features)
-        self._h3 = nn.Linear(n_features, n_output)
+        self._h3 = nn.Linear(n_features, self._n_output)
 
         nn.init.xavier_uniform_(self._h1.weight,
                                 gain=nn.init.calculate_gain('relu'))
@@ -62,11 +64,14 @@ class ActorNetwork(nn.Module):
 
     def forward(self, state):
         if self._agent_idx != -1:
-            state = state[self._agent_idx]
-        features1 = F.relu(self._h1(torch.squeeze(state, 1).float()))
+            if state.ndim == 3:
+                state = state[:, self._agent_idx, :]
+        if self._n_input != 1:
+            state = torch.squeeze(state, 1)
+        features1 = F.relu(self._h1(state.float()))
         features2 = F.relu(self._h2(features1))
         a = F.sigmoid(self._h3(features2))
-        a = a * (self.mdp.info.action_space.high - self.mdp.info.action_space.low) + self.mdp.info.action_space.low
+        # a = a * (self.mdp.info.action_space.high - self.mdp.info.action_space.low) + self.mdp.info.action_space.low
 
         return a
 
@@ -89,7 +94,7 @@ def create_ddpg_agent(
         dt=1e-2
 ):
     # Approximator
-    actor_input_shape = mdp.info.observation_space.shape
+    actor_input_shape = mdp.local_observation_space(agent_idx).shape
     actor_params = dict(network=ActorNetwork,
                         n_features=n_features_actor,
                         input_shape=actor_input_shape,
@@ -99,7 +104,7 @@ def create_ddpg_agent(
     actor_optimizer = {'class': optim.Adam,
                        'params': {'lr': lr_actor}}  # not so big of a difference to critic
 
-    critic_input_shape = (actor_input_shape[0] + mdp.info.action_space.shape[0],)
+    critic_input_shape = (actor_input_shape[0] + mdp.local_action_space(agent_idx).shape[0],)
     critic_params = dict(network=CriticNetwork,
                          optimizer={'class': optim.Adam,
                                     'params': {'lr': lr_critic}},

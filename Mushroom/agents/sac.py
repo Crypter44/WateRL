@@ -13,6 +13,9 @@ class ActorMuNetwork(nn.Module):
     def __init__(self, input_shape, output_shape, n_features, log, agent_idx=-1, **kwargs, ):
         super(ActorMuNetwork, self).__init__()
 
+        self._n_input = input_shape[-1]
+        self._n_output = output_shape[0]
+
         self._agent_idx = agent_idx
         # Layers
         self.fc1 = nn.Linear(input_shape[-1], n_features)
@@ -36,7 +39,10 @@ class ActorMuNetwork(nn.Module):
 
     def forward(self, state):
         if self._agent_idx != -1:
-            state = state[self._agent_idx]
+            if state.ndim == 3:
+                state = state[:, self._agent_idx, :]
+        if self._n_input != 1:
+            state = torch.squeeze(state, 1)
         state = torch.squeeze(state, 1).float()
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
@@ -51,6 +57,9 @@ class ActorMuNetwork(nn.Module):
 class ActorSigmaNetwork(nn.Module):
     def __init__(self, input_shape, output_shape, n_features, log, agent_idx=-1, **kwargs):
         super(ActorSigmaNetwork, self).__init__()
+
+        self._n_input = input_shape[-1]
+        self._n_output = output_shape[0]
 
         self._agent_idx = agent_idx
         # Layers
@@ -76,8 +85,10 @@ class ActorSigmaNetwork(nn.Module):
 
     def forward(self, state):
         if self._agent_idx != -1:
-            state = state[self._agent_idx]
-        state = torch.squeeze(state, 1).float()
+            if state.ndim == 3:
+                state = state[:, self._agent_idx, :]
+        if self._n_input != 1:
+            state = torch.squeeze(state, 1)
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
         # we choose a linear activation function for sigma,
@@ -117,8 +128,10 @@ class CriticNetwork(nn.Module):
 
     def forward(self, state, action):
         if self._agent_idx != -1:
-            state = state[self._agent_idx]
-            action = action[self._agent_idx]
+            if state.ndim == 3:
+                state = state[:, self._agent_idx, :]
+        if action.ndim == 3:
+            action = action[:, self._agent_idx, :]
         x = torch.cat((state.float(), action.float()), 1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -150,8 +163,8 @@ def create_sac_agent(
     log_sigma = []
     actor_mu_params = dict(
         network=ActorMuNetwork,
-        input_shape=mdp.info.observation_space.shape,
-        output_shape=mdp.info.action_space.shape,
+        input_shape=mdp.local_observation_space_shape(agent_idx),
+        output_shape=mdp.local_action_space_shape(agent_idx),
         n_features=n_features_actor,
         log=log_mu,
         agent_idx=agent_idx,
@@ -159,8 +172,8 @@ def create_sac_agent(
 
     actor_sigma_params = dict(
         network=ActorSigmaNetwork,
-        input_shape=mdp.info.observation_space.shape,
-        output_shape=mdp.info.action_space.shape,
+        input_shape=mdp.local_observation_space_shape(agent_idx),
+        output_shape=mdp.local_action_space_shape(agent_idx),
         n_features=n_features_actor,
         log=log_sigma,
         agent_idx=agent_idx,
@@ -200,7 +213,7 @@ def create_sac_agent(
         log_std_max,
         target_entropy,
         critic_fit_params
-    ), log_mu, log_sigma
+    ), log_mu, log_sigma  # TODO find all usages and fix this
 
 
 def run_sac_training(
