@@ -3,18 +3,18 @@ from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
 from Mushroom.agents.sac import create_sac_agent
-from Mushroom.fluid_network_environments.circular_network import CircularFluidNetwork
-from Mushroom.multi_agent_core import MultiAgentCore
-from Mushroom.plotting import plot_training_data
-from Mushroom.utils import set_seed, parametrized_training
+from Mushroom.environments.fluid.circular_network_no_pi import CircularFluidNetworkWithoutPI
+from Mushroom.core.multi_agent_core import MultiAgentCore
+from Mushroom.utils.plotting import plot_training_data
+from Mushroom.utils.utils import set_seed, parametrized_training
 
 # PARAMS
 seed = 0
 
 n_features_actor = 80
-lr_actor = 1e-4
+lr_actor = 2e-6
 n_features_critic = 80
-lr_critic = 2e-4
+lr_critic = 4e-6
 batch_size = 200
 initial_replay_size = 500
 max_replay_size = 10000
@@ -22,20 +22,24 @@ warmup_transitions = 0
 tau = 0.005
 lr_alpha = 0.001
 log_std_min = -20
-log_std_max = np.log(2)
+log_std_max = np.log(1)
 target_entropy = -5
 
 n_epochs = 30
 n_steps_learn = 400
 n_steps_eval = 600
 renders_on_completion = 50
+
+criteria = {
+    "demand": 1.0,
+}
 # END_PARAMS
 
 
 def train(p1, p2, seed, save_path):
     set_seed(seed)
 
-    mdp = CircularFluidNetwork(gamma=0.99, power_penalty=1.0, penalize_negative_flow=p1)
+    mdp = CircularFluidNetworkWithoutPI(gamma=0.99, criteria=criteria)
     agents = [
         create_sac_agent(
             mdp,
@@ -52,7 +56,7 @@ def train(p1, p2, seed, save_path):
             log_std_min=log_std_min,
             log_std_max=log_std_max,
             target_entropy=target_entropy,
-        ) for _ in range(2)
+        ) for _ in range(6)
     ]
 
     core = MultiAgentCore(agent=agents, mdp=mdp)
@@ -69,13 +73,13 @@ def train(p1, p2, seed, save_path):
 
     core.learn(
         n_steps=initial_replay_size,
-        n_steps_per_fit_per_agent=[initial_replay_size, initial_replay_size],
+        n_steps_per_fit_per_agent=[initial_replay_size] * 6,
         quiet=True
     )
 
     epochbar = tqdm(range(n_epochs), unit='epoch', leave=False)
     for e in epochbar:
-        core.learn(n_steps=n_steps_learn, n_steps_per_fit_per_agent=[1, 1], quiet=True)
+        core.learn(n_steps=n_steps_learn, n_steps_per_fit_per_agent=[1] * 6, quiet=True)
 
         data.append(compute_metrics(core.evaluate(n_steps=n_steps_eval, render=False, quiet=True)))
 
@@ -102,16 +106,16 @@ def train(p1, p2, seed, save_path):
     }
 
 
-tuning_params1 = [True, False]
+tuning_params1 = [None]
 tuning_params2 = [None]
 
 data, path = parametrized_training(
-    file_to_read_parameters_from=__file__,
+    __file__,
     tuning_params1=tuning_params1,
     tuning_params2=tuning_params2,
     seeds=[seed],
     train=train,
-    base_path="Plots/SAC/",
+    base_path="Plots/SAC/"
 )
 
 plot_training_data(data, path, plot_additional_data=True)

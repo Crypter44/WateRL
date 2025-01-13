@@ -10,9 +10,6 @@ class ControlApiCircular(SimulationEntityWithAction):
     """This Class is used when generating the input values for the FMU.
 
     It connects the input and output values for the FMU to a custom code.
-
-    Args:
-        SimulationEntityWithAction: Abstract object representing a simulation entity that supports actions.
     """
 
     def __init__(self):

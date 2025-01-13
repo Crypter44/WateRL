@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from mushroom_rl.utils import spaces
 
-from Mushroom.fluid_network_environments.circular_network import CircularFluidNetwork
+from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
 from Sofirpy.networks.control_api import ControlApiCircularNoPI
 from Sofirpy.simulation import ManualStepSimulator
 

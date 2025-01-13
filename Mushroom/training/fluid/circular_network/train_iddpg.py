@@ -4,10 +4,10 @@ from tqdm import tqdm
 
 from Mushroom.agents.ddpg import create_ddpg_agent
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
-from Mushroom.fluid_network_environments.circular_network_no_pi import CircularFluidNetworkWithoutPI
-from Mushroom.multi_agent_core import MultiAgentCore
-from Mushroom.plotting import plot_training_data
-from Mushroom.utils import set_seed, parametrized_training
+from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
+from Mushroom.core.multi_agent_core import MultiAgentCore
+from Mushroom.utils.plotting import plot_training_data
+from Mushroom.utils.utils import set_seed, parametrized_training
 
 # PARAMS
 gamma = 0.99
@@ -27,17 +27,19 @@ sigma = 0.5
 target_sigma = 0.005
 sigma_transition_length = 30
 
-theta = 0.15
-dt = 1e-2
-
-n_epochs = 40
+n_epochs = 20
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
 
-num_agents = 4
+num_agents = 2
 power_penalty = 0.0
 
+criteria = {
+    "demand": 0.9,
+    "max_power": 0.1,
+    "negative_flow": 0.0
+}
 # END_PARAMS
 
 
@@ -45,7 +47,7 @@ power_penalty = 0.0
 def train(p1, p2, seed, save_path):
     set_seed(seed)
     # MDP
-    mdp = CircularFluidNetworkWithoutPI(gamma=gamma, power_penalty=0.0, penalize_negative_flow=False)
+    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria)
     agents = [create_ddpg_agent(
         mdp,
         agent_idx=i,
@@ -60,8 +62,6 @@ def train(p1, p2, seed, save_path):
         sigma=sigma,
         target_sigma=target_sigma,
         sigma_transition_length=sigma_transition_length,
-        theta=theta,
-        dt=dt,
     ) for i in range(num_agents)]
 
     # Core

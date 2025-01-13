@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mushroom_rl.utils import spaces
 
-from Mushroom.fluid_network_environments.fluid_network_environment import AbstractFluidNetworkEnv
+from Mushroom.environments.fluid.abstract_environments import AbstractFluidNetworkEnv
 from Sofirpy.simulation import SimulationEntityWithAction, ManualStepSimulator
 
 
@@ -12,9 +12,6 @@ class Controller(SimulationEntityWithAction):
     """This Class is used when generating the input values for the FMU.
 
     It connects the input and output values for the FMU to a custom code.
-
-    Args:
-        SimulationEntity: Abstract object representing a simuation entity
     """
 
     def __init__(self) -> None:
@@ -34,6 +31,7 @@ class Controller(SimulationEntityWithAction):
 
         Args:
             time (float): Simulated timestep
+            action (np.ndarray): Action to be taken by the FMU
 
         """
         self.outputs["w_v_2"] = float(action[0])

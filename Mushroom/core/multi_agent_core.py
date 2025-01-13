@@ -353,7 +353,6 @@ class MultiAgentCore(Core):
                             c(dataset_per_agent[0])
                     else:
                         pass
-                        # ToDo: Introduce callbacks for adversary (?)
                     dataset_per_agent[
                         idx_agent
                     ] = (

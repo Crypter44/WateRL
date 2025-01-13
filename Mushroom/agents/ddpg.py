@@ -1,3 +1,6 @@
+import inspect
+import json
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -90,15 +93,14 @@ def create_ddpg_agent(
         sigma=0.2,
         target_sigma=0.001,
         sigma_transition_length=1,
-        theta=0.15,
-        dt=1e-2
+        save_path=None,
 ):
     # Approximator
     actor_input_shape = mdp.local_observation_space(agent_idx).shape
     actor_params = dict(network=ActorNetwork,
                         n_features=n_features_actor,
                         input_shape=actor_input_shape,
-                        output_shape=mdp.info.action_space.shape,
+                        output_shape=mdp.info.action_space_for_idx(-1).shape,
                         agent_idx=agent_idx)
 
     actor_optimizer = {'class': optim.Adam,
@@ -114,15 +116,16 @@ def create_ddpg_agent(
                          output_shape=(1,),
                          agent_idx=agent_idx)
 
-    # Policy
-    # policy_class = OUPolicyWithNoiseDecay
-    # policy_params = dict(initial_sigma=sigma, target_sigma=target_sigma,
-    #                      updates_till_target_reached=sigma_transition_length,
-    #                      theta=theta, dt=dt)
-
     policy_class = UnivariateGaussianPolicy
     policy_params = dict(initial_sigma=sigma, target_sigma=target_sigma,
                          updates_till_target_reached=sigma_transition_length)
+
+    if save_path is not None:
+        with open(save_path + f"Agent_{agent_idx}.json", "w") as f:
+            frame = inspect.currentframe()
+            args_as_dict = inspect.getargvalues(frame).locals
+            del args_as_dict['frame']  # Avoid including the frame reference
+            json.dump({key: str(value) for key, value in args_as_dict.items()}, f, indent=4,)
 
     # Agent
     return DDPG(mdp.info, policy_class, policy_params,

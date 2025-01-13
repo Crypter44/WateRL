@@ -4,9 +4,9 @@ from mushroom_rl.environments import DMControl
 from tqdm import tqdm
 
 from Mushroom.agents.ddpg import create_ddpg_agent, run_ddpg_training
-from Mushroom.better_mujoco_core import BetterMujocoCore
-from Mushroom.utils import plot
-from Mushroom.utils import set_seed
+from Mushroom.core.better_mujoco_core import BetterMujocoCore
+from Mushroom.utils.utils import plot
+from Mushroom.utils.utils import set_seed
 
 # Parametrization
 seeds = [1234, 2345]
@@ -69,8 +69,6 @@ for p1 in tuning_params1:
                 max_replay_size=max_replay_size,
                 tau=tau,
                 sigma=sigma,
-                theta=theta,
-                dt=dt,
             )
 
             # Core
@@ -101,4 +99,4 @@ pbar.close()
 print(f"Training took {time.time() - t:.2f} seconds")
 
 # Plot the results
-plot(tuning_params1, tuning_params2, seeds, data, False)
+plot(tuning_params1, tuning_params2, seeds, data)  # TODO fix plotting

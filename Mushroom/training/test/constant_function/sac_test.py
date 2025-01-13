@@ -6,9 +6,9 @@ from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
 from Mushroom.agents.sac import create_sac_agent
-from Mushroom.plotting import plot_training_data
-from Mushroom.training.constant_function.constant_value_env import ConstantValueEnv
-from Mushroom.utils import set_seed, parametrized_training
+from Mushroom.utils.plotting import plot_training_data
+from Mushroom.environments.test.constant_value_env import ConstantValueEnv
+from Mushroom.utils.utils import set_seed, parametrized_training
 
 # PARAMS
 n_features_actor = 80

@@ -1,9 +1,9 @@
 from mushroom_rl.core import Core
 
 from Mushroom.agents.ddpg import create_ddpg_agent, run_ddpg_training
-from Mushroom.fluid_network_environments.simple_network_valve import SimpleNetworkValve
-from Mushroom.utils import plot
-from Mushroom.utils import set_seed
+from Mushroom.environments.fluid.simple_network_valve import SimpleNetworkValve
+from Mushroom.utils.utils import plot
+from Mushroom.utils.utils import set_seed
 
 # Parametrization
 seeds = [4403, 2003, 2024, 5264]

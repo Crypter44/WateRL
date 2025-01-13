@@ -2,9 +2,9 @@ from mushroom_rl.core import Core
 from tqdm import tqdm
 
 from Mushroom.agents.sac import create_sac_agent, run_sac_training
-from Mushroom.fluid_network_environments.simple_network_valve import SimpleNetworkValve
-from Mushroom.utils import plot
-from Mushroom.utils import set_seed
+from Mushroom.environments.fluid.simple_network_valve import SimpleNetworkValve
+from Mushroom.utils.utils import plot
+from Mushroom.utils.utils import set_seed
 
 # Parametrization
 seeds = [3, 33]

@@ -6,12 +6,12 @@ from mushroom_rl.core import Core
 from mushroom_rl.utils.dataset import compute_J
 from tqdm import tqdm
 
-from Mushroom.fluid_network_environments.simple_network_valve import SimpleNetworkValve
-from Mushroom.utils import set_seed
+from Mushroom.environments.fluid.simple_network_valve import SimpleNetworkValve
+from Mushroom.utils.utils import set_seed
 
 scores = {}
 
-path = f"/home/js/PycharmProjects/Thesis/Mushroom/training/simple_network_valve/weights/"
+path = f"/home/js/PycharmProjects/Thesis/Mushroom/training/fluid/simple_network_valve/weights/"
 mdp = SimpleNetworkValve(gamma=0.99, horizon=100)
 
 files = os.listdir(path)

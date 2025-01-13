@@ -61,7 +61,7 @@ class ConsumerAgent(Agent):
     """ValveAgent implements methods from abstract class Agent to provide functionality for Valves.
 
     Args:
-        Agent (Agent): Base class for agents.
+        agent_config (AgentConfig): Data class with all the information required to instantiate the agents.
     """
 
     def __init__(self, agent_config: "AgentConfig"):
@@ -71,8 +71,8 @@ class ConsumerAgent(Agent):
             agent_config (AgentConfig):  Data class with all the information required to instantiate the agents.
         """
         super().__init__(agent_config, agent_type="consumer")
-        self.demand_volume_flow_m3h = 0  # agent's demand in m^3/h
-        self.demand_volume_flow_m3h = np.random.uniform(0.1, 0.8)  # agent's demand in m^3/h
+        # self.demand_volume_flow_m3h = 0.4  # agent's demand in m^3/h
+        self.demand_volume_flow_m3h = np.random.uniform(0.4, 1.5)  # agent's demand in m^3/h
         self.output_to_FMU[list(self.output_to_FMU.keys())[1]] = self.demand_volume_flow_m3h
         self.volume_flow_m3h_to_PI = 0  # Volume flow in m^3/h, which is transferred to the local PI as a setpoint
         self.measured_delta_pressure_bar = (
@@ -124,7 +124,7 @@ class PumpAgent(Agent):
     """PumpAgent implements methods from abstract class Agent to provide functionality for Pumps.
 
     Args:
-        Agent (Agent): Base class for agents.
+        agent_config (AgentConfig): Data class with all the information required to instantiate the agents.
     """
 
     def __init__(self, agent_config: "AgentConfig"):

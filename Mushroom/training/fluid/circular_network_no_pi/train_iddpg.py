@@ -1,21 +1,20 @@
 import numpy as np
-from mushroom_rl.core import Core
 from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
 from Mushroom.agents.ddpg import create_ddpg_agent
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
-from Mushroom.multi_agent_core import MultiAgentCore
-from Mushroom.plotting import plot_training_data
-from Mushroom.training.constant_function.constant_value_env import ConstantValueEnv
-from Mushroom.utils import parametrized_training, set_seed
+from Mushroom.environments.fluid.circular_network_no_pi import CircularFluidNetworkWithoutPI
+from Mushroom.core.multi_agent_core import MultiAgentCore
+from Mushroom.utils.plotting import plot_training_data
+from Mushroom.utils.utils import set_seed, parametrized_training
 
 # PARAMS
 gamma = 0.99
 gamma_eval = 1.
 
-lr_actor = 5e-4
-lr_critic = 1e-3
+lr_actor = 5e-5
+lr_critic = 1e-4
 
 initial_replay_size = 500
 max_replay_size = 5000
@@ -25,54 +24,39 @@ n_features = 80
 tau = .005
 
 sigma = 0.5
-target_sigma = 0.2
-sigma_transition_length = 20
+target_sigma = 0.005
+sigma_transition_length = 30
 
 theta = 0.15
 dt = 1e-2
 
-n_epochs = 30
+n_epochs = 40
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
-num_agents = 2
 
+num_agents = 4
+power_penalty = 0.0
 
-def reward_fn(action):
-    f = np.sin(10 * action ** 2) * action ** 3 + -0.00848
-    # r = -np.abs(f - value) * 10
-    r = np.exp(-15 * (np.sum(np.abs(f - value))) ** 2)
-    return r
-
-
-value = .7
-state_length = 1
-start_state = np.array([0] * state_length)
-steps_until_state_change = 12
-reset_to_start_state = True
-
+criteria = {
+    "demand": 1.0,
+}
 
 # END_PARAMS
 
 
+# create a dictionary to store data for each seed
 def train(p1, p2, seed, save_path):
     set_seed(seed)
-    mdp = ConstantValueEnv(
-        value,
-        reward_fn=reward_fn,
-        start_state=start_state,
-        steps_until_state_change=steps_until_state_change,
-        reset_to_start=reset_to_start_state,
-        num_agents=num_agents,
-        state_length=state_length,
-    )
-    agent = [create_ddpg_agent(
+    # MDP
+    mdp = CircularFluidNetworkWithoutPI(gamma=gamma, criteria=criteria)
+    agents = [create_ddpg_agent(
         mdp,
         agent_idx=i,
         n_features_actor=n_features,
         lr_actor=lr_actor,
         n_features_critic=n_features,
-        lr_critic=lr_critic,
+        lr_critic=lr_actor,
         batch_size=batch_size,
         initial_replay_size=initial_replay_size,
         max_replay_size=max_replay_size,
@@ -83,11 +67,13 @@ def train(p1, p2, seed, save_path):
         theta=theta,
         dt=dt,
     ) for i in range(num_agents)]
-    core = MultiAgentCore(agent=agent, mdp=mdp)
+
+    # Core
+    core = MultiAgentCore(agent=agents, mdp=mdp)
 
     core.learn(
         n_steps=initial_replay_size,
-        n_steps_per_fit_per_agent=[initial_replay_size] * num_agents,
+        n_steps_per_fit_per_agent=[initial_replay_size]*num_agents,
         quiet=True
     )
     data = [compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True), gamma_eval)]
@@ -95,25 +81,33 @@ def train(p1, p2, seed, save_path):
 
     pbar = tqdm(range(n_epochs), unit='epoch', leave=False)
     for n in pbar:
-        core.learn(n_steps=n_steps_learn, n_steps_per_fit_per_agent=[n_steps_per_fit] * num_agents, quiet=True)
+        core.learn(
+            n_steps=n_steps_learn,
+            n_steps_per_fit_per_agent=[n_steps_per_fit]*num_agents,
+            quiet=True
+        )
 
-        dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
-        core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noise")
+        core.evaluate(n_steps=200, render=False, quiet=True)
+        core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
         set_noise_for_all(core.agent, False)
         dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
-        core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
-        data.append(compute_metrics(dataset, gamma_eval))
         set_noise_for_all(core.agent, True)
+        core.mdp.render(save_path=save_path + f"Epoch_{n+1}")
 
-        if n > 9:
-            update_sigma_for_all(core.agent)
+        data.append(compute_metrics(dataset, gamma_eval))
+        pbar.set_postfix(
+            MinMaxMean=np.round(data[-1][0:3], 2),
+            sigma=np.round(core.agent[0].policy._sigma, 2)
+        )
+
+        update_sigma_for_all(agents)
 
     set_noise_for_all(core.agent, False)
-    for i in range(1):
+    for i in range(50):
         core.evaluate(n_episodes=1, quiet=True)
         core.mdp.render(save_path=save_path + f"Final_{i}")
 
-    return {"metrics": np.array(data[:]), "additional_data": {}}
+    return {"metrics": np.array(data), "additional_data": {}}
 
 
 training_data, path = parametrized_training(
@@ -122,7 +116,7 @@ training_data, path = parametrized_training(
     [None],
     [0],
     train=train,
-    base_path="./Plots/DDPG/"
+    base_path="./Plots/DDPG/",
 )
 
 plot_training_data(training_data, path)

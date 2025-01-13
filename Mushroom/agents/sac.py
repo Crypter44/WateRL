@@ -89,7 +89,7 @@ class ActorSigmaNetwork(nn.Module):
                 state = state[:, self._agent_idx, :]
         if self._n_input != 1:
             state = torch.squeeze(state, 1)
-        x = F.relu(self.fc1(state))
+        x = F.relu(self.fc1(state.float()))
         x = F.relu(self.fc2(x))
         # we choose a linear activation function for sigma,
         # since the output is considered as the log of the variance,
@@ -128,6 +128,9 @@ class CriticNetwork(nn.Module):
 
     def forward(self, state, action):
         if self._agent_idx != -1:
+            # TODO splitting by agent idx is not supported by sac
+            # Sac cannot accept a list here, so either it needs to be an nd array
+            # or the state needs to be split externally
             if state.ndim == 3:
                 state = state[:, self._agent_idx, :]
         if action.ndim == 3:
@@ -158,13 +161,12 @@ def create_sac_agent(
         target_entropy=None,
         critic_fit_params=None
 ):
-
     log_mu = []
     log_sigma = []
     actor_mu_params = dict(
         network=ActorMuNetwork,
-        input_shape=mdp.local_observation_space_shape(agent_idx),
-        output_shape=mdp.local_action_space_shape(agent_idx),
+        input_shape=mdp.local_observation_space(agent_idx).shape,
+        output_shape=mdp.local_action_space(agent_idx).shape,
         n_features=n_features_actor,
         log=log_mu,
         agent_idx=agent_idx,
@@ -172,8 +174,8 @@ def create_sac_agent(
 
     actor_sigma_params = dict(
         network=ActorSigmaNetwork,
-        input_shape=mdp.local_observation_space_shape(agent_idx),
-        output_shape=mdp.local_action_space_shape(agent_idx),
+        input_shape=mdp.local_observation_space(agent_idx).shape,
+        output_shape=mdp.local_action_space(agent_idx).shape,
         n_features=n_features_actor,
         log=log_sigma,
         agent_idx=agent_idx,
@@ -186,7 +188,8 @@ def create_sac_agent(
 
     critic_params = {
         'network': CriticNetwork,
-        'input_shape': (mdp.info.observation_space.shape[0] + mdp.info.action_space.shape[0],),
+        'input_shape': (
+        mdp.info.observation_space_for_idx(agent_idx).shape[0] + mdp.info.action_space_for_idx(agent_idx).shape[0],),
         'output_shape': (1,),
         'n_features': n_features_critic,
         'optimizer': {
@@ -238,11 +241,11 @@ def run_sac_training(
             core.learn(n_steps=n_steps_learn, n_steps_per_fit=n_steps_per_fit, quiet=True)
             data.append(compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True)))
 
-            if record and (n+1) % record_every == 0:
+            if record and (n + 1) % record_every == 0:
                 for i in range(n_recordings):
                     core.evaluate(n_episodes=1, quiet=True)
-                    core.mdp.render(f"Epo {n+1} - Eval {i+1}{record_postfix}")
-                core.agent.save(f"weights/sac_agent_epo_{n+1}{record_postfix.replace(' ', '')}")
+                    core.mdp.render(f"Epo {n + 1} - Eval {i + 1}{record_postfix}")
+                core.agent.save(f"weights/sac_agent_epo_{n + 1}{record_postfix.replace(' ', '')}")
 
             progressbar.set_postfix(MinMaxMean=np.round(data[-1][:3], 2))
 

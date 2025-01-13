@@ -4,7 +4,7 @@ import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Mushroom.fluid_network_environments.simple_network_valve import fmu_paths, model_classes, connections_config, \
+from Mushroom.environments.fluid.simple_network_valve import fmu_paths, model_classes, connections_config, \
     parameters_to_log
 from Sofirpy.simulation import ManualStepSimulator
 

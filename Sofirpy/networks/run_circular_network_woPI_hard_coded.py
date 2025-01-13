@@ -147,9 +147,6 @@ class Controler(SimulationEntity):
     """This Class is used when generating the input values for the FMU.
 
     It connects the input and output values for the FMU to a custom code.
-
-    Args:
-        SimulationEntity: Abstract object representing a simuation entity
     """
 
     def __init__(self) -> None:
@@ -170,12 +167,12 @@ class Controler(SimulationEntity):
             "p_rel_6": 0.0,
         }
         self.outputs = {
-            "w_p_1": 0,
-            "w_v_2": 0,
-            "w_v_3": 0,
-            "w_p_4": 0,
-            "w_v_5": 0,
-            "w_v_6": 0,
+            "w_p_1": 0.0,
+            "w_v_2": 0.0,
+            "w_v_3": 0.0,
+            "w_p_4": 0.0,
+            "w_v_5": 0.0,
+            "w_v_6": 0.0,
         }  # rotational speed at the pump
         self.requested_volume_flow = 0.0  # setpoint for volume flow at valve
         self.error_flow = 0.0

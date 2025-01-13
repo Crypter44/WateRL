@@ -1,9 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from mushroom_rl.core import MDPInfo
 from mushroom_rl.utils import spaces
 
-from Mushroom.fluid_network_environments.fluid_network_environment import AbstractEnvironment
+from Mushroom.environments.fluid.abstract_environments import AbstractEnvironment
+from Mushroom.environments.mdp_info import MAMDPInfo
 
 
 class ConstantValueEnv(AbstractEnvironment):
@@ -38,9 +38,11 @@ class ConstantValueEnv(AbstractEnvironment):
 
         observation_space = spaces.Box(low=state_min, high=state_max, shape=(self._state_length,))
         action_space = spaces.Box(low=action_min, high=action_max, shape=(1,))
-        mdp_info = MDPInfo(
-            observation_space,
-            action_space,
+        mdp_info = MAMDPInfo(
+            [observation_space],
+            [observation_space],
+            [action_space],
+            False,
             .99,
             10
         )
@@ -61,7 +63,9 @@ class ConstantValueEnv(AbstractEnvironment):
             self._state = np.random.uniform(self._state_min, self._state_max, self._state_length)
         self._state_log = [self._state]
         self._action_log = []
-        return self._state.repeat(2).reshape((2, self._state_length))
+        if self._num_agents == 1:
+            return self._state
+        return self._state.repeat(self._num_agents).reshape((self._num_agents, self._state_length))
 
     def step(self, action):
         action = np.clip(action, self._action_min, self._action_max)
@@ -70,20 +74,22 @@ class ConstantValueEnv(AbstractEnvironment):
         self._state_log.append(self._state)
         self._action_log.append(action)
         reward = self._reward_fn(action)
-        return self._state.repeat(2).reshape((2, self._state_length)), reward, False, {}
+        if self._num_agents == 1:
+            return self._state, reward, False, {}
+        return self._state.repeat(self._num_agents).reshape((self._num_agents, self._state_length)), reward, False, {}
 
     def render(self, save_path=None):
         fig, ax = plt.subplots(1, 3, figsize=(18, 6))
 
         state_plot = ax[0]
         state_plot.set_title("State")
-        state_plot.set_ylim((self._state_min-0.25, self._state_max+0.25))
+        state_plot.set_ylim((self._state_min - 0.25, self._state_max + 0.25))
         for i in range(self._state_length):
             state_plot.plot([s[i] for s in self._state_log])
 
         action_plot = ax[1]
         action_plot.set_title("Action")
-        action_plot.set_ylim((self._action_min-0.25, self._action_max+0.25))
+        action_plot.set_ylim((self._action_min - 0.25, self._action_max + 0.25))
         for i in range(self._num_agents):
             action_plot.plot([a[i] for a in self._action_log], alpha=0.5)
 
@@ -92,8 +98,10 @@ class ConstantValueEnv(AbstractEnvironment):
             max_action = max(float(a[i]) for a in self._action_log)
 
             # Add labels for min and max
-            action_plot.text(np.argmin(self._action_log), min_action - 0.05, f'{min_action:.3f}', color='green', va='center', ha='right')
-            action_plot.text(np.argmax(self._action_log), max_action + 0.05, f'{max_action:.3f}', color='red', va='center', ha='right')
+            action_plot.text(np.argmin(self._action_log), min_action - 0.05, f'{min_action:.3f}', color='green',
+                             va='center', ha='right')
+            action_plot.text(np.argmax(self._action_log), max_action + 0.05, f'{max_action:.3f}', color='red',
+                             va='center', ha='right')
 
         reward_plot = ax[2]
         reward_plot.set_title("Reward")

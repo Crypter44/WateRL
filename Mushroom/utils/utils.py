@@ -1,14 +1,14 @@
 import os
 import random
+from datetime import datetime
 from typing import Callable
 
 import numpy as np
 import torch
-from datetime import datetime
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from Mushroom.plotting import _plot_metrics_to_ax
+from Mushroom.utils.plotting import _plot_metrics_to_ax
 
 
 def set_seed(seed: int):
@@ -74,6 +74,9 @@ def parametrized_training(
         train: Callable,
         base_path,
 ):
+    print("You are using parametrized training!\n"
+          "This is a friendly reminder to make sure "
+          "that the parameters are actually used (correctly) by the train function!")
     data = {}
     base_path += datetime.now().strftime("%y-%m-%d__%H:%M/")
 
@@ -101,3 +104,64 @@ def parametrized_training(
                 data[p1][p2][seed] = train(p1, p2, seed, path)
             experiment_bar.update()
     return data, base_path
+
+
+def compute_metrics_with_labeled_dataset(dataset, gamma=1.):
+    """
+    Compute the metrics of each complete episode in the dataset.
+
+    Args:
+        dataset (list): the dataset to consider;
+        gamma (float, 1.): the discount factor.
+
+    Returns:
+        The minimum score reached in an episode,
+        the maximum score reached in an episode,
+        the mean score reached,
+        the median score reached,
+        the number of completed episodes.
+
+        If no episode has been completed, it returns 0 for all values.
+
+    """
+    for i in reversed(range(len(dataset))):
+        if dataset[i]["last"]:
+            i += 1
+            break
+
+    dataset = dataset[:i]
+
+    if len(dataset) > 0:
+        J = compute_J_with_labeled_dataset(dataset, gamma)
+        return np.min(J), np.max(J), np.mean(J), np.median(J), len(J)
+    else:
+        return 0, 0, 0, 0, 0
+
+
+def compute_J_with_labeled_dataset(dataset, gamma=1.):
+    """
+    Compute the cumulative discounted reward of each episode in the dataset.
+
+    Args:
+        dataset (list): the dataset to consider;
+        gamma (float, 1.): discount factor.
+
+    Returns:
+        The cumulative discounted reward of each episode in the dataset.
+
+    """
+    js = list()
+
+    j = 0.
+    episode_steps = 0
+    for i in range(len(dataset)):
+        j += gamma ** episode_steps * dataset[i]["rewards"]
+        episode_steps += 1
+        if dataset[i]["last"] or i == len(dataset) - 1:
+            js.append(j)
+            j = 0.
+            episode_steps = 0
+
+    if len(js) == 0:
+        return [0.]
+    return js

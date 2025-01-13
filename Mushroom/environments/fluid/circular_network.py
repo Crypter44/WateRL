@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mushroom_rl.utils import spaces
 
-from Mushroom.fluid_network_environments.fluid_network_environment import AbstractFluidNetworkEnv
+from Mushroom.environments.fluid.abstract_environments import AbstractFluidNetworkEnv
 from Sofirpy.networks.control_api import ControlApiCircular
 from Sofirpy.simulation import ManualStepSimulator
 
-working_dir = Path(__file__).parent.parent.parent
+working_dir = Path(__file__).parent.parent.parent.parent
 
 fmu_dir_path = working_dir / "Fluid_Model" / "circular_water_network"
 
@@ -35,10 +35,8 @@ with open(logging_config_path) as logging_config_json:
 class CircularFluidNetwork(AbstractFluidNetworkEnv):
     def __init__(
             self,
-            # 4 demands of the network, 4 resulting volume flows
-            observation_space=spaces.Box(low=-10, high=10, shape=(8,)),
-            # 2 rotational speeds of the pumps
-            action_space=spaces.Box(low=0, high=1, shape=(1,)),
+            observation_spaces=None,
+            action_spaces=None,
             fluid_network_simulator=ManualStepSimulator(
                 stop_time=200,
                 step_size=1,
@@ -52,20 +50,31 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             ),
             horizon=200,
             gamma: float = 0.99,
-            power_penalty: float = 0.01,
-            penalize_negative_flow: bool = False,
+            criteria: dict = None,
+            labeled_step: bool = False,
     ):
         super().__init__(
-            observation_space=observation_space,
-            action_space=action_space,
+            state_space=spaces.Box(low=-500, high=500, shape=(18,)),
+            observation_spaces=(
+                observation_spaces
+                if observation_spaces is not None
+                else [spaces.Box(low=-10, high=10, shape=(4,))]
+            ),
+            action_spaces=(
+                action_spaces
+                if action_spaces is not None
+                else [spaces.Box(low=0, high=1, shape=(1,))]
+            ),
             fluid_network_simulator=fluid_network_simulator,
             horizon=horizon,
             gamma=gamma,
+            labeled_step=labeled_step,
+            n_agents=2,
         )
-        self._power_penalty = power_penalty
-        self._penalize_negative_flow = penalize_negative_flow
+        self._criteria = criteria if criteria is not None else {"demand": 1}
         self._current_simulation_state = None
         self.actions = []
+        self.rewards = []
 
     def render(self, title=None, save_path=None):
         results = self.sim.get_results()
@@ -82,37 +91,39 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
             pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
             title=title,
-            save_path=save_path
+            save_path=save_path,
+            rewards=self.rewards,
         )
 
     def step(self, action):
         # clip action to action space
-        action = np.clip(action, self._mdp_info.action_space.low, self._mdp_info.action_space.high)
+        action = np.clip(action, self._mdp_info.action_space_for_idx(0).low, self._mdp_info.action_space_for_idx(0).high)
         simulation_states = []
         for i in range(10):  # simulate 10 time steps, to the next control step
             self.sim.do_simulation_step(action)
-            simulation_states.append(self._get_current_simulation_state())  # save each sim state to calculate reward
+            simulation_states.append(self._get_current_state())  # save each sim state to calculate reward
 
         # calculate reward based on how the network behaved during two control steps
         reward = self._reward_fun(self._current_state, action, simulation_states)
 
-        self._current_simulation_state = simulation_states[-1]
         self._current_state, absorbing = self._get_current_state()
         self.actions.append(action)
-        return self._current_state, reward, absorbing, {}
+        self.rewards.append(reward)
+
+        step = {
+            "state": self._current_state,
+            "obs": self._get_observations(),
+            "rewards": reward,
+            "absorbing": absorbing,
+        }
+        return step if self.labeled_step else (self._get_observations(), reward, absorbing, {})
 
     def reset(self, state=None):
         self.actions = []
+        self.rewards = []
         return super().reset(state)
 
     def _get_current_state(self):
-        """
-        Return the observable state of the environment.
-        """
-        state, absorbing = self._get_current_simulation_state()
-        return state[:8], absorbing
-
-    def _get_current_simulation_state(self):
         """
         Return the current state of the simulation, even if it is not observable.
         """
@@ -122,6 +133,9 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             return np.array(controller_state), done
         except KeyError:
             raise KeyError("The key 'control_api' was not found in the global state.")
+
+    def _get_observations(self):
+        return [self._current_state[:4] for _ in range(self._mdp_info.n_agents)]
 
     def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
         return self._bound_reward(state, action, sim_states)
@@ -138,16 +152,10 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         return reward
 
     def _bound_reward(self, state: np.ndarray, action: np.ndarray, sim_states: list):
-        def r_deviation(d):
-            # return -d ** 2 / 1.3 ** 2 + 1
-            # return 0.9 * np.exp(-40*d**2) + 0.1 * np.exp(-2*d**2)
-            # return np.exp(-500 * (d - .1) ** 2)
-            # return np.exp(-250 * d ** 2)
-            # return np.exp(-10 * np.abs(d))
+        def r_demand(d):
             smoothness = 0.0001
-
-            bound = 0.05
-            value_at_bound = 0.1
+            bound = 0.2
+            value_at_bound = 0.01
 
             b = np.log(value_at_bound) / (np.sqrt(smoothness) - np.sqrt(smoothness + bound ** 2))
             a = np.exp(b * np.sqrt(smoothness))
@@ -156,37 +164,37 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
 
         def r_power(p):
             return 1 / 187 * (193 - p)
-            #
-            # b = 0.005
-            # a = 1 / (np.exp(-6 * b) - np.exp(-193 * b))
-            # c = -a * np.exp(-193 * b)
-            # return a * np.exp(-b * p) + c
 
         # return -(abs(0.25 - float(action[2]))) * 10
         num_valves = 4
 
         reward = 0
-        sim_states_to_use = sim_states[:]
+        sim_states_to_use = sim_states[-1:]
         for s, _ in sim_states_to_use:
             tmp = 0
-            for i in range(num_valves):
-                tmp += (
-                        1 / num_valves
-                        * 1 / len(sim_states_to_use)
-                        * (1 - self._power_penalty)
-                        * r_deviation(s[i] - s[i + 4])
-                )
 
-            tmp += 0.5 * self._power_penalty * (r_power(s[16]))  # TODO change to actual power draw, if sim is fixed
-            tmp += 0.5 * self._power_penalty * (r_power(s[17]))  # TODO change to actual power draw, if sim is fixed
+            if "demand" in self._criteria.keys():
+                for i in range(num_valves):
+                    tmp += (
+                            1 / num_valves
+                            * self._criteria["demand"]
+                            * r_demand(s[i] - s[i + 4])
+                    )
+            if "max_power" in self._criteria.keys():
+                tmp += self._criteria["max_power"] * min(r_power(s[16]), r_power(s[17]))
+            if "mean_power" in self._criteria.keys():
+                tmp += self._criteria["mean_power"] * (r_power(s[16]) + r_power(s[17])) / 2
+            if "opening" in self._criteria.keys():
+                tmp += self._criteria["opening"] * max(s[8], s[9], s[10], s[11])
+            if "max_speed" in self._criteria.keys():
+                tmp += self._criteria["max_speed"] * min(1 - s[12], 1 - s[13])
+            if "mean_speed" in self._criteria.keys():
+                tmp += self._criteria["mean_speed"] * (2 - s[12] - s[13]) / 2
+            if "negative_flow" in self._criteria.keys():
+                if s[14] < 0 or s[15] < 0:
+                    tmp -= self._criteria["negative_flow"]
 
-            # tmp += 0.5 * self._power_penalty * (1-s[12])
-            # tmp += 0.5 * self._power_penalty * (1-s[13])
-
-            if self._penalize_negative_flow and (s[14] < 0 or s[15] < 0):
-                return -10
-
-            reward += tmp
+            reward += tmp / len(sim_states_to_use)
 
         return reward
 
@@ -202,6 +210,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pump_powers,
             pump_flows,
             pump_actions=None,
+            rewards=None,
             title=None,
             save_path=None
     ):
@@ -333,4 +342,30 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             fig.show()
         else:
             fig.savefig(save_path + ".png")
+        plt.close(fig)
+
+        if rewards is not None:
+            fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+            ax.plot(rewards)
+            ax.set_xlabel("Action step")
+            ax.set_ylabel("Reward")
+            ax.set_ylim(-1, 1.5)
+            ax.set_xticks(range(0, len(rewards), 1))
+            ax.grid(True)
+            fig.suptitle(title)
+
+            # plot min and max line with value
+            min_reward = np.min(rewards)
+            max_reward = np.max(rewards)
+            ax.text(0, min_reward, f'{min_reward:.2f}', color='green', fontsize=10, ha='center', va='bottom')
+            ax.text(0, max_reward, f'{max_reward:.2f}', color='red', fontsize=10, ha='center', va='top')
+            ax.plot(range(0, len(rewards), 1), [min_reward] * len(rewards), color='green', linestyle='--', linewidth=1)
+            ax.plot(range(0, len(rewards), 1), [max_reward] * len(rewards), color='red', linestyle='--', linewidth=1)
+
+            if save_path is None:
+                fig.show()
+            else:
+                path = str.replace(save_path, "Epoch", "Epoch_rewards")
+                path = str.replace(path, "Final", "Final_rewards")
+                fig.savefig(path + ".png")
             plt.close(fig)

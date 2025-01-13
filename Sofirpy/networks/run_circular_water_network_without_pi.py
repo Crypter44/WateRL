@@ -1,9 +1,8 @@
 # import
-import matplotlib.pyplot as plt
 import numpy as np
 
-from Mushroom.fluid_network_environments.circular_network import CircularFluidNetwork
-from Mushroom.fluid_network_environments.circular_network_no_pi import fmu_paths, model_classes, connections_config, \
+from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
+from Mushroom.environments.fluid.circular_network_no_pi import fmu_paths, model_classes, connections_config, \
     parameters_to_log
 from Sofirpy.simulation import ManualStepSimulator
 

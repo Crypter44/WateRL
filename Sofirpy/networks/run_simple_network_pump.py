@@ -70,9 +70,6 @@ class Controler(SimulationEntity):
     """This Class is used when generating the input values for the FMU.
 
     It connects the input and output values for the FMU to a custom code.
-
-    Args:
-        SimulationEntity: Abstract object representing a simuation entity
     """
 
     def __init__(self) -> None:

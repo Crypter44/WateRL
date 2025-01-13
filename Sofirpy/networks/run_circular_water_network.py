@@ -3,7 +3,7 @@ import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Mushroom.fluid_network_environments.circular_network import fmu_paths, model_classes, connections_config, \
+from Mushroom.environments.fluid.circular_network import fmu_paths, model_classes, connections_config, \
     parameters_to_log, CircularFluidNetwork
 from Sofirpy.simulation import ManualStepSimulator
 
@@ -19,7 +19,7 @@ sim = ManualStepSimulator(
     verbose=True,
 )
 
-speeds = np.array([1.0, 1.0])
+speeds = np.array([0.45, 0.45])
 c = 0
 while not sim.is_done():
     sim.do_simulation_step(speeds)

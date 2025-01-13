@@ -1,20 +1,19 @@
 import numpy as np
-from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
-from Mushroom.agents.ddpg import create_ddpg_agent
+from Mushroom.agents.facmac import setup_facmac_agents
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
-from Mushroom.fluid_network_environments.circular_network import CircularFluidNetwork
-from Mushroom.multi_agent_core import MultiAgentCore
-from Mushroom.plotting import plot_training_data
-from Mushroom.utils import set_seed, parametrized_training
+from Mushroom.core.multi_agent_core_mixer import MultiAgentCoreMixer
+from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
+from Mushroom.utils.plotting import plot_training_data
+from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset
 
 # PARAMS
 gamma = 0.99
 gamma_eval = 1.
 
-lr_actor = 5e-5
-lr_critic = 1e-4
+lr_actor = 1e-4
+lr_critic = 2e-4
 
 initial_replay_size = 500
 max_replay_size = 5000
@@ -24,20 +23,20 @@ n_features = 80
 tau = .005
 
 sigma = 0.5
-target_sigma = 0.005
+target_sigma = 0.01
 sigma_transition_length = 30
 
-theta = 0.15
-dt = 1e-2
-
-n_epochs = 20
-n_steps_learn = 1400
+n_epochs = 30
+n_steps_learn = 1000
 n_steps_test = 600
 n_steps_per_fit = 1
 
 num_agents = 2
-power_penalty = 0.0
-
+criteria = {
+    "demand": 0.9,
+    "max_power": 0.1,
+    "negative_flow": 0.0
+}
 # END_PARAMS
 
 
@@ -45,14 +44,16 @@ power_penalty = 0.0
 def train(p1, p2, seed, save_path):
     set_seed(seed)
     # MDP
-    mdp = CircularFluidNetwork(gamma=gamma, power_penalty=0.0, penalize_negative_flow=False)
-    agents = [create_ddpg_agent(
+    criteria["max_power"] = p1
+    criteria["demand"] = 1.0 - p1
+    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, labeled_step=True)
+    agents, facmac = setup_facmac_agents(
         mdp,
-        agent_idx=-1,
+        n_agents=num_agents,
         n_features_actor=n_features,
         lr_actor=lr_actor,
         n_features_critic=n_features,
-        lr_critic=lr_actor,
+        lr_critic=lr_critic,
         batch_size=batch_size,
         initial_replay_size=initial_replay_size,
         max_replay_size=max_replay_size,
@@ -60,45 +61,48 @@ def train(p1, p2, seed, save_path):
         sigma=sigma,
         target_sigma=target_sigma,
         sigma_transition_length=sigma_transition_length,
-        theta=theta,
-        dt=dt,
-    ) for i in range(num_agents)]
+    )
 
     # Core
-    core = MultiAgentCore(agent=agents, mdp=mdp)
+    core = MultiAgentCoreMixer(
+        agents=agents,
+        mixer=facmac,
+        mdp=mdp,
+    )
 
     core.learn(
         n_steps=initial_replay_size,
-        n_steps_per_fit_per_agent=[initial_replay_size]*num_agents,
+        n_steps_per_fit_per_agent=[initial_replay_size] * num_agents,
         quiet=True
     )
-    data = [compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True), gamma_eval)]
+    dataset, _ = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+    data = [compute_metrics_with_labeled_dataset(dataset, gamma_eval)]
     core.mdp.render(save_path=save_path + f"Epoch_0")
 
     pbar = tqdm(range(n_epochs), unit='epoch', leave=False)
     for n in pbar:
         core.learn(
             n_steps=n_steps_learn,
-            n_steps_per_fit_per_agent=[n_steps_per_fit]*num_agents,
+            n_steps_per_fit_per_agent=[n_steps_per_fit] * num_agents,
             quiet=True
         )
 
         core.evaluate(n_steps=200, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
-        set_noise_for_all(core.agent, False)
-        dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
-        set_noise_for_all(core.agent, True)
-        core.mdp.render(save_path=save_path + f"Epoch_{n+1}")
+        set_noise_for_all(core.agents, False)
+        dataset, _ = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+        set_noise_for_all(core.agents, True)
+        core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
 
-        data.append(compute_metrics(dataset, gamma_eval))
+        data.append(compute_metrics_with_labeled_dataset(dataset, gamma_eval))
         pbar.set_postfix(
             MinMaxMean=np.round(data[-1][0:3], 2),
-            sigma=np.round(core.agent[0].policy._sigma, 2)
+            sigma=np.round(core.agents[0].policy._sigma, 2)
         )
 
         update_sigma_for_all(agents)
 
-    set_noise_for_all(core.agent, False)
+    set_noise_for_all(core.agents, False)
     for i in range(50):
         core.evaluate(n_episodes=1, quiet=True)
         core.mdp.render(save_path=save_path + f"Final_{i}")
@@ -108,11 +112,11 @@ def train(p1, p2, seed, save_path):
 
 training_data, path = parametrized_training(
     __file__,
+    [0.1, 0.25, 0.5],
     [None],
-    [None],
-    [0],
+    [1],
     train=train,
-    base_path="./Plots/DDPG/",
+    base_path="Plots/FACMAC/",
 )
 
 plot_training_data(training_data, path)
