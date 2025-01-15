@@ -2,23 +2,23 @@ within ;
 model wrapper_mini_circular_water_network
   mini_circular_water_network mini_circular_water_network_test1
     annotation (Placement(transformation(extent={{-22,4},{32,54}})));
-  Modelica.Blocks.Sources.Step valve_6(height=0.4)
+  Modelica.Blocks.Sources.Step valve_6(height=3)
     annotation (Placement(transformation(extent={{-16,-32},{4,-12}})));
-  Modelica.Blocks.Sources.Step valve_2(height=0.3)
+  Modelica.Blocks.Sources.Step valve_2(height=3)
     annotation (Placement(transformation(extent={{-88,22},{-68,42}})));
-  Modelica.Blocks.Sources.Step valve_3(height=0.6)
+  Modelica.Blocks.Sources.Step valve_3(height=1)
     annotation (Placement(transformation(extent={{-60,48},{-40,68}})));
   Modelica.Blocks.Sources.Step pump_4(height=1)
     annotation (Placement(transformation(extent={{90,58},{70,78}})));
-  Modelica.Blocks.Sources.Step valve_5(height=0.7)
+  Modelica.Blocks.Sources.Step valve_5(height=3)
     annotation (Placement(transformation(extent={{94,20},{74,40}})));
-  Modelica.Blocks.Sources.Step pump_1(height=0.9, startTime=10)
+  Modelica.Blocks.Sources.Step pump_1(height=0,   startTime=10)
     annotation (Placement(transformation(extent={{-94,-14},{-74,6}})));
   Modelica.Blocks.Math.Add3 add3_1
     annotation (Placement(transformation(extent={{-54,-18},{-34,2}})));
-  Modelica.Blocks.Sources.Step pump_2(height=-0.9, startTime=20)
+  Modelica.Blocks.Sources.Step pump_2(height=0,    startTime=20)
     annotation (Placement(transformation(extent={{-94,-44},{-74,-24}})));
-  Modelica.Blocks.Sources.Step pump_3(height=+0.9, startTime=30)
+  Modelica.Blocks.Sources.Step pump_3(height=0,    startTime=30)
     annotation (Placement(transformation(extent={{-94,-78},{-74,-58}})));
 equation
   connect(valve_6.y, mini_circular_water_network_test1.w_v_6) annotation (Line(

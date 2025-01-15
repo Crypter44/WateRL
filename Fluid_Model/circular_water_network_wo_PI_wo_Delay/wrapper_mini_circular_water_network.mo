@@ -1,16 +1,16 @@
 within ;
 model wrapper_mini_circular_water_network
-  Modelica.Blocks.Sources.Step step_6(height=3)
+  Modelica.Blocks.Sources.Step step_6(height=1)
     annotation (Placement(transformation(extent={{-16,-32},{4,-12}})));
-  Modelica.Blocks.Sources.Step pump_1(height=0.8, startTime=10)
+  Modelica.Blocks.Sources.Step pump_1(height=0.7)
     annotation (Placement(transformation(extent={{-58,0},{-38,20}})));
-  Modelica.Blocks.Sources.Step valve_2(height=2)
+  Modelica.Blocks.Sources.Step valve_2(height=1)
     annotation (Placement(transformation(extent={{-88,22},{-68,42}})));
-  Modelica.Blocks.Sources.Step valve_3(height=2.5)
+  Modelica.Blocks.Sources.Step valve_3(height=1)
     annotation (Placement(transformation(extent={{-60,48},{-40,68}})));
-  Modelica.Blocks.Sources.Step pump_4(height=0.5, startTime=2)
-    annotation (Placement(transformation(extent={{88,58},{68,78}})));
-  Modelica.Blocks.Sources.Step step5(height=3)
+  Modelica.Blocks.Sources.Step pump_4(height=0.7)
+    annotation (Placement(transformation(extent={{90,58},{70,78}})));
+  Modelica.Blocks.Sources.Step step5(height=1)
     annotation (Placement(transformation(extent={{94,20},{74,40}})));
   mini_circular_water_network_wo_PI mini_circular_water_network_wo_PI1
     annotation (Placement(transformation(extent={{-6,10},{44,56}})));
@@ -24,7 +24,7 @@ equation
   connect(valve_3.y, mini_circular_water_network_wo_PI1.w_v_3) annotation (Line(
         points={{-39,58},{-16,58},{-16,39.6},{-7.4,39.6}}, color={0,0,127}));
   connect(pump_4.y, mini_circular_water_network_wo_PI1.w_p_4)
-    annotation (Line(points={{67,68},{26,68},{26,56.6}}, color={0,0,127}));
+    annotation (Line(points={{69,68},{26,68},{26,56.6}}, color={0,0,127}));
   connect(step5.y, mini_circular_water_network_wo_PI1.w_v_5) annotation (Line(
         points={{73,30},{50,30},{50,37.4},{44.4,37.4}}, color={0,0,127}));
   annotation (

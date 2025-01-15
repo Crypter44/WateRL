@@ -1,0 +1,30 @@
+{
+    "water_network": [
+        "V_flow_1",
+        "p_rel_1",
+        "P_pum_1",
+        "V_flow_2",
+        "p_rel_2",
+        "V_flow_3",
+        "p_rel_3",
+        "V_flow_4",
+        "p_rel_4",
+        "P_pum_4",
+        "V_flow_5",
+        "p_rel_5",
+        "V_flow_6",
+        "p_rel_6"
+    ],
+    "control_api": [
+        "w_p_1",
+        "w_v_2",
+        "w_v_3",
+        "w_p_4",
+        "w_v_5",
+        "w_v_6",
+        "demand_v_2",
+        "demand_v_3",
+        "demand_v_5",
+        "demand_v_6"
+    ]
+}

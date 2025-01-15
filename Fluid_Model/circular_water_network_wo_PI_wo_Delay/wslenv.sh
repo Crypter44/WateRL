@@ -1,0 +1,8 @@
+DYMOLA="C:/Program Files/Dymola 2024x" 
+export DYMOLACL="" 
+export DYMOLALINK="" 
+export DYMOLAPATHLAST="" 
+DYMOLAINC="" 
+DYMOLASRC="" 
+DYMOLALIB="" 
+export DYNUSECLANG="0" 
