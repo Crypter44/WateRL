@@ -17,7 +17,14 @@
         "p_rel_5",
         "u_v_6",
         "V_flow_6",
-        "p_rel_6"
+        "p_rel_6",
+        "u_v_7",
+        "V_flow_7",
+        "p_rel_7",
+        "u_v_8",
+        "V_flow_8",
+        "p_rel_8",
+        "level_9_tank"
     ],
     "control_api": [
         "w_p_1",
@@ -26,6 +33,8 @@
         "w_p_4",
         "w_v_5",
         "w_v_6",
+        "w_v_7",
+        "w_v_8",
         "demand_v_2",
         "demand_v_3",
         "demand_v_5",

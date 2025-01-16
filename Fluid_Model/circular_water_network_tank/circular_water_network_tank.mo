@@ -1,6 +1,6 @@
 within ;
-model mini_circular_water_network
-  "System consisting of tree pumps and multiple sinks (consumer)."
+model circular_water_network_tank
+  "System consisting of two pumps, a tank, and multiple sinks (consumer)."
 
   //replaceable package Medium = Modelica.Media.Water.StandardWaterOnePhase
     //constrainedby Modelica.Media.Interfaces.PartialMedium;
@@ -15,6 +15,8 @@ model mini_circular_water_network
     m_flow_start=0)
     annotation (Placement(transformation(extent={{288,-40},{308,-20}})));
 
+  // Power Curve -2.58707135371286 7.63830983123264 29.4033336406988 57.46
+  // beta_1 * Q^3 +  beta_2 * Q^2 * n + beta_3 * Q * n^2 + beta_4 * n^3  with the pumps electrical Power "P" in kW, the pumps volumeflow "Q" in m³/h
   Custom_Pump_V2.BaseClasses_Custom.Pump_vs pump_1(
     redeclare package Medium = Medium,
     allowFlowReversal=true,
@@ -23,8 +25,8 @@ model mini_circular_water_network
         Custom_Pump_V2.BaseClasses_Custom.PumpCharacteristics.quadraticFlow (c=
             {-0.962830634026511,0.33404915911756,15.48238267}),
     redeclare function powerCharacteristic =
-        Custom_Pump_V2.BaseClasses_Custom.PumpCharacteristics.cubicPower (c={-0.14637,
-            1.1881,23.0824,53.0304,6.0431}),
+        Custom_Pump_V2.BaseClasses_Custom.PumpCharacteristics.cubicPower (c=
+        {-2.58707135371286, 7.63830983123264, 29.4033336406988, 57.46, 0}),
     checkValve=false,
     rpm_rel=0.93969,
     use_N_in=true,
@@ -60,10 +62,10 @@ model mini_circular_water_network
         rotation=90,
         origin={92,354})));
 
-  Modelica.Fluid.Vessels.OpenTank tank(
+  Modelica.Fluid.Vessels.OpenTank tank_9(
     height=5,
     crossArea=10,
-    level_start=0.2*tank.height,
+    level_start=0.5*tank_9.height,
     redeclare package Medium = Medium,
     use_portsData=false,
     nPorts=2) annotation (Placement(transformation(extent={{10,164},{50,204}})));
@@ -601,8 +603,6 @@ model mini_circular_water_network
   Modelica.Blocks.Sources.RealExpression realExpression1(y=0)
     annotation (Placement(transformation(extent={{178,320},{158,340}})));
 
-
-
   ApproxAbs approxAbs_7
     annotation (Placement(transformation(extent={{184,170},{164,190}})));
   ApproxAbs approxAbs_8
@@ -621,9 +621,12 @@ model mini_circular_water_network
     redeclare package Medium = Medium,
     height_ab=-5)
     annotation (Placement(transformation(extent={{46,96},{66,116}})));
+  Modelica.Blocks.Interfaces.RealOutput level_9_tank
+    annotation (Placement(transformation(extent={{-180,196},{-200,216}})));
 equation
   P_pum_1 = pump_1.W_total;
   P_pum_4 = pump_4.W_total;
+  level_9_tank = tank_9.level;
   connect(volumeFlow_1.port_a, source_1.ports[1])
     annotation (Line(points={{-116,-114},{-154,-114}},
                                                    color={0,127,255}));
@@ -959,9 +962,9 @@ equation
           76},{120,60},{110,60}}, color={0,0,127}));
   connect(pipe_9.port_b, valve_7.port_b)
     annotation (Line(points={{66,130},{92,130},{92,140}}, color={0,127,255}));
-  connect(pipe_9.port_a, tank.ports[1])
+  connect(pipe_9.port_a,tank_9. ports[1])
     annotation (Line(points={{46,130},{28,130},{28,164}}, color={0,127,255}));
-  connect(pipe_10.port_a, tank.ports[2])
+  connect(pipe_10.port_a,tank_9. ports[2])
     annotation (Line(points={{46,106},{32,106},{32,164}}, color={0,127,255}));
   connect(pipe_10.port_b, volumeFlow_8.port_b) annotation (Line(points={{66,106},
           {80,106},{80,120},{102,120},{102,110}}, color={0,127,255}));
@@ -974,4 +977,4 @@ equation
             440}})),
     uses(Modelica(version="4.0.0"), Custom_Pump_V2(version="1")),
     version="1");
-end mini_circular_water_network;
+end circular_water_network_tank;

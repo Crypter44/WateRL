@@ -29,6 +29,16 @@
       "parameter_name": "w_v_6",
       "connect_to_system": "control_api",
       "connect_to_external_parameter": "w_v_6"
+    },
+    {
+      "parameter_name": "w_v_7",
+      "connect_to_system": "control_api",
+      "connect_to_external_parameter": "w_v_7"
+    },
+    {
+      "parameter_name": "w_v_8",
+      "connect_to_system": "control_api",
+      "connect_to_external_parameter": "w_v_8"
     }
   ],
   "control_api": [
@@ -121,6 +131,36 @@
       "parameter_name": "p_rel_6",
       "connect_to_system": "water_network",
       "connect_to_external_parameter": "p_rel_6"
+    },
+    {
+      "parameter_name": "u_v_7",
+      "connect_to_system": "water_network",
+      "connect_to_external_parameter": "u_v_7"
+    },
+    {
+      "parameter_name": "V_flow_7",
+      "connect_to_system": "water_network",
+      "connect_to_external_parameter": "V_flow_7"
+    },
+    {
+      "parameter_name": "p_rel_7",
+      "connect_to_system": "water_network",
+      "connect_to_external_parameter": "p_rel_7"
+    },
+    {
+      "parameter_name": "u_v_8",
+      "connect_to_system": "water_network",
+      "connect_to_external_parameter": "u_v_8"
+    },
+    {
+      "parameter_name": "V_flow_8",
+      "connect_to_system": "water_network",
+      "connect_to_external_parameter": "V_flow_8"
+    },
+    {
+      "parameter_name": "p_rel_8",
+      "connect_to_system": "water_network",
+      "connect_to_external_parameter": "p_rel_8"
     }
   ]
 }

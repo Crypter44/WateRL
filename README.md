@@ -14,7 +14,7 @@ The pumps pressure is calculated with
 $$
 \Delta p_\mathrm{pump}= \alpha_1 Q^2 + \alpha_2 Q n + \alpha_3 n^2
 $$
-(volume flow $Q$ in m^3/s, $n \in [0, 1]$ und $p$ in m) for the pumps used in this model $\alpha_1 = -0.065158$, $\alpha_2 = 0.34196$ and $\alpha_3 = 8.1602$.
+(volume flow $Q$ in m^3/h, $n \in [0, 1]$ und $p$ in m) for the pumps used in this model $\alpha_1 = -0.065158$, $\alpha_2 = 0.34196$ and $\alpha_3 = 8.1602$.
 
 The pump's power consumtion si calculated as
 $$

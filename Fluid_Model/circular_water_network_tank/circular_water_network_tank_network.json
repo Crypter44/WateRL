@@ -30,6 +30,11 @@
             "type": "consumer",
             "input_FMU": ["w_v_6", "demand_v_6"],
             "output_FMU": ["u_v_6", "V_flow_6", "p_rel_6"]
+        },
+        "tank_9": {
+            "type": "tank",
+            "input_FMU": ["w_v_7", "w_v_8"],
+            "output_FMU": ["u_v_7", "V_flow_7", "p_rel_7", "u_v_8", "V_flow_8", "p_rel_8", "level_9_tank"]
         }
     }
 }
