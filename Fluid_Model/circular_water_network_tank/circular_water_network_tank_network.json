@@ -8,12 +8,12 @@
         },
         "valve_2": {
             "type": "consumer",
-            "input_FMU": ["w_v_2", "demand_v_2"],
+            "input_FMU": ["w_v_2"],
             "output_FMU": ["u_v_2", "V_flow_2", "p_rel_2"]
         },
         "valve_3": {
             "type": "consumer",
-            "input_FMU": ["w_v_3", "demand_v_3"],
+            "input_FMU": ["w_v_3"],
             "output_FMU": ["u_v_3", "V_flow_3", "p_rel_3"]
         },
         "pump_4": {
@@ -23,18 +23,18 @@
         },
         "valve_5": {
             "type": "consumer",
-            "input_FMU": ["w_v_5", "demand_v_5"],
+            "input_FMU": ["w_v_5"],
             "output_FMU": ["u_v_5", "V_flow_5", "p_rel_5"]
         },
         "valve_6": {
             "type": "consumer",
-            "input_FMU": ["w_v_6", "demand_v_6"],
+            "input_FMU": ["w_v_6"],
             "output_FMU": ["u_v_6", "V_flow_6", "p_rel_6"]
         },
         "tank_9": {
             "type": "tank",
-            "input_FMU": ["w_v_7", "w_v_8"],
-            "output_FMU": ["u_v_7", "V_flow_7", "p_rel_7", "u_v_8", "V_flow_8", "p_rel_8", "level_9_tank"]
+            "input_FMU": ["w_v_7","w_v_8"],
+            "output_FMU": ["u_v_7_1", "u_v_7_2", "V_flow_7", "p_rel_7", "u_v_8_1", "u_v_8_2", "V_flow_8", "p_rel_8", "level_tank_9"]
         }
     }
 }

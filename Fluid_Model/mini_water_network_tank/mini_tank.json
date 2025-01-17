@@ -1,0 +1,20 @@
+{
+	"filename": "mini_circular_water_network",
+    "agents": {
+        "pump_4": {
+            "type": "pump",
+            "input_FMU": ["w_p_4"],
+            "output_FMU": ["V_flow_4", "p_rel_4", "P_pum_4"]
+        },
+        "valve_5": {
+            "type": "consumer",
+            "input_FMU": ["w_v_5"],
+            "output_FMU": ["u_v_5", "V_flow_5", "p_rel_5"]
+        },
+        "tank_9": {
+            "type": "tank",
+            "input_FMU": ["w_v_7"],
+            "output_FMU": ["u_v_7_1", "u_v_7_2","V_flow_7_1", "V_flow_7_2", "p_rel_7_1", "p_rel_7_2", "level_tank_9"]
+        }
+    }
+}
