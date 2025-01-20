@@ -48,17 +48,15 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
                 verbose=False,
             ),
             gamma: float = 0.99,
-            power_penalty: float = 0.01,
-            penalize_negative_flow: bool = False,
+            criteria=None,
     ):
         super().__init__(
-            observation_space=observation_space,
-            action_space=action_space,
+            observation_spaces=[observation_space],
+            action_spaces=[action_space],
             fluid_network_simulator=fluid_network_simulator,
             gamma=gamma,
-            power_penalty=power_penalty,
-            penalize_negative_flow=penalize_negative_flow,
             horizon=50,
+            criteria=criteria,
         )
 
     def render(self, title=None, save_path=None):
@@ -83,7 +81,7 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
         """
         Return the observable state of the environment.
         """
-        state, absorbing = self._get_current_simulation_state()
+        state, absorbing = super()._get_current_state()
         return state[:4].reshape((4, 1)), absorbing
 
     def local_observation_space(self, agent_index: int):
@@ -91,6 +89,3 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
 
     def local_action_space(self, agent_index: int):
         return spaces.Box(low=0, high=1, shape=(1,))
-
-    def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
-        return self._bound_reward(state, action, sim_states)

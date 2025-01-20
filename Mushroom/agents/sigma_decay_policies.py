@@ -1,4 +1,5 @@
 import warnings
+from copy import deepcopy
 
 import numpy as np
 from mushroom_rl.policy import GaussianPolicy
@@ -8,8 +9,8 @@ from scipy.stats import stats
 
 class Decay:
     def __init__(self, checkpoints, decay_type='linear'):
-        self.checkpoints = checkpoints
-        self.next_checkpoint = checkpoints.pop(0)
+        self.checkpoints = deepcopy(checkpoints)
+        self.next_checkpoint = self.checkpoints.pop(0)
         self.current = self.next_checkpoint[1]
         self.num_updates = 0
         self.decay_type = decay_type
@@ -66,7 +67,7 @@ class OUPolicyWithNoiseDecay(OrnsteinUhlenbeckPolicy):
 class UnivariateGaussianPolicy(GaussianPolicy):
     def __init__(
             self,
-            mu,
+            mu=None,
             sigma_checkpoints=None,
             decay_type='exponential',
             initial_sigma=None,

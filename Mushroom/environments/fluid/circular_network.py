@@ -1,4 +1,6 @@
+import concurrent.futures
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -38,7 +40,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             observation_spaces=None,
             action_spaces=None,
             fluid_network_simulator=ManualStepSimulator(
-                stop_time=200,
+                stop_time=50,
                 step_size=1,
                 fmu_paths=fmu_paths,
                 model_classes=model_classes,
@@ -48,9 +50,9 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 get_units=False,
                 verbose=False,
             ),
-            horizon=200,
+            horizon=50,
             gamma: float = 0.99,
-            criteria: dict = None,
+            criteria: dict[str, dict[str, float]] = None,
             labeled_step: bool = False,
     ):
         super().__init__(
@@ -71,13 +73,18 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             labeled_step=labeled_step,
             n_agents=2,
         )
-        self._criteria = criteria if criteria is not None else {"demand": 1}
+        self._criteria = criteria if criteria is not None else {"demand": {"w": 1}}
         self._current_simulation_state = None
         self.actions = []
         self.rewards = []
+        self._render_executor = concurrent.futures.ThreadPoolExecutor()
 
     def render(self, title=None, save_path=None):
         results = self.sim.get_results()
+        rewards = deepcopy(self.rewards)
+        self._render_executor.submit(self._render_task, title, save_path, results, rewards=rewards)
+
+    def _render_task(self, title=None, save_path=None, results=None, rewards=None):
         valves = [2, 3, 5, 6]
         pumps = [1, 4]
         self.plot_valve_and_pump_data(
@@ -92,12 +99,13 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
             title=title,
             save_path=save_path,
-            rewards=self.rewards,
+            rewards=rewards,
         )
 
     def step(self, action):
         # clip action to action space
-        action = np.clip(action, self._mdp_info.action_space_for_idx(0).low, self._mdp_info.action_space_for_idx(0).high)
+        action = np.clip(action, self._mdp_info.action_space_for_idx(0).low,
+                         self._mdp_info.action_space_for_idx(0).high)
         simulation_states = []
         for i in range(10):  # simulate 10 time steps, to the next control step
             self.sim.do_simulation_step(action)
@@ -123,6 +131,10 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self.rewards = []
         return super().reset(state)
 
+    def stop_renderer(self):
+        self._render_executor.shutdown()
+        plt.close("all")
+
     def _get_current_state(self):
         """
         Return the current state of the simulation, even if it is not observable.
@@ -138,34 +150,25 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         return [self._current_state[:4] for _ in range(self._mdp_info.n_agents)]
 
     def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
-        return self._bound_reward(state, action, sim_states)
+        """
+        Calculate the reward based on the current state and the action taken.
 
-    def _unbound_summed_squared_error(self, state: np.ndarray, action: np.ndarray, sim_states: list):
-        reward = 0
-        for s, _ in sim_states[:]:
-            for i in range(4):  # loop over 4 valves
-                demand = s[i]
-                volume_flow = s[i + 4]
-                reward -= 10 * (demand - volume_flow) ** 2
-            reward -= self._power_penalty * (s[12] + s[13])
+        Which criteria are used to calculate the reward can be set in the constructor.
+        There are several criteria available:
+        - demand: The reward is based on the difference between the demand and the actual flow.
+        - max_power: The reward is based on the maximum power consumption of the pumps.
+        - mean_power: The reward is based on the mean power consumption of the pumps.
+        - opening: The reward is based on the opening of the valves, the higher the opening, the higher the reward.
+        - target_opening: The reward is based on the difference between the target opening and the actual opening.
+        - max_speed: The reward is based on the maximum speed of the pumps.
+        - mean_speed: The reward is based on the mean speed of the pumps.
+        - negative_flow: The reward is based on the flow of the pumps, if the flow is negative, the reward is negative.
 
-        return reward
-
-    def _bound_reward(self, state: np.ndarray, action: np.ndarray, sim_states: list):
-        def r_demand(d):
-            smoothness = 0.0001
-            bound = 0.2
-            value_at_bound = 0.01
-
-            b = np.log(value_at_bound) / (np.sqrt(smoothness) - np.sqrt(smoothness + bound ** 2))
-            a = np.exp(b * np.sqrt(smoothness))
-
-            return a * np.exp(-b * np.sqrt(d ** 2 + smoothness))
-
-        def r_power(p):
-            return 1 / 187 * (193 - p)
-
-        # return -(abs(0.25 - float(action[2]))) * 10
+        :param state: The current state of the simulation.
+        :param action: The action taken.
+        :param sim_states: The states of the simulation during the control step.
+        :return: The reward.
+        """
         num_valves = 4
 
         reward = 0
@@ -177,26 +180,76 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 for i in range(num_valves):
                     tmp += (
                             1 / num_valves
-                            * self._criteria["demand"]
-                            * r_demand(s[i] - s[i + 4])
+                            * self._criteria["demand"]["w"]
+                            * self._exponential_reward(
+                        s[i] - s[i + 4],
+                        0,
+                        self._criteria["demand"].get("smoothness", 0.0001),
+                        self._criteria["demand"].get("bound", 0.1),
+                        self._criteria["demand"].get("value_at_bound", 0.01),
+                    )
                     )
             if "max_power" in self._criteria.keys():
-                tmp += self._criteria["max_power"] * min(r_power(s[16]), r_power(s[17]))
+                tmp += self._criteria["max_power"]["w"] * self._linear_reward(max(s[16], s[17]), 6, 193)
             if "mean_power" in self._criteria.keys():
-                tmp += self._criteria["mean_power"] * (r_power(s[16]) + r_power(s[17])) / 2
+                tmp += self._criteria["mean_power"]["w"] * self._linear_reward((s[16] + s[17]) / 2, 6, 193)
             if "opening" in self._criteria.keys():
-                tmp += self._criteria["opening"] * max(s[8], s[9], s[10], s[11])
+                tmp += self._criteria["opening"]["w"] * max(s[8], s[9], s[10], s[11])
+            if "target_opening" in self._criteria.keys():
+                x = max(s[8], s[9], s[10], s[11])
+                if x < 0.9:
+                    tmp += self._criteria["target_opening"]["w"] * (
+                        self._exponential_reward(
+                            x,  # only consider the valve with the highest opening
+                            self._criteria["target_opening"].get("target", 0.9),
+                            self._criteria["target_opening"].get("smoothness", 0.01),
+                            self._criteria["target_opening"].get("bound", 0.6),
+                            self._criteria["target_opening"].get("value_at_bound", 0.1),
+                        )
+                    )
+                else:
+                    tmp += self._criteria["target_opening"]["w"] * (
+                        self._exponential_reward(
+                            x,
+                            self._criteria["target_opening"].get("target", 0.9),
+                            self._criteria["target_opening"].get("smoothness", 0.1),
+                            0.05,
+                            0.05
+                        )
+                    )
             if "max_speed" in self._criteria.keys():
-                tmp += self._criteria["max_speed"] * min(1 - s[12], 1 - s[13])
+                tmp += self._criteria["max_speed"]["w"] * min(1 - s[12], 1 - s[13])
             if "mean_speed" in self._criteria.keys():
-                tmp += self._criteria["mean_speed"] * (2 - s[12] - s[13]) / 2
+                tmp += self._criteria["mean_speed"]["w"] * (2 - s[12] - s[13]) / 2
+            if "target_speed" in self._criteria.keys():
+                tmp += self._criteria["target_speed"]["w"] * (
+                    self._exponential_reward(
+                        (s[12] + s[13]) / 2,
+                        self._criteria["target_speed"].get("target", 0.5),
+                        self._criteria["target_speed"].get("smoothness", 0.01),
+                        self._criteria["target_speed"].get("bound", 0.3),
+                        self._criteria["target_speed"].get("value_at_bound", 0.01),
+                    )
+                )
             if "negative_flow" in self._criteria.keys():
                 if s[14] < 0 or s[15] < 0:
-                    tmp -= self._criteria["negative_flow"]
+                    tmp -= self._criteria["negative_flow"]["w"]
 
             reward += tmp / len(sim_states_to_use)
 
         return reward
+
+    @staticmethod
+    def _exponential_reward(x, target, smoothness, bound, value_at_bound):
+        b = np.log(value_at_bound) / (np.sqrt(smoothness) - np.sqrt(smoothness + bound ** 2))
+        a = np.exp(b * np.sqrt(smoothness))
+        return a * np.exp(-b * np.sqrt((x - target) ** 2 + smoothness))
+
+    @staticmethod
+    def _linear_reward(x, min_x, max_x, min_reward=0, max_reward=1.0):
+        r = (max_x - x) / (max_x - min_x)
+        r = np.clip(r, 0, 1)
+        return min_reward + r * (max_reward - min_reward)
 
     @staticmethod
     def plot_valve_and_pump_data(

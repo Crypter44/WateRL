@@ -273,10 +273,11 @@ class FACMAC(Agent):
 def setup_facmac_agents(
         mdp,
         n_agents,
+        policy=None,
         n_features_actor=80,
         lr_actor=1e-4,
         n_features_critic=80,
-        lr_critic=1e-3,
+        lr_critic=2e-4,
         batch_size=200,
         initial_replay_size=500,
         max_replay_size=5000,
@@ -314,12 +315,12 @@ def setup_facmac_agents(
             use_cuda=True
         )
 
-        policy = UnivariateGaussianPolicy(
-            mu=None,
-            initial_sigma=sigma,
-            target_sigma=target_sigma,
-            updates_till_target_reached=sigma_transition_length
-        )
+        if policy is None:
+            policy = UnivariateGaussianPolicy(
+                initial_sigma=sigma,
+                target_sigma=target_sigma,
+                updates_till_target_reached=sigma_transition_length
+            )
 
         agents.append(
             DDPG(

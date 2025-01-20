@@ -27,7 +27,7 @@ sigma = 0.5
 target_sigma = 0.005
 sigma_transition_length = 30
 
-n_epochs = 20
+n_epochs = 30
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
@@ -36,9 +36,7 @@ num_agents = 2
 power_penalty = 0.0
 
 criteria = {
-    "demand": 0.9,
-    "max_power": 0.1,
-    "negative_flow": 0.0
+    "target_opening": {"w": 1.},
 }
 # END_PARAMS
 
