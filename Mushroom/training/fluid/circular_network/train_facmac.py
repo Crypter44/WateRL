@@ -12,8 +12,8 @@ from Mushroom.utils.utils import set_seed, parametrized_training, compute_metric
 gamma = 0.99
 gamma_eval = 1.
 
-lr_actor = 5e-5
-lr_critic = 1e-4
+lr_actor = 5e-6
+lr_critic = 1e-5
 
 initial_replay_size = 500
 max_replay_size = 5000
@@ -32,7 +32,10 @@ n_steps_per_fit = 1
 
 num_agents = 2
 criteria = {
-    "target_speed": {"w": 1.},
+    "target_speed": {
+        "w": 1.,
+        "target": 0.5
+    },
 }
 # END_PARAMS
 
@@ -40,8 +43,9 @@ criteria = {
 # create a dictionary to store data for each seed
 def train(p1, p2, seed, save_path):
 
+    criteria["target_speed"]["target"] = p1
+
     set_seed(seed)
-    # MDP
     mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, labeled_step=True)
     agents, facmac = setup_facmac_agents(
         mdp,
@@ -59,6 +63,7 @@ def train(p1, p2, seed, save_path):
         max_replay_size=max_replay_size,
         tau=tau,
     )
+    mdp.enable_q_logging(agents)
 
     # Core
     core = MultiAgentCoreMixer(
@@ -111,7 +116,7 @@ def train(p1, p2, seed, save_path):
 
 training_data, path = parametrized_training(
     __file__,
-    [None],
+    [0.6],
     [None],
     [1],
     train=train,

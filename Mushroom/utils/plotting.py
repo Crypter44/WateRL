@@ -12,7 +12,7 @@ def _plot_metrics_to_ax(ax, data: dict, title: str, range_alpha=0.1, color=None)
     ax.set_title(title)
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Score")
-    ax.legend()
+    ax.legend(loc='lower right')
 
 
 def plot_additional_data_to_ax(ax, data: dict, title: str, list_of_data_names_in_one_plot: list):

@@ -3,12 +3,13 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from mushroom_rl.utils import spaces
 
 from Mushroom.environments.fluid.abstract_environments import AbstractFluidNetworkEnv
-from Sofirpy.networks.control_api import ControlApiCircular
+from Sofirpy.networks.circular_network.control_api import ControlApiCircular
 from Sofirpy.simulation import ManualStepSimulator
 
 working_dir = Path(__file__).parent.parent.parent.parent
@@ -77,14 +78,21 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self._current_simulation_state = None
         self.actions = []
         self.rewards = []
+
+        self._agents = None
+        self.qs = None
+
+        # Init rendering using matplotlib
+        mpl.rcParams['figure.max_open_warning'] = 50
         self._render_executor = concurrent.futures.ThreadPoolExecutor()
 
     def render(self, title=None, save_path=None):
         results = self.sim.get_results()
         rewards = deepcopy(self.rewards)
-        self._render_executor.submit(self._render_task, title, save_path, results, rewards=rewards)
+        qs = deepcopy(self.qs) if self.qs else None
+        self._render_executor.submit(self._render_task, title, save_path, results, rewards=rewards, qs=qs)
 
-    def _render_task(self, title=None, save_path=None, results=None, rewards=None):
+    def _render_task(self, title=None, save_path=None, results=None, rewards=None, qs=None):
         valves = [2, 3, 5, 6]
         pumps = [1, 4]
         self.plot_valve_and_pump_data(
@@ -100,12 +108,26 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             title=title,
             save_path=save_path,
             rewards=rewards,
+            qs=qs,
         )
+
+    def enable_q_logging(self, agents):
+        assert len(agents) == self._mdp_info.n_agents
+        self.qs = [[] for _ in range(self._mdp_info.n_agents)]
+        self._agents = agents
 
     def step(self, action):
         # clip action to action space
         action = np.clip(action, self._mdp_info.action_space_for_idx(0).low,
                          self._mdp_info.action_space_for_idx(0).high)
+
+        if self.qs is not None:
+            for i, a in enumerate(self._agents):
+                self.qs[i].append(a.critic_approximator.predict(
+                    np.array([self._get_observations()[i]]),
+                    np.array([action[i]])
+                ))
+
         simulation_states = []
         for i in range(10):  # simulate 10 time steps, to the next control step
             self.sim.do_simulation_step(action)
@@ -129,6 +151,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
     def reset(self, state=None):
         self.actions = []
         self.rewards = []
+        if self.qs:
+            self.qs = [[] for _ in range(self._mdp_info.n_agents)]
         return super().reset(state)
 
     def stop_renderer(self):
@@ -162,6 +186,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         - target_opening: The reward is based on the difference between the target opening and the actual opening.
         - max_speed: The reward is based on the maximum speed of the pumps.
         - mean_speed: The reward is based on the mean speed of the pumps.
+        - target_speed: The reward is based on the difference between the target speed and the actual mean pump speed.
         - negative_flow: The reward is based on the flow of the pumps, if the flow is negative, the reward is negative.
 
         :param state: The current state of the simulation.
@@ -197,24 +222,32 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 tmp += self._criteria["opening"]["w"] * max(s[8], s[9], s[10], s[11])
             if "target_opening" in self._criteria.keys():
                 x = max(s[8], s[9], s[10], s[11])
-                if x < 0.9:
+                target = self._criteria["target_opening"].get("target", 0.95)
+                smoothness = self._criteria["target_opening"].get("smoothness", 0.01)
+                left_bound = self._criteria["target_opening"].get("left_bound", 0.3)
+                value_at_left_bound = self._criteria["target_opening"].get("value_at_left_bound", 0.01)
+                right_bound = self._criteria["target_opening"].get("right_bound", 0.05)
+                value_at_right_bound = self._criteria["target_opening"].get("value_at_right_bound", 0.01)
+                if x < target:
                     tmp += self._criteria["target_opening"]["w"] * (
                         self._exponential_reward(
                             x,  # only consider the valve with the highest opening
-                            self._criteria["target_opening"].get("target", 0.9),
-                            self._criteria["target_opening"].get("smoothness", 0.01),
-                            self._criteria["target_opening"].get("bound", 0.6),
-                            self._criteria["target_opening"].get("value_at_bound", 0.1),
+                            target,
+                            smoothness,
+                            left_bound,
+                            value_at_left_bound,
                         )
                     )
+                elif x > 0.9999:
+                    tmp -= self._criteria["target_opening"]["w"]
                 else:
                     tmp += self._criteria["target_opening"]["w"] * (
                         self._exponential_reward(
                             x,
-                            self._criteria["target_opening"].get("target", 0.9),
-                            self._criteria["target_opening"].get("smoothness", 0.1),
-                            0.05,
-                            0.05
+                            target,
+                            smoothness,
+                            right_bound,
+                            value_at_right_bound,
                         )
                     )
             if "max_speed" in self._criteria.keys():
@@ -227,7 +260,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                         (s[12] + s[13]) / 2,
                         self._criteria["target_speed"].get("target", 0.5),
                         self._criteria["target_speed"].get("smoothness", 0.01),
-                        self._criteria["target_speed"].get("bound", 0.3),
+                        self._criteria["target_speed"].get("bound", 0.8),
                         self._criteria["target_speed"].get("value_at_bound", 0.01),
                     )
                 )
@@ -264,6 +297,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pump_flows,
             pump_actions=None,
             rewards=None,
+            qs=None,
             title=None,
             save_path=None
     ):
@@ -397,8 +431,30 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             fig.savefig(save_path + ".png")
         plt.close(fig)
 
+        CircularFluidNetwork._plot_reward_and_q(rewards, qs, title, save_path)
+
+    @staticmethod
+    def _plot_reward_and_q(
+            rewards=None,
+            qs=None,
+            title=None,
+            save_path=None
+    ):
+        rows = 0
         if rewards is not None:
-            fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+            rows += 1
+        if qs is not None:
+            rows += 1
+
+        if rows == 0:
+            return
+
+        fig, subplot_ax = plt.subplots(rows, 1, figsize=(8, rows * 8))
+        if rewards is not None:
+            if rows == 1:
+                ax = subplot_ax
+            else:
+                ax = subplot_ax[0]
             ax.plot(rewards)
             ax.set_xlabel("Action step")
             ax.set_ylabel("Reward")
@@ -415,10 +471,21 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             ax.plot(range(0, len(rewards), 1), [min_reward] * len(rewards), color='green', linestyle='--', linewidth=1)
             ax.plot(range(0, len(rewards), 1), [max_reward] * len(rewards), color='red', linestyle='--', linewidth=1)
 
-            if save_path is None:
-                fig.show()
+        if qs is not None:
+            if rows == 1:
+                ax = subplot_ax
             else:
-                path = str.replace(save_path, "Epoch", "Epoch_rewards")
-                path = str.replace(path, "Final", "Final_rewards")
-                fig.savefig(path + ".png")
-            plt.close(fig)
+                ax = subplot_ax[1]
+
+            for q in qs:
+                ax.plot(q)
+            ax.set_xlabel("Action step")
+            ax.set_ylabel("Q-value")
+
+        if save_path is None:
+            fig.show()
+        else:
+            path = str.replace(save_path, "Epoch", "Epoch_rewards")
+            path = str.replace(path, "Final", "Final_rewards")
+            fig.savefig(path + ".png")
+        plt.close(fig)

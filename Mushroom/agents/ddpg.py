@@ -90,9 +90,11 @@ def create_ddpg_agent(
         initial_replay_size=500,
         max_replay_size=5000,
         tau=0.001,
-        sigma=0.2,
-        target_sigma=0.001,
-        sigma_transition_length=1,
+        sigma_checkpoints=None,
+        decay_type='exponential',
+        sigma=None,
+        target_sigma=None,
+        sigma_transition_length=None,
         save_path=None,
 ):
     # Approximator
@@ -117,8 +119,8 @@ def create_ddpg_agent(
                          agent_idx=agent_idx)
 
     policy_class = UnivariateGaussianPolicy
-    policy_params = dict(initial_sigma=sigma, target_sigma=target_sigma,
-                         updates_till_target_reached=sigma_transition_length)
+    policy_params = dict(initial_sigma=sigma, target_sigma=target_sigma, decay_type=decay_type,
+                         updates_till_target_reached=sigma_transition_length, sigma_checkpoints=sigma_checkpoints)
 
     if save_path is not None:
         with open(save_path + f"Agent_{agent_idx}.json", "w") as f:

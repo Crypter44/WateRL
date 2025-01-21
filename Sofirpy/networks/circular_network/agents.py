@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import numpy as np
-import random
 
 
 @dataclass
@@ -114,7 +113,7 @@ class ConsumerAgent(Agent):
                         - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve)
                 )
         )
-        self.demand_volume_flow_m3h = np.random.uniform(0.4, 0.8)
+        self.demand_volume_flow_m3h = np.random.uniform(0.3, 1.5)
         self.output_to_FMU[list(self.output_to_FMU.keys())[1]] = self.demand_volume_flow_m3h
 
 
