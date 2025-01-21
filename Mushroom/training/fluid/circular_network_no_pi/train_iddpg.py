@@ -39,7 +39,7 @@ num_agents = 4
 power_penalty = 0.0
 
 criteria = {
-    "demand": 1.0,
+    "demand": {"w": 1.0}
 }
 
 # END_PARAMS

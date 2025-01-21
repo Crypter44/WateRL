@@ -31,9 +31,9 @@ n_steps_eval = 600
 renders_on_completion = 50
 
 criteria = {
-    "demand": 0.9,
-    "max_power": 0.1,
-    "negative_flow": 0.0
+    "demand": {"w": 0.9},
+    "max_power": {"w": 0.1},
+    "negative_flow": {"w": 0.0}
 }
 # END_PARAMS
 

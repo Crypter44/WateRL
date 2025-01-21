@@ -71,9 +71,7 @@ class ConsumerAgent(Agent):
             agent_config (AgentConfig):  Data class with all the information required to instantiate the agents.
         """
         super().__init__(agent_config, agent_type="consumer")
-        # self.demand_volume_flow_m3h = 0.4  # agent's demand in m^3/h
-        self.demand_volume_flow_m3h = np.random.uniform(0.4, 1.5)  # agent's demand in m^3/h
-        self.output_to_FMU[list(self.output_to_FMU.keys())[1]] = self.demand_volume_flow_m3h
+        self.calculate_demand_volume_flow()
         self.volume_flow_m3h_to_PI = 0  # Volume flow in m^3/h, which is transferred to the local PI as a setpoint
         self.measured_delta_pressure_bar = (
             0  # relative pressure difference over valve in bar from FMU
@@ -116,7 +114,7 @@ class ConsumerAgent(Agent):
                         - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve)
                 )
         )
-        self.demand_volume_flow_m3h = random.choice(demand_volume_flow_curve)
+        self.demand_volume_flow_m3h = np.random.uniform(0.4, 0.8)
         self.output_to_FMU[list(self.output_to_FMU.keys())[1]] = self.demand_volume_flow_m3h
 
 

@@ -11,6 +11,8 @@ from sofirpy import SimulationEntity
 from sofirpy.simulation.simulation import Simulator, _validate_input, init_fmus, \
     init_models, init_connections, init_parameter_list
 
+from Sofirpy.fmu.resettable_fmu import init_fmus_resettable, reset_fmus
+
 
 class SimulationEntityWithAction(SimulationEntity):
     """
@@ -98,6 +100,8 @@ class ManualStepSimulator(Simulator):
 
         self.results = None
 
+        self.models = init_models(self._model_classes, self._start_values.copy())
+        self.fmus = init_fmus_resettable(self._fmu_paths, step_size, self._start_values.copy())
         self.reset_simulation(stop_time, step_size, logging_step_size)
         super().__init__(self.systems, self.connections, self._parameters_to_log)
 
@@ -109,11 +113,6 @@ class ManualStepSimulator(Simulator):
             start_time: float = 0.0,
     ) -> None:
         """Reset the simulation to the initial state."""
-        self.conclude_simulation()
-        shutil.rmtree(self.tmp_dir, ignore_errors=True)
-        logging.info("Cleared temporary directory.")
-        os.makedirs(self.tmp_dir, exist_ok=True)
-
         stop_time = float(stop_time)
         step_size = float(step_size)
 
@@ -124,8 +123,9 @@ class ManualStepSimulator(Simulator):
 
         logging.info(f"Simulation logging step size set to {logging_step_size} seconds.")
 
-        self.fmus = init_fmus(self._fmu_paths, step_size, self._start_values.copy())
+        self.conclude_simulation()
         self.models = init_models(self._model_classes, self._start_values.copy())
+        reset_fmus(self.fmus, self._fmu_paths, self._start_values.copy())
 
         # Check if all user-defined python models are SimulationEntityWithAction
         for model in self.models.values():

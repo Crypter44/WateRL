@@ -31,7 +31,7 @@ n_steps_eval = 600
 renders_on_completion = 50
 
 criteria = {
-    "demand": 1.0,
+    "demand": {"w": 1.0},
 }
 # END_PARAMS
 
