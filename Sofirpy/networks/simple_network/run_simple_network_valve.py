@@ -4,18 +4,14 @@ import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Mushroom.environments.fluid.simple_network_valve import fmu_paths, model_classes, connections_config, \
-    parameters_to_log
+from Sofirpy.networks.simple_network.config import get_simple_network_valve_config
 from Sofirpy.simulation import ManualStepSimulator
 
 # create simulation
 sim = ManualStepSimulator(
     stop_time=100,
     step_size=1,
-    fmu_paths=fmu_paths,
-    model_classes=model_classes,
-    connections_config=connections_config,
-    parameters_to_log=parameters_to_log,
+    config=get_simple_network_valve_config(),
     logging_step_size=1,
     get_units=True,
     verbose=True,

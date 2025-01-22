@@ -56,7 +56,7 @@ def train(p1, p2, seed, save_path):
             log_std_min=log_std_min,
             log_std_max=log_std_max,
             target_entropy=target_entropy,
-        ) for _ in range(6)
+        )[0] for _ in range(6)
     ]
 
     core = MultiAgentCore(agent=agents, mdp=mdp)

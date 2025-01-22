@@ -27,8 +27,6 @@ sigma = 0.5
 target_sigma = 0.005
 sigma_transition_length = 30
 
-theta = 0.15
-dt = 1e-2
 
 n_epochs = 40
 n_steps_learn = 1400
@@ -64,8 +62,6 @@ def train(p1, p2, seed, save_path):
         sigma=sigma,
         target_sigma=target_sigma,
         sigma_transition_length=sigma_transition_length,
-        theta=theta,
-        dt=dt,
     ) for i in range(num_agents)]
 
     # Core

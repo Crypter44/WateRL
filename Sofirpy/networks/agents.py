@@ -14,6 +14,19 @@ class AgentConfig:
     names_input_from_FMU: list = field(
         default_factory=list
     )  # name of the input variables
+    demand: float = 0.0  # demand of the consumer in m^3/h
+
+
+def set_demand_for_consumers(agents_configs: list[AgentConfig], demands: list[float]):
+    """Sets the demand for the consumers in the agents_configs.
+
+    Args:
+        agents_configs (list[AgentConfig]): List of AgentConfig objects.
+        demands (list[float]): List of demands for the consumers.
+    """
+    for idx, agent_config in enumerate(agents_configs):
+        if agent_config.agent_type == "consumer":
+            agent_config.demand = demands[idx]
 
 
 class Agent(ABC):
@@ -70,6 +83,7 @@ class ConsumerAgent(Agent):
             agent_config (AgentConfig):  Data class with all the information required to instantiate the agents.
         """
         super().__init__(agent_config, agent_type="consumer")
+        self.demand_volume_flow_m3h = agent_config.demand
         self.calculate_demand_volume_flow()
         self.volume_flow_m3h_to_PI = 0  # Volume flow in m^3/h, which is transferred to the local PI as a setpoint
         self.measured_delta_pressure_bar = (

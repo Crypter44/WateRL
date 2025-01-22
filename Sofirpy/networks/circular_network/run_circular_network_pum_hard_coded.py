@@ -6,13 +6,13 @@ import time
 
 from sofirpy import simulate, SimulationEntity
 
-dir_path = Path(__file__).parent
+dir_path = Path(__file__).parent.parent
 # plt.style.use(dir_path / "FST.mplstyle")
 
 # %% setup simulation
 
-fmu_dir_path = dir_path.parent / "Fluid_Model" / "circular_water_network_wo_PI"
-fmu_path = fmu_dir_path / "mini_circular_water_network_wo_PI.fmu"
+fmu_dir_path = dir_path.parent / "fluid_models" / "circular_water_network"
+fmu_path = fmu_dir_path / "mini_circular_water_network.fmu"
 
 connections_config = {
     "water_network": [
@@ -191,10 +191,10 @@ class Controler(SimulationEntity):
         elif time > 20:
             self.outputs["w_p_1"] = 0.9
 
-        self.outputs["w_v_2"] = 1
-        self.outputs["w_v_3"] = 1
-        self.outputs["w_v_5"] = 1
-        self.outputs["w_v_6"] = 1
+        self.outputs["w_v_2"] = 0.5
+        self.outputs["w_v_3"] = 0.5
+        self.outputs["w_v_5"] = 0.5
+        self.outputs["w_v_6"] = 0.5
 
         if time < 50:
             self.outputs["w_p_4"] = 0.9
@@ -299,12 +299,3 @@ ax.set_xlabel("TIME in s")
 ax.set_ylabel("VOLUME FLOW in m$^3$/h")
 ax2.set_ylabel("PUMP ROTATIONAL SPEED in %", c=[0 / 255, 78 / 255, 115 / 255])
 ax2.spines["right"].set_visible(True)
-
-# %%
-fig, ax = plt.subplots()
-ax2 = ax.twinx()
-
-ax.plot(
-    results["time"],
-    results["water_network.V_flow_6"],
-)

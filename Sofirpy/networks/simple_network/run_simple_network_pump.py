@@ -6,12 +6,12 @@ import time
 
 from sofirpy import simulate, SimulationEntity
 
-dir_path = Path(__file__).parent
+dir_path = Path(__file__).parent.parent
 plt.style.use(dir_path / "FST.mplstyle")
 
 # %% setup simulation
 
-fmu_dir_path = dir_path.parent / "Fluid_Model" / "simple_network_pump"
+fmu_dir_path = dir_path.parent / "fluid_models" / "simple_network_pump"
 fmu_path = fmu_dir_path / "simple_network_pump.fmu"
 
 connections_config = {

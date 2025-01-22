@@ -1,9 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Mushroom.environments.fluid.circular_network import fmu_paths, model_classes, connections_config, \
-    parameters_to_log
 from Mushroom.utils.utils import set_seed
+from Sofirpy.networks.circular_network.config import get_circular_network_config
 from Sofirpy.simulation import ManualStepSimulator
 
 set_seed(0)
@@ -11,10 +10,7 @@ set_seed(0)
 sim = ManualStepSimulator(
     stop_time=200,
     step_size=1,
-    fmu_paths=fmu_paths,
-    model_classes=model_classes,
-    connections_config=connections_config,
-    parameters_to_log=parameters_to_log,
+    **get_circular_network_config(),
     logging_step_size=1,
     get_units=False,
     verbose=True,

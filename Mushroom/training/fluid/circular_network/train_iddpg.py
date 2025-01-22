@@ -26,22 +26,23 @@ batch_size = 200
 n_features = 80
 tau = .005
 
-sigma = [(0, 0.5), (20, 0.2), (40, 0.1)]
+sigma = [(0, 0.3), (75, 0.2), (150, 0.1)]
 
-n_epochs = 80
+n_epochs = 800
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
 
-n_episodes_final = 300
-n_episodes_final_render = 50
+n_episodes_final = 500
+n_episodes_final_render = 100
+n_epochs_per_checkpoint = 100
 
 criteria = {
     "target_opening": {
         "w": 1.,
         "target": 0.95,
         "smoothness": 0.0001,
-        "left_bound": 0.4,
+        "left_bound": 0.2,
         "value_at_left_bound": 0.05,
         "right_bound": 0.05,
         "value_at_right_bound": 0.001,
@@ -52,9 +53,6 @@ criteria = {
 
 # create a dictionary to store data for each seed
 def train(p1, p2, seed, save_path):
-    criteria["target_opening"]["w"] = p2
-    criteria["target_opening"]["left_bound"] = p1
-
     set_seed(seed)
     # MDP
     mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria)
@@ -107,31 +105,39 @@ def train(p1, p2, seed, save_path):
 
         update_sigma_for_all(agents)
 
+        if (n+1) % n_epochs_per_checkpoint == 0:
+            for i, a in enumerate(core.agent):
+                a.save(save_path + f"/checkpoints/Epoch_{n+1}_Agent_{i}")
+
     set_noise_for_all(core.agent, False)
     for i in range(n_episodes_final_render):
         core.evaluate(n_episodes=1, quiet=True)
         core.mdp.render(save_path=save_path + f"Final_{i}")
 
-    with open(save_path + "Evaluation.json", "w") as f:
-        final = compute_metrics(
-            core.evaluate(n_episodes=n_episodes_final, render=False, quiet=False),
-            gamma_eval
-        )
-        json.dump({
-            "Min": final[0],
-            "Max": final[1],
-            "Mean": final[2],
-            "Median": final[3],
-            "Count": final[4],
-        }, f, indent=4)
+    for i, a in enumerate(core.agent):
+        a.save(save_path + f"/checkpoints/Final_Agent_{i}")
+
+    if n_episodes_final > 0:
+        with open(save_path + "Evaluation.json", "w") as f:
+            final = compute_metrics(
+                core.evaluate(n_episodes=n_episodes_final, render=False, quiet=False),
+                gamma_eval
+            )
+            json.dump({
+                "Min": final[0],
+                "Max": final[1],
+                "Mean": final[2],
+                "Median": final[3],
+                "Count": final[4],
+            }, f, indent=4)
 
     return {"metrics": np.array(data), "additional_data": {}}
 
 
 training_data, path = parametrized_training(
     __file__,
-    [0.3, 0.2],
-    [1, 5],
+    [None],
+    [None],
     [0],
     train=train,
     base_path="./Plots/DDPG/",

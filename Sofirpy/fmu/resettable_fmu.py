@@ -1,6 +1,7 @@
 import logging
+import shutil
 from pathlib import Path
-from typing import cast
+from typing import cast, Any
 
 from fmpy import read_model_description, extract
 from fmpy.fmi2 import FMU2Slave
@@ -19,7 +20,7 @@ class ResettableFmu(Fmu):
             start_time (float, optional): start time. Defaults to 0.
         """
         self.model_description = read_model_description(self.fmu_path)
-        self.unzip_dir = extract(self.fmu_path)
+        self.unzip_dir = Path(extract(self.fmu_path))
         self.reset(start_values)
 
     def reset(self, start_values: dict[str, co.StartValue]) -> None:
@@ -68,6 +69,11 @@ class ResettableFmu(Fmu):
                 f"can not be set:\n{not_set_start_values}"
             )
         self.fmu.exitInitializationMode()
+
+    def conclude_simulation(self) -> None:
+        super().conclude_simulation()
+        shutil.rmtree(self.unzip_dir)
+        logging.info(f"Cleared temp dir: '{self.unzip_dir}'.")
 
 
 def init_fmus_resettable(
@@ -121,3 +127,35 @@ def reset_fmus(
         logging.info(f"FMU '{fmu_name}' reset.")
 
     return fmus
+
+
+def init_models(
+    model_classes: co.ModelClasses,
+    model_init_args: dict[str, dict[str, Any]],
+    start_values: co.StartValues,
+) -> dict[str, System]:
+    """Initialize python models as a System object and store them in a dictionary.
+
+    Args:
+        model_classes (ModelClasses): Dictionary which defines which Python Models
+            should be simulated.
+        model_init_args (dict[str, list[Any]]): Dictionary which defines the arguments
+            that should be passed to the Python Models.
+        start_values (StartValues): Dictionary which defines start values for the
+            systems.
+
+    Returns:
+        dict[str, System]: key -> python model name; value -> System instance
+    """
+
+    models: dict[str, System] = {}
+    for model_name, model_class in model_classes.items():
+        _start_values = start_values.get(model_name) or {}
+        _init_args = model_init_args.get(model_name) or []
+        model_instance = model_class(**_init_args)
+        model_instance.initialize(_start_values)
+        system = System(model_instance, model_name)
+        models[model_name] = system
+        logging.info(f"Python Model '{model_name}' initialized.")
+
+    return models

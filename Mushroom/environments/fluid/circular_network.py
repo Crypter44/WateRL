@@ -1,7 +1,7 @@
 import concurrent.futures
-import json
+import random
+from collections import deque
 from copy import deepcopy
-from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -9,30 +9,9 @@ import numpy as np
 from mushroom_rl.utils import spaces
 
 from Mushroom.environments.fluid.abstract_environments import AbstractFluidNetworkEnv
-from Sofirpy.networks.circular_network.control_api import ControlApiCircular
+from Sofirpy.networks.agents import set_demand_for_consumers
+from Sofirpy.networks.circular_network.config import get_circular_network_config
 from Sofirpy.simulation import ManualStepSimulator
-
-working_dir = Path(__file__).parent.parent.parent.parent
-
-fmu_dir_path = working_dir / "Fluid_Model" / "circular_water_network"
-
-fmu_path = fmu_dir_path / "mini_circular_water_network.fmu"
-
-agent_config_path = fmu_dir_path / "mini_circular_water_network.json"
-
-connections_config_path = fmu_dir_path / "mini_circular_water_network_connections_config.json"
-
-logging_config_path = fmu_dir_path / "mini_circular_water_network_parameters_to_log.json"
-
-# create interface of multi-agent system to FMU
-model_classes = {"control_api": ControlApiCircular}
-fmu_paths = {"water_network": str(fmu_path)}
-
-with open(connections_config_path) as connections_config_json:
-    connections_config = json.load(connections_config_json)
-
-with open(logging_config_path) as logging_config_json:
-    parameters_to_log = json.load(logging_config_json)
 
 
 class CircularFluidNetwork(AbstractFluidNetworkEnv):
@@ -40,22 +19,17 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             self,
             observation_spaces=None,
             action_spaces=None,
-            fluid_network_simulator=ManualStepSimulator(
-                stop_time=50,
-                step_size=1,
-                fmu_paths=fmu_paths,
-                model_classes=model_classes,
-                connections_config=connections_config,
-                parameters_to_log=parameters_to_log,
-                logging_step_size=1,
-                get_units=False,
-                verbose=False,
-            ),
+            fluid_network_simulator=None,
             horizon=50,
             gamma: float = 0.99,
             criteria: dict[str, dict[str, float]] = None,
+            demand=("uniform_individual", 0.3, 1.5),
             labeled_step: bool = False,
     ):
+
+        if fluid_network_simulator is None:
+            fluid_network_simulator = self._setup_simulator(**demand)
+
         super().__init__(
             state_space=spaces.Box(low=-500, high=500, shape=(18,)),
             observation_spaces=(
@@ -172,6 +146,37 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
 
     def _get_observations(self):
         return [self._current_state[:4] for _ in range(self._mdp_info.n_agents)]
+
+    def _setup_simulator(self, demand_type, low, high):
+        config = get_circular_network_config()
+
+        set_demand_for_consumers(config["model_init_args"], self._configure_demand(demand_type, low, high))
+
+        return ManualStepSimulator(
+            stop_time=50,
+            step_size=1,
+            **config,
+            logging_step_size=1,
+            get_units=False,
+            verbose=False,
+        )
+
+    @staticmethod
+    def _configure_demand(kind, low, high, count) -> list[float]:
+        if kind == "uniform_individually":
+            return [np.random.uniform(low, high) for _ in range(count)]
+        elif kind == "uniform_global":
+            demand = np.random.uniform(low * count, high * count)
+            random_numbers = np.random.dirichlet(np.ones(count))
+            scaled_numbers = random_numbers * (demand - count * low)
+            final_numbers = scaled_numbers + low
+            while np.any(final_numbers > high):
+                excess = np.sum(final_numbers[final_numbers > high] - high)
+                final_numbers[final_numbers > high] = high
+                final_numbers[final_numbers < high] += excess / np.sum(final_numbers < high)
+            return final_numbers
+        else:
+            raise ValueError(f"Unknown demand type: {kind}")
 
     def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
         """

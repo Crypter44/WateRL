@@ -2,17 +2,13 @@
 import numpy as np
 
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
-from Mushroom.environments.fluid.circular_network_no_pi import fmu_paths, model_classes, connections_config, \
-    parameters_to_log
+from Sofirpy.networks.circular_network_no_pi.config import get_circular_network_no_pi_config
 from Sofirpy.simulation import ManualStepSimulator
 
 sim = ManualStepSimulator(
     stop_time=200,
     step_size=1,
-    fmu_paths=fmu_paths,
-    model_classes=model_classes,
-    connections_config=connections_config,
-    parameters_to_log=parameters_to_log,
+    config=get_circular_network_no_pi_config(),
     logging_step_size=1,
     get_units=False,
     verbose=True,
