@@ -48,34 +48,14 @@
       "connect_to_external_parameter": "p_rel_5"
     },
     {
-      "parameter_name": "u_v_7_1",
+      "parameter_name": "V_flow_7",
       "connect_to_system": "water_network",
-      "connect_to_external_parameter": "u_v_7_1"
+      "connect_to_external_parameter": "V_flow_7"
     },
     {
-      "parameter_name": "u_v_7_2",
+      "parameter_name": "p_rel_7",
       "connect_to_system": "water_network",
-      "connect_to_external_parameter": "u_v_7_2"
-    },
-    {
-      "parameter_name": "V_flow_7_1",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "V_flow_7_1"
-    },
-    {
-      "parameter_name": "V_flow_7_2",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "V_flow_7_2"
-    },
-    {
-      "parameter_name": "p_rel_7_1",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "p_rel_7_1"
-    },
-    {
-      "parameter_name": "p_rel_7_2",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "p_rel_7_2"
+      "connect_to_external_parameter": "p_rel_7"
     }
   ]
 }

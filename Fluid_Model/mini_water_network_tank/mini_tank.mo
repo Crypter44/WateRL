@@ -86,15 +86,7 @@ model mini_tank
     redeclare package Medium = Medium) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=-90,
-        origin={114,250})));
-  Modelica.Fluid.Valves.ValveLinear valve_7_2(
-    allowFlowReversal=true,
-    dp_nominal=100000,
-    m_flow_nominal=1,
-    redeclare package Medium = Medium) annotation (Placement(transformation(
-        extent={{10,-10},{-10,10}},
-        rotation=-90,
-        origin={62,166})));
+        origin={114,252})));
 
   Modelica.Fluid.Valves.ValveDiscrete valveDiscreteRamp_4(
     redeclare package Medium = Medium,
@@ -138,26 +130,16 @@ model mini_tank
   Modelica.Fluid.Sensors.RelativePressure pressure_5(
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{180,398},{200,378}})));
-  Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_7_1(redeclare package Medium =
-        Medium) annotation (Placement(transformation(
+  Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_7_1(redeclare package Medium
+      = Medium) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=-90,
-        origin={114,198})));
-  Modelica.Fluid.Sensors.RelativePressure pressure_7_1(redeclare package Medium =
-        Medium) annotation (Placement(transformation(
+        origin={114,176})));
+  Modelica.Fluid.Sensors.RelativePressure pressure_7_1(redeclare package Medium
+      = Medium) annotation (Placement(transformation(
         extent={{10,-10},{-10,10}},
         rotation=90,
         origin={140,282})));
-  Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_7_2(redeclare package Medium =
-        Medium) annotation (Placement(transformation(
-        extent={{-10,-10},{10,10}},
-        rotation=-90,
-        origin={62,118})));
-  Modelica.Fluid.Sensors.RelativePressure pressure_7_2(redeclare package Medium =
-        Medium) annotation (Placement(transformation(
-        extent={{10,10},{-10,-10}},
-        rotation=90,
-        origin={28,168})));
   Modelica.Blocks.Continuous.LimPID PI_5(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
     k=0.01,
@@ -167,25 +149,6 @@ model mini_tank
     yMin=0,
     initType=Modelica.Blocks.Types.Init.InitialState)
     annotation (Placement(transformation(extent={{262,342},{242,362}})));
-
- Modelica.Blocks.Continuous.LimPID PI_7_1(
-    controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=0.01,
-    Ti=0.01,
-    Td=0.1,
-    yMax=1,
-    yMin=0,
-    initType=Modelica.Blocks.Types.Init.InitialState)
-    annotation (Placement(transformation(extent={{190,238},{170,258}})));
- Modelica.Blocks.Continuous.LimPID PI_7_2(
-    controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=0.01,
-    Ti=0.01,
-    Td=0.1,
-    yMax=1,
-    yMin=0,
-    initType=Modelica.Blocks.Types.Init.InitialState)
-    annotation (Placement(transformation(extent={{166,156},{146,176}})));
 
   Modelica.Blocks.Interfaces.RealOutput V_flow_4
     "Volume flow rate from port_a to port_b" annotation (Placement(
@@ -209,7 +172,7 @@ model mini_tank
     "Volume flow rate from port_a to port_b"
     annotation (Placement(transformation(extent={{-10,-10},{10,10}},
         rotation=0,
-        origin={326,320})));
+        origin={330,320})));
   Modelica.Blocks.Interfaces.RealOutput p_rel_5 "Relative pressure signal"
     annotation (Placement(transformation(extent={{318,406},{338,426}})));
   Modelica.Blocks.Interfaces.RealInput w_v_5
@@ -218,32 +181,22 @@ model mini_tank
         rotation=180,
         origin={328,352})));
   Modelica.Blocks.Interfaces.RealOutput u_v_5 "Connector of Real output signal"
-    annotation (Placement(transformation(extent={{314,364},{334,384}})));
+    annotation (Placement(transformation(extent={{320,364},{340,384}})));
 
-  Modelica.Blocks.Interfaces.RealOutput V_flow_7_1
+  Modelica.Blocks.Interfaces.RealOutput V_flow_7
     "Volume flow rate from port_a to port_b" annotation (Placement(
         transformation(
         extent={{-10,-10},{10,10}},
         rotation=0,
-        origin={330,198})));
-  Modelica.Blocks.Interfaces.RealOutput V_flow_7_2
-    annotation (Placement(transformation(extent={{320,108},{340,128}})));
-  Modelica.Blocks.Interfaces.RealOutput p_rel_7_1 "Relative pressure signal"
+        origin={330,176})));
+  Modelica.Blocks.Interfaces.RealOutput p_rel_7 "Relative pressure signal"
     annotation (Placement(transformation(extent={{320,272},{340,292}})));
 
-  Modelica.Blocks.Interfaces.RealOutput p_rel_7_2 "Relative pressure signal"
-    annotation (Placement(transformation(extent={{320,76},{340,96}})));
   Modelica.Blocks.Interfaces.RealInput w_v_7
     "=1: completely open, =0: completely closed"
     annotation (Placement(transformation(extent={{-20,-20},{20,20}},
         rotation=180,
-        origin={340,234})));
-  Modelica.Blocks.Interfaces.RealOutput u_v_7_1
-    "Connector of Real output signal"
-    annotation (Placement(transformation(extent={{320,256},{340,276}})));
-  Modelica.Blocks.Interfaces.RealOutput u_v_7_2
-    "Connector of Real output signal"
-    annotation (Placement(transformation(extent={{320,174},{340,194}})));
+        origin={338,252})));
   Modelica.Blocks.Math.UnitConversions.To_bar to_bar4 annotation (Placement(
         transformation(
         extent={{10,-10},{-10,10}},
@@ -251,8 +204,8 @@ model mini_tank
         origin={-24,484})));
   Modelica.Blocks.Math.UnitConversions.To_bar to_bar5 annotation (Placement(transformation(extent={{242,406},
             {262,426}})));
-  Modelica.Blocks.Math.UnitConversions.To_bar to_bar7_1 annotation (Placement(transformation(extent={{260,272},{280,292}})));
-  Modelica.Blocks.Math.UnitConversions.To_bar to_bar7_2 annotation (Placement(transformation(extent={{154,76},{174,96}})));
+  Modelica.Blocks.Math.UnitConversions.To_bar to_bar7
+    annotation (Placement(transformation(extent={{260,272},{280,292}})));
 
   To_m3hr to_m3hr4 annotation (Placement(transformation(extent={{38,486},{18,
             506}})));
@@ -260,14 +213,10 @@ model mini_tank
         extent={{-10,-10},{10,10}},
         rotation=0,
         origin={202,320})));
-  To_m3hr to_m3hr7_1 annotation (Placement(transformation(
+  To_m3hr to_m3hr7 annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=0,
-        origin={152,198})));
-  To_m3hr to_m3hr7_2 annotation (Placement(transformation(
-        extent={{-10,-10},{10,10}},
-        rotation=0,
-        origin={132,118})));
+        origin={152,176})));
 
   Modelica.Blocks.Interfaces.RealOutput P_pum_4 annotation (Placement(
         transformation(
@@ -282,8 +231,6 @@ model mini_tank
         extent={{-10,-10},{10,10}},
         rotation=-90,
         origin={142,502})));
-  Modelica.Blocks.Nonlinear.FixedDelay fixedDelay7(delayTime=1)
-    annotation (Placement(transformation(extent={{312,224},{292,244}})));
   Modelica.Blocks.Logical.GreaterThreshold greaterThreshold1(threshold=0.01)
     annotation (Placement(transformation(extent={{164,466},{184,486}})));
   Modelica.Blocks.Logical.Switch switch_4
@@ -295,41 +242,6 @@ model mini_tank
     annotation (Placement(transformation(extent={{10,-10},{-10,10}},
         rotation=90,
         origin={-28,50})));
-  Modelica.Blocks.Logical.GreaterEqualThreshold greaterEqualThreshold_7_1(threshold
-      =0.01)
-    annotation (Placement(transformation(extent={{262,224},{242,244}})));
-  Modelica.Blocks.Logical.Switch switch_7_1
-    annotation (Placement(transformation(extent={{222,238},{202,258}})));
-  Modelica.Blocks.Sources.RealExpression realExpression_7_1
-    annotation (Placement(transformation(extent={{204,214},{224,234}})));
-  Modelica.Blocks.Logical.Switch switch_7_2
-    annotation (Placement(transformation(extent={{194,176},{174,156}})));
-
-  Modelica.Fluid.Fittings.TeeJunctionIdeal teeJunctionIdeal_1(redeclare package
-      Medium = Medium)
-    annotation (Placement(transformation(extent={{82,306},{102,326}})));
-
-  Modelica.Blocks.Math.Gain gain_7_2(k=-1)
-    annotation (Placement(transformation(extent={{290,156},{270,176}})));
-
-  Modelica.Fluid.Fittings.TeeJunctionIdeal teeJunctionIdeal_2(redeclare package
-      Medium = Medium)
-    annotation (Placement(transformation(extent={{88,108},{108,88}})));
-  Modelica.Blocks.Logical.GreaterEqualThreshold greaterEqualThreshold_7_2(threshold
-      =0.01)
-    annotation (Placement(transformation(extent={{252,156},{232,176}})));
-  AbsoluteValueConnection absoluteValueConnection_7_1 annotation (Placement(
-        transformation(
-        extent={{10,10},{-10,-10}},
-        rotation=90,
-        origin={180,218})));
-  AbsoluteValueConnection absoluteValueConnection_7_2 annotation (Placement(
-        transformation(
-        extent={{-10,-10},{10,10}},
-        rotation=-90,
-        origin={156,138})));
-  Modelica.Blocks.Sources.RealExpression realExpression_7_2
-    annotation (Placement(transformation(extent={{222,164},{202,184}})));
 
 
 equation
@@ -370,12 +282,12 @@ equation
   connect(to_bar5.y,p_rel_5)
     annotation (Line(points={{263,416},{328,416}},
                                                  color={0,0,127}));
-  connect(V_flow_5, to_m3hr5.y) annotation (Line(points={{326,320},{213,320}},
+  connect(V_flow_5, to_m3hr5.y) annotation (Line(points={{330,320},{213,320}},
                            color={0,0,127}));
   connect(volumeFlow_5.V_flow, to_m3hr5.u)
     annotation (Line(points={{148,345},{148,320},{190,320}}, color={0,0,127}));
   connect(PI_5.y,u_v_5)
-    annotation (Line(points={{241,352},{230,352},{230,374},{324,374}},
+    annotation (Line(points={{241,352},{230,352},{230,374},{330,374}},
                                                    color={0,0,127}));
   connect(PI_5.y,valve_5. opening) annotation (Line(points={{241,352},{192,352},
           {192,356}},                    color={0,0,127}));
@@ -418,107 +330,41 @@ equation
   connect(switch_4.y, pump_4.N_in)
     annotation (Line(points={{123,448},{102,448},{102,458}}, color={0,0,127}));
   connect(pressure_7_1.port_b, valve_7_1.port_b) annotation (Line(
-      points={{140,272},{140,234},{114,234},{114,240}},
+      points={{140,272},{140,234},{114,234},{114,242}},
       color={0,127,255},
       pattern=LinePattern.Dot));
   connect(pressure_7_1.port_a, valve_7_1.port_a) annotation (Line(
-      points={{140,292},{140,298},{114,298},{114,260}},
+      points={{140,292},{140,298},{114,298},{114,262}},
       color={0,127,255},
       pattern=LinePattern.Dot));
-  connect(to_bar7_1.u, pressure_7_1.p_rel)
+  connect(to_bar7.u, pressure_7_1.p_rel)
     annotation (Line(points={{258,282},{149,282}}, color={0,0,127}));
-  connect(V_flow_7_1, to_m3hr7_1.y)
-    annotation (Line(points={{330,198},{163,198}}, color={0,0,127}));
-  connect(fixedDelay7.u,w_v_7)
-    annotation (Line(points={{314,234},{340,234}},           color={0,0,127}));
-  connect(to_bar7_1.y, p_rel_7_1)
+  connect(V_flow_7, to_m3hr7.y)
+    annotation (Line(points={{330,176},{163,176}}, color={0,0,127}));
+  connect(to_bar7.y, p_rel_7)
     annotation (Line(points={{281,282},{330,282}}, color={0,0,127}));
   connect(pipe_9.port_a,tank_9. ports[1])
     annotation (Line(points={{38,76},{-34,76},{-34,124}}, color={0,127,255}));
-  connect(V_flow_7_1, V_flow_7_1)
-    annotation (Line(points={{330,198},{330,198}}, color={0,0,127}));
-  connect(greaterEqualThreshold_7_1.y, switch_7_1.u2) annotation (Line(points={{
-          241,234},{234,234},{234,248},{224,248}}, color={255,0,255}));
-  connect(greaterEqualThreshold_7_1.u, fixedDelay7.y)
-    annotation (Line(points={{264,234},{291,234}}, color={0,0,127}));
-  connect(realExpression_7_1.y, switch_7_1.u3) annotation (Line(points={{225,224},
-          {232,224},{232,240},{224,240}}, color={0,0,127}));
-  connect(teeJunctionIdeal_1.port_3, teeJunctionIdeal_5.port_3)
-    annotation (Line(points={{92,326},{92,346}}, color={0,127,255}));
-  connect(gain_7_2.u, fixedDelay7.y) annotation (Line(points={{292,166},{298,166},
-          {298,218},{286,218},{286,234},{291,234}}, color={0,0,127}));
-  connect(to_m3hr7_2.u, volumeFlow_7_2.V_flow)
-    annotation (Line(points={{120,118},{73,118}}, color={0,0,127}));
-  connect(fixedDelay7.y, switch_7_1.u1) annotation (Line(points={{291,234},{286,
-          234},{286,256},{224,256}}, color={0,0,127}));
-  connect(PI_7_1.u_s, switch_7_1.y)
-    annotation (Line(points={{192,248},{201,248}}, color={0,0,127}));
-  connect(PI_7_1.y, valve_7_1.opening) annotation (Line(points={{169,248},{122,248},
-          {122,250}},                                    color={0,0,127}));
-  connect(PI_7_1.y, u_v_7_1) annotation (Line(points={{169,248},{160,248},{160,266},
-          {330,266}},                          color={0,0,127}));
-  connect(switch_7_2.y, PI_7_2.u_s)
-    annotation (Line(points={{173,166},{168,166}}, color={0,0,127}));
-  connect(PI_7_2.y, valve_7_2.opening) annotation (Line(points={{145,166},{70,166}},
-                                   color={0,0,127}));
-  connect(PI_7_2.y, u_v_7_2) annotation (Line(points={{145,166},{138,166},{138,184},
-          {330,184}},      color={0,0,127}));
+  connect(V_flow_7, V_flow_7)
+    annotation (Line(points={{330,176},{330,176}}, color={0,0,127}));
   connect(pipe_5.port_b, teeJunctionIdeal_5.port_1) annotation (Line(points={{16,
           406},{8,406},{8,356},{82,356}}, color={0,127,255}));
-  connect(pipe_9.port_b, teeJunctionIdeal_2.port_3)
-    annotation (Line(points={{58,76},{98,76},{98,88}},    color={0,127,255}));
-  connect(greaterEqualThreshold_7_2.u, gain_7_2.y)
-    annotation (Line(points={{254,166},{269,166}}, color={0,0,127}));
-  connect(greaterEqualThreshold_7_2.y, switch_7_2.u2)
-    annotation (Line(points={{231,166},{196,166}}, color={255,0,255}));
-  connect(absoluteValueConnection_7_1.y, PI_7_1.u_m)
-    annotation (Line(points={{180,229},{180,236}}, color={0,0,127}));
-  connect(absoluteValueConnection_7_2.y, PI_7_2.u_m)
-    annotation (Line(points={{156,149},{156,154}}, color={0,0,127}));
-  connect(to_m3hr7_2.y, absoluteValueConnection_7_2.u)
-    annotation (Line(points={{143,118},{156,118},{156,126}}, color={0,0,127}));
-  connect(absoluteValueConnection_7_2.u, V_flow_7_2)
-    annotation (Line(points={{156,126},{156,118},{330,118}}, color={0,0,127}));
-  connect(gain_7_2.y, switch_7_2.u1) annotation (Line(points={{269,166},{256,166},
-          {256,150},{196,150},{196,158}}, color={0,0,127}));
-  connect(teeJunctionIdeal_1.port_2, valve_7_1.port_a) annotation (Line(points={
-          {102,316},{114,316},{114,260}}, color={0,127,255}));
   connect(valve_7_1.port_b, volumeFlow_7_1.port_a)
-    annotation (Line(points={{114,240},{114,208}}, color={0,127,255}));
-  connect(volumeFlow_7_1.port_b, teeJunctionIdeal_2.port_2)
-    annotation (Line(points={{114,188},{114,98},{108,98}}, color={0,127,255}));
-  connect(to_m3hr7_1.u, volumeFlow_7_1.V_flow)
-    annotation (Line(points={{140,198},{125,198}}, color={0,0,127}));
-  connect(to_m3hr7_1.y, absoluteValueConnection_7_1.u)
-    annotation (Line(points={{163,198},{180,198},{180,206}}, color={0,0,127}));
-  connect(volumeFlow_7_2.port_b, teeJunctionIdeal_2.port_1)
-    annotation (Line(points={{62,108},{62,98},{88,98}}, color={0,127,255}));
-  connect(realExpression_7_2.y, switch_7_2.u3)
-    annotation (Line(points={{201,174},{196,174}}, color={0,0,127}));
-  connect(pressure_7_2.port_b, valve_7_2.port_a) annotation (Line(
-      points={{28,158},{28,148},{62,148},{62,156}},
-      color={0,127,255},
-      pattern=LinePattern.Dot));
-  connect(pressure_7_2.port_a, valve_7_2.port_b) annotation (Line(
-      points={{28,178},{28,184},{62,184},{62,176}},
-      color={0,127,255},
-      pattern=LinePattern.Dot));
-  connect(valve_7_2.port_a, volumeFlow_7_2.port_a)
-    annotation (Line(points={{62,156},{62,128}}, color={0,127,255}));
-  connect(teeJunctionIdeal_1.port_1, valve_7_2.port_b)
-    annotation (Line(points={{82,316},{62,316},{62,176}}, color={0,127,255}));
-  connect(to_bar7_2.u, pressure_7_2.p_rel) annotation (Line(points={{152,86},{10,
-          86},{10,168},{19,168}}, color={0,0,127}));
-  connect(to_bar7_2.y, p_rel_7_2)
-    annotation (Line(points={{175,86},{330,86}}, color={0,0,127}));
-  connect(p_rel_7_2, p_rel_7_2)
-    annotation (Line(points={{330,86},{330,86}}, color={0,0,127}));
+    annotation (Line(points={{114,242},{114,186}}, color={0,127,255}));
+  connect(to_m3hr7.u, volumeFlow_7_1.V_flow)
+    annotation (Line(points={{140,176},{125,176}}, color={0,0,127}));
+  connect(volumeFlow_7_1.port_b, pipe_9.port_b)
+    annotation (Line(points={{114,166},{114,76},{58,76}}, color={0,127,255}));
+  connect(teeJunctionIdeal_5.port_3, valve_7_1.port_a) annotation (Line(points=
+          {{92,346},{92,304},{114,304},{114,262}}, color={0,127,255}));
+  connect(w_v_7, valve_7_1.opening)
+    annotation (Line(points={{338,252},{122,252}}, color={0,0,127}));
  annotation (Placement(transformation(
         extent={{10,-10},{-10,10}},
         rotation=180,
         origin={48,188})),
-    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-180,60},{320,540}})),
-    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-180,60},{320,
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,60},{320,540}})),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,60},{320,
             540}})),
     uses(Modelica(version="4.0.0"), Custom_Pump_V2(version="1")),
     version="1");

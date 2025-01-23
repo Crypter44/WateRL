@@ -14,7 +14,7 @@
         "tank_9": {
             "type": "tank",
             "input_FMU": ["w_v_7"],
-            "output_FMU": ["u_v_7_1", "u_v_7_2","V_flow_7_1", "V_flow_7_2", "p_rel_7_1", "p_rel_7_2", "level_tank_9"]
+            "output_FMU": ["V_flow_7", "p_rel_7", "level_tank_9"]
         }
     }
 }

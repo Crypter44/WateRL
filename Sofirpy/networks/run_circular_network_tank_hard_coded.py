@@ -2,6 +2,7 @@
 import json
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
+import numpy as np
 from pathlib import Path
 import time
 
@@ -39,12 +40,8 @@ class Controler(SimulationEntity):
             "V_flow_5": 0.0,
             "p_rel_5": 0.0,
             "u_v_5": 0.0,
-            "V_flow_7_1": 0.0,
-            "V_flow_7_2": 0.0,
-            "p_rel_7_1": 0.0,
-            "p_rel_7_2": 0.0,
-            "u_v_7:1": 0.0,
-            "u_v_7_2": 0.0,
+            "V_flow_7": 0.0,
+            "p_rel_7": 0.0,
             "level_tank_9": 0.0,
         }
         self.outputs = {
@@ -64,16 +61,19 @@ class Controler(SimulationEntity):
             # Bedarf ist so gering, dass Tank befüllt werden kann
             self.outputs["w_p_4"] = 1
             self.outputs["w_v_5"] = 0.2
-            self.outputs["w_v_7"] = 1
+            self.outputs["w_v_7"] = 0
         elif time < 20000:
-            # Bedarf ist so groß, dass Tank als zusätzliche Quelle eingesetzt wird
+            self.outputs["w_p_4"] = 1
+            self.outputs["w_v_5"] = 0.2
+            self.outputs["w_v_7"] = 1
+        elif time < 30000:
             self.outputs["w_p_4"] = 1
             self.outputs["w_v_5"] = 3
-            self.outputs["w_v_7"] = -1
-        elif time > 20000:
-            self.outputs["w_p_4"] = 1
-            self.outputs["w_v_5"] = 2
             self.outputs["w_v_7"] = 0
+        elif time > 30000:
+            self.outputs["w_p_4"] = 1
+            self.outputs["w_v_5"] = 3
+            self.outputs["w_v_7"] = 1
 
     def set_parameter(
         self, parameter_name: str, parameter_value: float
@@ -111,12 +111,12 @@ fmu_paths = {"water_network": str(fmu_path)}
 start_time = time.time()
 results, units = simulate(
     stop_time=50000.0,
-    step_size=1.0,
+    step_size=10.0,
     fmu_paths=fmu_paths,
     model_classes=model_classes,
     connections_config=connections_config,
     parameters_to_log=parameters_to_log,
-    logging_step_size=1,
+    logging_step_size=10,
     get_units=True,
 )
 
@@ -162,7 +162,7 @@ ax.plot(
 )
 ax2.plot(
     results["time"],
-    results["control_api.w_v_5"],
+    results["water_network.u_v_5"],
     lw=1.5,
     markersize=8,
     c=[0 / 255, 78 / 255, 115 / 255],
@@ -176,34 +176,37 @@ ax.set_title("VALVE 5")
 fig, ax = plt.subplots()
 ax.plot(
     results["time"],
-    results["water_network.V_flow_7_1"],
+    results["water_network.V_flow_7"],
     lw=1.5,
     path_effects=[
         pe.Stroke(linewidth=2.5, foreground=[77 / 255, 73 / 255, 67 / 255]),
         pe.Normal(),
     ],
     c=[253 / 255, 202 / 255, 0 / 255],
-    label="gemessen an der Inflowleitung des Tanks",
 )
-ax.plot(
-    results["time"],
-    results["water_network.V_flow_7_2"],
-    lw=1.5,
-    markersize=8,
-    c=[0 / 255, 78 / 255, 115 / 255],
-    label="gemessen an der Outflowleitung des Tanks",
-)
+ax2 = ax.twinx()
 ax.set_xlabel("TIME in s")
 ax.set_ylabel("VOLUME FLOW in m$^3$/h")
-ax.legend(loc="upper right")
-ax.set_title("TANK")
-fig, ax = plt.subplots()
-ax.plot(
+
+ax2.plot(
     results["time"],
     results["water_network.level_tank_9"],
     lw=1.5,
     c=[0 / 255, 78 / 255, 115 / 255],
 )
+ax2.set_ylabel("TANK LEVEL in m", c=[0 / 255, 78 / 255, 115 / 255])
+ax2.set_title("TANK")
+
+# %%
+fig, ax = plt.subplots()
+ax.plot(
+    results["time"],
+    results["water_network.p_rel_7"],
+    lw=1.5,
+    c=[0 / 255, 78 / 255, 115 / 255],
+)
+ax.hlines(y=0, xmin=0, xmax=50000, colors="k", linestyles=":")
 ax.set_xlabel("TIME in s")
-ax.set_ylabel("TANK LEVEL in m")
-ax.set_title("TANK")
+ax.set_ylabel("RELATIVE PRESSURE @ TANK-VALVE in bar")
+ax.set_title("TANK-VALVE")
+# %%
