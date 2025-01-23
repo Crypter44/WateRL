@@ -72,6 +72,8 @@ class ResettableFmu(Fmu):
 
     def conclude_simulation(self) -> None:
         super().conclude_simulation()
+
+    def finalize(self):
         shutil.rmtree(self.unzip_dir)
         logging.info(f"Cleared temp dir: '{self.unzip_dir}'.")
 
@@ -151,7 +153,7 @@ def init_models(
     models: dict[str, System] = {}
     for model_name, model_class in model_classes.items():
         _start_values = start_values.get(model_name) or {}
-        _init_args = model_init_args.get(model_name) or []
+        _init_args = model_init_args.get(model_name) or {}
         model_instance = model_class(**_init_args)
         model_instance.initialize(_start_values)
         system = System(model_instance, model_name)

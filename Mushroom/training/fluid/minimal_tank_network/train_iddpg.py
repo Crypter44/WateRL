@@ -9,6 +9,7 @@ from Mushroom.agents.ddpg import create_ddpg_agent
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
 from Mushroom.core.multi_agent_core import MultiAgentCore
+from Mushroom.environments.fluid.minimal_tank_network import MinimalTankNetwork
 from Mushroom.utils.plotting import plot_training_data
 from Mushroom.utils.utils import set_seed, parametrized_training
 
@@ -27,16 +28,16 @@ batch_size = 200
 n_features = 80
 tau = .005
 
-sigma = [(0, 0.3), (75, 0.2), (150, 0.1)]
+sigma = [(0, 0.3), (15, 0.2), (30, 0.1)]
 
-n_epochs = 800
+n_epochs = 30
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
 
-n_episodes_final = 500
-n_episodes_final_render = 100
-n_epochs_per_checkpoint = 100
+n_episodes_final = 10
+n_episodes_final_render = 0
+n_epochs_per_checkpoint = 10000000
 
 criteria = {
     "target_opening": {
@@ -58,7 +59,7 @@ mpl.rcParams['figure.max_open_warning'] = n_episodes_final_render
 def train(p1, p2, seed, save_path):
     set_seed(seed)
     # MDP
-    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria)
+    mdp = MinimalTankNetwork(criteria=criteria)
     agents = [create_ddpg_agent(
         mdp,
         agent_idx=i,
@@ -93,7 +94,7 @@ def train(p1, p2, seed, save_path):
             quiet=True
         )
 
-        core.evaluate(n_steps=200, render=False, quiet=True)
+        core.evaluate(n_episodes=1, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
         set_noise_for_all(core.agent, False)
         dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)

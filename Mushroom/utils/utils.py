@@ -165,3 +165,15 @@ def compute_J_with_labeled_dataset(dataset, gamma=1.):
     if len(js) == 0:
         return [0.]
     return js
+
+
+def exponential_reward(x, target, smoothness, bound, value_at_bound):
+    b = np.log(value_at_bound) / (np.sqrt(smoothness) - np.sqrt(smoothness + bound ** 2))
+    a = np.exp(b * np.sqrt(smoothness))
+    return a * np.exp(-b * np.sqrt((x - target) ** 2 + smoothness))
+
+
+def linear_reward(x, min_x, max_x, min_reward=0, max_reward=1.0):
+    r = (max_x - x) / (max_x - min_x)
+    r = np.clip(r, 0, 1)
+    return min_reward + r * (max_reward - min_reward)

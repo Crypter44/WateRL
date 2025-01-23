@@ -30,6 +30,7 @@ class AbstractFluidNetworkEnv(AbstractEnvironment):
             fluid_network_simulator: ManualStepSimulator,
             gamma: float,
             horizon: int,
+            stop_time: int = None,
             n_agents: int = 1,
             labeled_step: bool = False
     ):
@@ -46,6 +47,7 @@ class AbstractFluidNetworkEnv(AbstractEnvironment):
         )
         self.labeled_step = labeled_step
         self._horizon = horizon
+        self._stop_time = stop_time or horizon
         self.sim = fluid_network_simulator
         super().__init__(mdp_info)
 
@@ -56,7 +58,7 @@ class AbstractFluidNetworkEnv(AbstractEnvironment):
         if state is not None:
             raise NotImplementedError("Resetting to a specific state is not supported.")
 
-        self.sim.reset_simulation(self._horizon, 1, 1)
+        self.sim.reset_simulation(self._stop_time, 1, 1)
         self._current_state, _ = self._get_current_state()
 
         sample = {

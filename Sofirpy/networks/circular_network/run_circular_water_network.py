@@ -15,7 +15,7 @@ sim = ManualStepSimulator(
     get_units=False,
     verbose=True,
 )
-
+sim.reset_simulation(200, 1)
 speeds = np.array([0.45, 0.45])
 c = 0
 while not sim.is_done():

@@ -8,7 +8,7 @@ import sofirpy.common as co
 from sofirpy import SimulationEntity
 from sofirpy.simulation.simulation import Simulator, _validate_input, init_connections, init_parameter_list
 
-from Sofirpy.fmu.resettable_fmu import init_fmus_resettable, reset_fmus, init_models
+from Sofirpy.fmu.resettable_fmu import init_fmus_resettable, reset_fmus, init_models, ResettableFmu
 
 
 class SimulationEntityWithAction(SimulationEntity):
@@ -126,7 +126,6 @@ class ManualStepSimulator(Simulator):
         if model_init_args is not None:
             self._model_init_args = model_init_args
 
-        self.conclude_simulation()
         self.models = init_models(self._model_classes, self._model_init_args, self._start_values.copy())
         reset_fmus(self.fmus, self._fmu_paths, self._start_values.copy())
 
@@ -172,10 +171,10 @@ class ManualStepSimulator(Simulator):
             return
 
         time_step, time = self._time_step, self._time_series[self._time_step]
-        for fmu in self.fmus.values():
-            fmu.simulation_entity.do_step(time)
         for agent in self.models.values():
             agent.simulation_entity.do_step_with_action(time, action)
+        for fmu in self.fmus.values():
+            fmu.simulation_entity.do_step(time)
         self.set_systems_inputs()
         if ((time_step + 1) % self._logging_multiple) == 0:
             self.log_values(self._time_series[time_step + 1], self._log_step)
@@ -203,4 +202,7 @@ class ManualStepSimulator(Simulator):
     def finalize(self):
         """Finalize the simulation"""
         self.conclude_simulation()
+        for system in self.systems.values():
+            if isinstance(system.simulation_entity, ResettableFmu):
+                system.simulation_entity.finalize()
         logging.info("Simulation finished.")

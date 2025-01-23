@@ -59,4 +59,10 @@ def get_simple_network_valve_config():
     model_classes = {"control_api": ControllerSimpleNetworkValve}
     fmu_paths = {"water_network": str(fmu_path)}
 
-    return fmu_paths, model_classes, connections_config, parameters_to_log
+    return {
+        "fmu_paths": fmu_paths,
+        "model_classes": model_classes,
+        "model_init_args": {},
+        "connections_config": connections_config,
+        "parameters_to_log": parameters_to_log,
+    }

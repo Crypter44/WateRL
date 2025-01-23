@@ -20,4 +20,10 @@ def get_circular_network_no_pi_config():
     with open(logging_config_path) as logging_config_json:
         parameters_to_log = json.load(logging_config_json)
 
-    return fmu_paths, model_classes, connections_config, parameters_to_log
+    return {
+        "model_classes": model_classes,
+        "model_init_args": {},
+        "fmu_paths": fmu_paths,
+        "connections_config": connections_config,
+        "parameters_to_log": parameters_to_log,
+    }

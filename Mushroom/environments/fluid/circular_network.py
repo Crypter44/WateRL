@@ -1,14 +1,12 @@
 import concurrent.futures
-import random
-from collections import deque
 from copy import deepcopy
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from mushroom_rl.utils import spaces
 
 from Mushroom.environments.fluid.abstract_environments import AbstractFluidNetworkEnv
+from Mushroom.utils.utils import exponential_reward, linear_reward
 from Sofirpy.networks.agents import set_demand_for_consumers
 from Sofirpy.networks.circular_network.config import get_circular_network_config
 from Sofirpy.simulation import ManualStepSimulator
@@ -57,7 +55,6 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self.qs = None
 
         # Init rendering using matplotlib
-        mpl.rcParams['figure.max_open_warning'] = 50
         self._render_executor = concurrent.futures.ThreadPoolExecutor()
 
     def render(self, title=None, save_path=None):
@@ -209,20 +206,20 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             if "demand" in self._criteria.keys():
                 for i in range(num_valves):
                     tmp += (
-                            1 / num_valves
-                            * self._criteria["demand"]["w"]
-                            * self._exponential_reward(
-                        s[i] - s[i + 4],
-                        0,
-                        self._criteria["demand"].get("smoothness", 0.0001),
-                        self._criteria["demand"].get("bound", 0.1),
-                        self._criteria["demand"].get("value_at_bound", 0.01),
-                    )
+                            1 / num_valves *
+                            self._criteria["demand"]["w"] *
+                            exponential_reward(
+                                s[i] - s[i + 4],
+                                0,
+                                self._criteria["demand"].get("smoothness", 0.0001),
+                                self._criteria["demand"].get("bound", 0.1),
+                                self._criteria["demand"].get("value_at_bound", 0.01),
+                            )
                     )
             if "max_power" in self._criteria.keys():
-                tmp += self._criteria["max_power"]["w"] * self._linear_reward(max(s[16], s[17]), 6, 193)
+                tmp += self._criteria["max_power"]["w"] * linear_reward(max(s[16], s[17]), 6, 193)
             if "mean_power" in self._criteria.keys():
-                tmp += self._criteria["mean_power"]["w"] * self._linear_reward((s[16] + s[17]) / 2, 6, 193)
+                tmp += self._criteria["mean_power"]["w"] * linear_reward((s[16] + s[17]) / 2, 6, 193)
             if "opening" in self._criteria.keys():
                 tmp += self._criteria["opening"]["w"] * max(s[8], s[9], s[10], s[11])
             if "target_opening" in self._criteria.keys():
@@ -235,7 +232,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 value_at_right_bound = self._criteria["target_opening"].get("value_at_right_bound", 0.01)
                 if x < target:
                     tmp += self._criteria["target_opening"]["w"] * (
-                        self._exponential_reward(
+                        exponential_reward(
                             x,  # only consider the valve with the highest opening
                             target,
                             smoothness,
@@ -247,7 +244,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                     tmp -= self._criteria["target_opening"]["w"]
                 else:
                     tmp += self._criteria["target_opening"]["w"] * (
-                        self._exponential_reward(
+                        exponential_reward(
                             x,
                             target,
                             smoothness,
@@ -261,7 +258,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 tmp += self._criteria["mean_speed"]["w"] * (2 - s[12] - s[13]) / 2
             if "target_speed" in self._criteria.keys():
                 tmp += self._criteria["target_speed"]["w"] * (
-                    self._exponential_reward(
+                    exponential_reward(
                         (s[12] + s[13]) / 2,
                         self._criteria["target_speed"].get("target", 0.5),
                         self._criteria["target_speed"].get("smoothness", 0.01),
@@ -276,18 +273,6 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             reward += tmp / len(sim_states_to_use)
 
         return reward
-
-    @staticmethod
-    def _exponential_reward(x, target, smoothness, bound, value_at_bound):
-        b = np.log(value_at_bound) / (np.sqrt(smoothness) - np.sqrt(smoothness + bound ** 2))
-        a = np.exp(b * np.sqrt(smoothness))
-        return a * np.exp(-b * np.sqrt((x - target) ** 2 + smoothness))
-
-    @staticmethod
-    def _linear_reward(x, min_x, max_x, min_reward=0, max_reward=1.0):
-        r = (max_x - x) / (max_x - min_x)
-        r = np.clip(r, 0, 1)
-        return min_reward + r * (max_reward - min_reward)
 
     @staticmethod
     def plot_valve_and_pump_data(

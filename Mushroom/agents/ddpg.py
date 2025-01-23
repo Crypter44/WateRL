@@ -102,7 +102,7 @@ def create_ddpg_agent(
     actor_params = dict(network=ActorNetwork,
                         n_features=n_features_actor,
                         input_shape=actor_input_shape,
-                        output_shape=mdp.info.action_space_for_idx(-1).shape,
+                        output_shape=mdp.info.action_space_for_idx(agent_idx).shape,
                         agent_idx=agent_idx)
 
     actor_optimizer = {'class': optim.Adam,
