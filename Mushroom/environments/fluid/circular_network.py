@@ -26,7 +26,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
     ):
 
         if fluid_network_simulator is None:
-            fluid_network_simulator = self._setup_simulator(**demand)
+            fluid_network_simulator = self._setup_simulator(*demand)
 
         super().__init__(
             state_space=spaces.Box(low=-500, high=500, shape=(18,)),
@@ -147,7 +147,10 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
     def _setup_simulator(self, demand_type, low, high):
         config = get_circular_network_config()
 
-        set_demand_for_consumers(config["model_init_args"], self._configure_demand(demand_type, low, high))
+        set_demand_for_consumers(
+            config["model_init_args"]["control_api"]["agent_configs"],
+            self._configure_demand(demand_type, low, high, 4)
+        )
 
         return ManualStepSimulator(
             stop_time=50,
@@ -160,7 +163,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
 
     @staticmethod
     def _configure_demand(kind, low, high, count) -> list[float]:
-        if kind == "uniform_individually":
+        if kind == "uniform_individual":
             return [np.random.uniform(low, high) for _ in range(count)]
         elif kind == "uniform_global":
             demand = np.random.uniform(low * count, high * count)

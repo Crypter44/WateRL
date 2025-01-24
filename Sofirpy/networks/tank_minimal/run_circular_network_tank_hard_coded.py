@@ -13,7 +13,7 @@ dir_path = Path(__file__).parent
 
 # %% setup simulation
 
-fmu_dir_path = dir_path.parent.parent / "Fluid_Model" / "mini_water_network_tank"
+fmu_dir_path = dir_path.parent.parent / "fluid_models" / "mini_water_network_tank"
 fmu_path = fmu_dir_path / "mini_tank.fmu"
 
 connections_config_path = fmu_dir_path / "mini_tank_connections_config.json"
@@ -60,11 +60,11 @@ class Controler(SimulationEntity):
         if time < 10000:
             # Bedarf ist so gering, dass Tank befüllt werden kann
             self.outputs["w_p_4"] = 1
-            self.outputs["w_v_5"] = 0.2
+            self.outputs["w_v_5"] = 0.4
             self.outputs["w_v_7"] = 0
         elif time < 20000:
             self.outputs["w_p_4"] = 1
-            self.outputs["w_v_5"] = 0.2
+            self.outputs["w_v_5"] = 0.4
             self.outputs["w_v_7"] = 1
         elif time < 30000:
             self.outputs["w_p_4"] = 1
@@ -146,6 +146,7 @@ ax.set_ylabel("VOLUME FLOW in m$^3$/h")
 ax2.set_ylabel("PUMP POWER in W", c=[0 / 255, 78 / 255, 115 / 255])
 ax2.spines["right"].set_visible(True)
 ax.set_title("PUMP 4")
+fig.show()
 # %% display results - valve 5
 fig, ax = plt.subplots()
 ax2 = ax.twinx()
@@ -172,6 +173,7 @@ ax.set_ylabel("VOLUME FLOW in m$^3$/h")
 ax2.set_ylabel("OPENING RATE", c=[0 / 255, 78 / 255, 115 / 255])
 ax2.spines["right"].set_visible(True)
 ax.set_title("VALVE 5")
+fig.show()
 # %% display results - tank 9
 fig, ax = plt.subplots()
 ax.plot(
@@ -196,7 +198,7 @@ ax2.plot(
 )
 ax2.set_ylabel("TANK LEVEL in m", c=[0 / 255, 78 / 255, 115 / 255])
 ax2.set_title("TANK")
-
+fig.show()
 # %%
 fig, ax = plt.subplots()
 ax.plot(
@@ -209,4 +211,5 @@ ax.hlines(y=0, xmin=0, xmax=50000, colors="k", linestyles=":")
 ax.set_xlabel("TIME in s")
 ax.set_ylabel("RELATIVE PRESSURE @ TANK-VALVE in bar")
 ax.set_title("TANK-VALVE")
+fig.show()
 # %%

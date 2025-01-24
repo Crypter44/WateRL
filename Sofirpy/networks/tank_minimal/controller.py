@@ -9,7 +9,7 @@ class ControllerMinimalTank(SimulationEntityWithAction):
 
     It connects the input and output values for the FMU to a custom code.
     """
-    CONTROL_STEP_INTERVAL = 500
+    CONTROL_STEP_INTERVAL = 1000
 
     def __init__(self) -> None:
         self.inputs = {
@@ -46,7 +46,7 @@ class ControllerMinimalTank(SimulationEntityWithAction):
 
         if time < 10000:
             # Bedarf ist so gering, dass Tank befüllt werden kann
-            self.outputs["w_v_5"] = 0.2
+            self.outputs["w_v_5"] = 0.4
         elif time < 20000:
             # Bedarf ist so groß, dass Tank als zusätzliche Quelle eingesetzt wird
             self.outputs["w_v_5"] = 3

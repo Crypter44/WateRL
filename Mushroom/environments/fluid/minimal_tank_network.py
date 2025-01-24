@@ -267,19 +267,10 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         # Plot inflow and outflow
         ax[1, 1].plot(
             sim_data["time"],
-            sim_data["water_network.V_flow_7_1"],
+            sim_data["water_network.V_flow_7"],
             color='green',
             label="Inflow",
         )
-        ax[1, 1].plot(
-            sim_data["time"],
-            sim_data["water_network.V_flow_7_2"],
-            color='red',
-            label="Outflow",
-        )
-        ax[1, 1].set_xlabel("Time [s]")
-        ax[1, 1].set_ylabel("Volume flow [m³/h]")
-        ax[1, 1].set_title("Tank Inflow/Outflow")
 
         # Plot tank control
         ax[1, 2].plot(

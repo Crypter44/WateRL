@@ -24,9 +24,11 @@ def set_demand_for_consumers(agents_configs: list[AgentConfig], demands: list[fl
         agents_configs (list[AgentConfig]): List of AgentConfig objects.
         demands (list[float]): List of demands for the consumers.
     """
-    for idx, agent_config in enumerate(agents_configs):
+    idx = 0
+    for agent_config in agents_configs:
         if agent_config.agent_type == "consumer":
             agent_config.demand = demands[idx]
+            idx += 1
 
 
 class Agent(ABC):

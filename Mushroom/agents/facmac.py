@@ -8,7 +8,7 @@ from mushroom_rl.utils.torch import get_weights, set_weights
 from torch import optim
 
 from Mushroom.agents.ddpg import ActorNetwork, CriticNetwork
-from Mushroom.agents.facmac_ddpg import DDPG
+from Mushroom.agents.ddpg_with_mixer_support import DDPG
 from Mushroom.agents.qmix import QMixer
 from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
 from Mushroom.utils.replay_memories import ReplayMemoryObsMultiAgent
