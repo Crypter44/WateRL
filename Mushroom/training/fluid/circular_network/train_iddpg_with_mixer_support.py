@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 
-from Mushroom.agents.maddpg import setup_maddpg_agents
+from Mushroom.agents.ddpg_with_mixer_support import setup_iddpg_agents
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all, UnivariateGaussianPolicy
 from Mushroom.core.multi_agent_core_mixer import MultiAgentCoreMixer
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
@@ -42,9 +42,10 @@ criteria = {
 
 # create a dictionary to store data for each seed
 def train(p1, p2, seed, save_path):
+    criteria["target_speed"]["target"] = p1
     set_seed(seed)
     mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, labeled_step=True)
-    agents, maddpg = setup_maddpg_agents(
+    agents = setup_iddpg_agents(
         mdp,
         policy=UnivariateGaussianPolicy(
             sigma_checkpoints=sigma_checkpoints,
@@ -60,12 +61,11 @@ def train(p1, p2, seed, save_path):
         max_replay_size=max_replay_size,
         tau=tau,
     )
-    mdp.enable_q_logging(agents)
 
     # Core
     core = MultiAgentCoreMixer(
         agents=agents,
-        mixer=maddpg,
+        mixer=None,
         mdp=mdp,
     )
 
@@ -113,11 +113,11 @@ def train(p1, p2, seed, save_path):
 
 training_data, path = parametrized_training(
     __file__,
-    [None],
+    [0, 0.2, 0.4, 0.6, 0.8, 1],
     [None],
     [1],
     train=train,
-    base_path="Plots/MADDPG/",
+    base_path="Plots/IDDPG_With_Mixing_Support/",
 )
 
 plot_training_data(training_data, path)

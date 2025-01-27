@@ -244,7 +244,8 @@ class MultiAgentCoreMixer(object):
                     actor_losses.append(actor_loss)
                     critic_losses.append(critic_loss)
 
-                self.mixer.fit(dataset)
+                if self.mixer is not None:
+                    self.mixer.fit(dataset)
                 dataset = list()
                 dataset_info = list()
 

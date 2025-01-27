@@ -31,8 +31,8 @@ def get_circular_network_config():
                     name=agent_name,
                     agent_id=idx,
                     agent_type=agent_configs_dict["agents"][agent_name]["type"],
-                    names_output_to_FMU=agent_configs_dict["agents"][agent_name]["output_FMU"],
-                    names_input_from_FMU=agent_configs_dict["agents"][agent_name]["input_FMU"],
+                    names_output_to_FMU=agent_configs_dict["agents"][agent_name]["input_FMU"],
+                    names_input_from_FMU=agent_configs_dict["agents"][agent_name]["output_FMU"],
                 )
             )
 

@@ -8,7 +8,7 @@ num_agents = 2
 gamma = 0.99
 gamma_eval = 1.
 
-path = """/home/js/PycharmProjects/Thesis/Mushroom/training/fluid/circular_network/Plots/DDPG/25-01-22__08:55/None-None/s0/checkpoints/Final_Agent_0"""
+path = """/Mushroom/training/fluid/circular_network/Plots/IDDPG/25-01-22__08:55/None-None/s0/checkpoints/Final_Agent_0"""
 
 criteria = {
     "target_opening": {

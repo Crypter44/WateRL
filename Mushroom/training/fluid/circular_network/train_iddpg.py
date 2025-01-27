@@ -29,7 +29,7 @@ tau = .005
 
 sigma = [(0, 0.3), (75, 0.2), (150, 0.1)]
 
-n_epochs = 800
+n_epochs = 10
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
@@ -39,14 +39,9 @@ n_episodes_final_render = 100
 n_epochs_per_checkpoint = 100
 
 criteria = {
-    "target_opening": {
+    "target_speed": {
         "w": 1.,
-        "target": 0.95,
-        "smoothness": 0.0001,
-        "left_bound": 0.2,
-        "value_at_left_bound": 0.05,
-        "right_bound": 0.05,
-        "value_at_right_bound": 0.001,
+        "target": 0.5
     },
 }
 # END_PARAMS
@@ -58,7 +53,7 @@ mpl.rcParams['figure.max_open_warning'] = n_episodes_final_render
 def train(p1, p2, seed, save_path):
     set_seed(seed)
     # MDP
-    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria)
+    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, demand=("uniform_global", 0.3, 1.5))
     agents = [create_ddpg_agent(
         mdp,
         agent_idx=i,
@@ -143,7 +138,7 @@ training_data, path = parametrized_training(
     [None],
     [0],
     train=train,
-    base_path="./Plots/DDPG/",
+    base_path="Plots/IDDPG/",
 )
 
 plot_training_data(training_data, path)
