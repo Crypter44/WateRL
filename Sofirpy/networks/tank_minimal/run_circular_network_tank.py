@@ -30,7 +30,7 @@ for i in range(test_count):
     )
     if use_random_initialization:
         action = np.random.uniform(low, high, (2,))  # This is incredibly unstable, if high is set to anything above 0.1
-        # It does not matter, whether we keep the action the same or wether we change it, the simulation will fail often
+        # It does not matter, whether we keep the action the same or whether we change it, the simulation will fail often
     else:
         action = np.zeros((2,))  # This is more stable, but still fails, if the action is changed too  much
     for time in tqdm(range(50000)):

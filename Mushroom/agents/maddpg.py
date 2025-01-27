@@ -1,13 +1,14 @@
-import numpy as np
-import torch
 from copy import deepcopy
 from itertools import chain
+
+import numpy as np
+import torch
 import torch.nn.functional as F
 from mushroom_rl.approximators.parametric import TorchApproximator
 from mushroom_rl.core import Agent
 from torch import optim
 
-from Mushroom.agents.ddpg import CriticNetwork, ActorNetwork
+from Mushroom.agents.ddpg import CriticNetwork, ActorNetwork, SharedCriticNetwork
 from Mushroom.agents.ddpg_with_mixer_support import DDPG
 from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
 from Mushroom.utils.replay_memories import ReplayMemoryObsMultiAgent
@@ -113,6 +114,16 @@ class MADDPG(Agent):
             ]
             absorbing_t = torch.tensor(absorbing, dtype=torch.bool)
 
+            # move to cuda if necessary
+            if self._use_cuda:
+                states_t = states_t.cuda()
+                obs_t = [obs.cuda() for obs in obs_t]
+                actions_t = [actions.cuda() for actions in actions_t]
+                rewards_t = rewards_t.cuda()
+                next_states_t = next_states_t.cuda()
+                next_obs_t = [obs.cuda() for obs in next_obs_t]
+                absorbing_t = absorbing_t.cuda()
+
             # Update critic
             actions_cat = torch.cat(actions_t, dim=-1)
             next_actions_t = [
@@ -154,10 +165,6 @@ class MADDPG(Agent):
                 actor_loss /= self.mdp_info.n_agents
             self._actor_optimizer.zero_grad()
             actor_loss.backward()
-            if self._grad_norm_clip is not None:
-                actor_grad_norm = torch.nn.utils.clip_grad_norm_(
-                    self.actor_params, self._grad_norm_clip
-                )
             self._actor_optimizer.step()
 
             # Update target mixer
@@ -444,11 +451,11 @@ def setup_maddpg_agents(
             "params": {"lr": lr_actor},
         },
         critic_params={
-            "network": CriticNetwork,
+            "network": SharedCriticNetwork,
             "optimizer": {"class": optim.Adam, "params": {"lr": lr_critic}},
             "loss": F.mse_loss,
             "n_features": n_features_critic,
-            "input_shape": (n_features_actor * n_agents + n_agents,),
+            "input_shape": (mdp.info.state_space.shape[0] + n_agents,),
             "output_shape": (1,),
             "use_cuda": True,
         },

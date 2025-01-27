@@ -59,11 +59,20 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
 
     def render(self, title=None, save_path=None):
         results = self.sim.get_results()
+        actions = deepcopy(self.actions)
         rewards = deepcopy(self.rewards)
         qs = deepcopy(self.qs) if self.qs else None
-        self._render_executor.submit(self._render_task, title, save_path, results, rewards=rewards, qs=qs)
+        self._render_executor.submit(
+            self._render_task,
+            title,
+            save_path,
+            results,
+            rewards=rewards,
+            qs=qs,
+            actions=actions
+        )
 
-    def _render_task(self, title=None, save_path=None, results=None, rewards=None, qs=None):
+    def _render_task(self, title=None, save_path=None, results=None, actions=None, rewards=None, qs=None):
         valves = [2, 3, 5, 6]
         pumps = [1, 4]
         self.plot_valve_and_pump_data(
@@ -76,6 +85,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
             pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
             pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
+            pump_actions=actions,
             title=title,
             save_path=save_path,
             rewards=rewards,
@@ -162,18 +172,22 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         )
 
     @staticmethod
-    def _configure_demand(kind, low, high, count) -> list[float]:
+    def _configure_demand(kind, low, high, num_valves) -> list[float]:
         if kind == "uniform_individual":
-            return [np.random.uniform(low, high) for _ in range(count)]
+            return [np.random.uniform(low, high) for _ in range(num_valves)]
         elif kind == "uniform_global":
-            demand = np.random.uniform(low * count, high * count)
-            random_numbers = np.random.dirichlet(np.ones(count))
-            scaled_numbers = random_numbers * (demand - count * low)
+            demand = np.random.uniform(low * num_valves, high * num_valves)
+            random_numbers = np.random.dirichlet(np.ones(num_valves))
+            scaled_numbers = random_numbers * (demand - num_valves * low)
             final_numbers = scaled_numbers + low
+            c = 0
             while np.any(final_numbers > high):
+                if c > 5:
+                    break
                 excess = np.sum(final_numbers[final_numbers > high] - high)
                 final_numbers[final_numbers > high] = high
                 final_numbers[final_numbers < high] += excess / np.sum(final_numbers < high)
+                c += 1
             return final_numbers
         else:
             raise ValueError(f"Unknown demand type: {kind}")
