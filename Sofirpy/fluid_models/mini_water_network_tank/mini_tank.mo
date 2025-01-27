@@ -251,7 +251,7 @@ model mini_tank
     length=10,
     diameter(displayUnit="m") = 0.05,
     redeclare package Medium = Medium,
-    height_ab=-2)
+    height_ab=-7)
     annotation (Placement(transformation(extent={{88,346},{108,366}})));
 equation
   P_pum_4 = pump_4.W_total;
