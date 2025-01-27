@@ -163,3 +163,5 @@ class PumpAgent(Agent):
                 self.measured_delta_pressure_bar = self.inputs_from_FMU[key]
             elif "P_pum" in key:
                 self.measured_power_consumption = self.inputs_from_FMU[key]
+            else:
+                raise ValueError(f"Key '{key}' is not known.")
