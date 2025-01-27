@@ -48,7 +48,6 @@ model mini_tank
   Modelica.Fluid.Vessels.OpenTank tank_9(
     height=5,
     crossArea=5,
-    level_start=0.5*tank_9.height,
     redeclare package Medium = Medium,
     use_portsData=false,
     nPorts=1) annotation (Placement(transformation(extent={{-54,124},{-14,164}})));
@@ -70,7 +69,7 @@ model mini_tank
 
   Modelica.Fluid.Fittings.TeeJunctionIdeal teeJunctionIdeal_5(redeclare package
       Medium = Medium)
-    annotation (Placement(transformation(extent={{82,366},{102,346}})));
+    annotation (Placement(transformation(extent={{26,366},{46,346}})));
 
   Modelica.Fluid.Valves.ValveLinear valve_5(
     allowFlowReversal=true,
@@ -125,13 +124,14 @@ model mini_tank
         rotation=90,
         origin={46,462})));
   Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_5(
-    redeclare package Medium = Medium)
+    redeclare package Medium = Medium, allowFlowReversal=false)
     annotation (Placement(transformation(extent={{138,366},{158,346}})));
   Modelica.Fluid.Sensors.RelativePressure pressure_5(
     redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{180,398},{200,378}})));
   Modelica.Fluid.Sensors.VolumeFlowRate volumeFlow_7_1(redeclare package Medium
-      = Medium) annotation (Placement(transformation(
+      = Medium, allowFlowReversal=true)
+                annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=-90,
         origin={114,176})));
@@ -244,6 +244,15 @@ model mini_tank
         origin={-28,50})));
 
 
+  Modelica.Blocks.Nonlinear.FixedDelay fixedDelay1(delayTime=1)
+    annotation (Placement(transformation(extent={{224,242},{204,262}})));
+  Modelica.Fluid.Pipes.StaticPipe pipe_1(
+    allowFlowReversal=false,
+    length=10,
+    diameter(displayUnit="m") = 0.05,
+    redeclare package Medium = Medium,
+    height_ab=-2)
+    annotation (Placement(transformation(extent={{88,346},{108,366}})));
 equation
   P_pum_4 = pump_4.W_total;
   level_tank_9 = tank_9.level;
@@ -304,8 +313,6 @@ equation
     annotation (Line(points={{92,506},{92,524},{70,524}},  color={0,127,255}));
   connect(V_flow_4, V_flow_4)
     annotation (Line(points={{4,546},{4,546}},       color={0,0,127}));
-  connect(teeJunctionIdeal_5.port_2, volumeFlow_5.port_a) annotation (Line(
-        points={{102,356},{138,356}},                     color={0,127,255}));
   connect(fixedDelay2.y, PI_5.u_s)
     annotation (Line(points={{275,352},{264,352}},           color={0,0,127}));
   connect(fixedDelay2.u, w_v_5)
@@ -347,18 +354,24 @@ equation
     annotation (Line(points={{38,76},{-34,76},{-34,124}}, color={0,127,255}));
   connect(V_flow_7, V_flow_7)
     annotation (Line(points={{330,176},{330,176}}, color={0,0,127}));
-  connect(pipe_5.port_b, teeJunctionIdeal_5.port_1) annotation (Line(points={{16,
-          406},{8,406},{8,356},{82,356}}, color={0,127,255}));
+  connect(pipe_5.port_b, teeJunctionIdeal_5.port_1) annotation (Line(points={{16,406},
+          {10,406},{10,356},{26,356}},    color={0,127,255}));
   connect(valve_7_1.port_b, volumeFlow_7_1.port_a)
     annotation (Line(points={{114,242},{114,186}}, color={0,127,255}));
   connect(to_m3hr7.u, volumeFlow_7_1.V_flow)
     annotation (Line(points={{140,176},{125,176}}, color={0,0,127}));
   connect(volumeFlow_7_1.port_b, pipe_9.port_b)
     annotation (Line(points={{114,166},{114,76},{58,76}}, color={0,127,255}));
-  connect(teeJunctionIdeal_5.port_3, valve_7_1.port_a) annotation (Line(points=
-          {{92,346},{92,304},{114,304},{114,262}}, color={0,127,255}));
-  connect(w_v_7, valve_7_1.opening)
-    annotation (Line(points={{338,252},{122,252}}, color={0,0,127}));
+  connect(teeJunctionIdeal_5.port_3, valve_7_1.port_a) annotation (Line(points={{36,346},
+          {36,268},{114,268},{114,262}},           color={0,127,255}));
+  connect(fixedDelay1.u, w_v_7)
+    annotation (Line(points={{226,252},{338,252}}, color={0,0,127}));
+  connect(fixedDelay1.y, valve_7_1.opening)
+    annotation (Line(points={{203,252},{122,252}}, color={0,0,127}));
+  connect(teeJunctionIdeal_5.port_2, pipe_1.port_a)
+    annotation (Line(points={{46,356},{88,356}}, color={0,127,255}));
+  connect(pipe_1.port_b, volumeFlow_5.port_a)
+    annotation (Line(points={{108,356},{138,356}}, color={0,127,255}));
  annotation (Placement(transformation(
         extent={{10,-10},{-10,10}},
         rotation=180,

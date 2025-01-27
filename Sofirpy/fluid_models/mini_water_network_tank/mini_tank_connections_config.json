@@ -56,6 +56,11 @@
       "parameter_name": "p_rel_7",
       "connect_to_system": "water_network",
       "connect_to_external_parameter": "p_rel_7"
+    },
+    {
+      "parameter_name": "level_tank_9",
+      "connect_to_system": "water_network",
+      "connect_to_external_parameter": "level_tank_9"
     }
   ]
 }
