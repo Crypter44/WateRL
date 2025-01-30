@@ -215,22 +215,22 @@ model mini_tank
   Modelica.Blocks.Nonlinear.FixedDelay fixedDelay1(delayTime=1)
     annotation (Placement(transformation(extent={{240,242},{220,262}})));
 
-  //MAGNA3 D 100-120 F
+  //Wilo Stratos MAXO 25/0,5-12 PN 16
   Modelica.Fluid.Machines.PrescribedPump pump_4(
     redeclare package Medium = Medium,
     m_flow_start=0.001,
     checkValveHomotopy=Modelica.Fluid.Types.CheckValveHomotopyType.Closed,
-    N_nominal=3033,
+    N_nominal=3900,
     use_powerCharacteristic=true,
     redeclare function powerCharacteristic =
         Modelica.Fluid.Machines.BaseClasses.PumpCharacteristics.quadraticPower
-        (V_flow_nominal(displayUnit="m3/h") = {0,0.0027777777777778,0.0055555555555556},
-          W_nominal={500,750,1000}),
+        (V_flow_nominal(displayUnit="m3/h") = {0.00033333333333333,0.00066666666666667,
+          0.00088888888888889}, W_nominal={140,175,200}),
     checkValve=true,
     redeclare function flowCharacteristic =
         Modelica.Fluid.Machines.BaseClasses.PumpCharacteristics.quadraticFlow (
-          V_flow_nominal(displayUnit="m3/h") = {0,0.0027777777777778,0.0055555555555556},
-          head_nominal={13,12,10}),
+          V_flow_nominal(displayUnit="m3/h") = {0.00066666666666667,0.00088888888888889,
+          0.0011111111111111}, head_nominal={10.3,10.2,10}),
     V(displayUnit="l") = 0.01,
     energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial,
     massDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial,
