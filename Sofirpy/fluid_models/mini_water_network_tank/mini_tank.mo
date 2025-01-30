@@ -244,7 +244,7 @@ model mini_tank
         extent={{-10,-10},{10,10}},
         rotation=90,
         origin={100,550})));
-  Modelica.Blocks.Math.Gain gain(k=3033) annotation (Placement(transformation(
+  Modelica.Blocks.Math.Gain gain(k=3900) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=-90,
         origin={144,454})));
