@@ -1,14 +1,16 @@
 from copy import deepcopy
 
+import numpy as np
 import torch
 import torch.nn.functional as F
+from gymnasium.spaces import Box
 from mushroom_rl.approximators.parametric import TorchApproximator
-from mushroom_rl.core import Agent
 from torch import optim
 
 from Mushroom.agents.ddpg import CriticNetwork, ActorNetwork
 from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
 from Mushroom.utils.replay_memories import ReplayMemoryObs
+from aryaman import Agent
 
 
 class DDPG(Agent):
@@ -32,15 +34,14 @@ class DDPG(Agent):
             warmup_replay_size,
             replay_memory,
             use_cuda,
-            use_mixer=True,
+            primary_agent,
+            use_mixer,
     ):
         """
         Constructor.
 
         """
-        super().__init__(mdp_info, policy)
-
-        self._idx_agent = idx_agent
+        super().__init__(mdp_info, policy, idx_agent)
 
         self._batch_size = batch_size
         self._target_update_frequency = target_update_frequency
@@ -53,15 +54,15 @@ class DDPG(Agent):
 
         self._n_updates = 0
 
+        self._primary_agent = primary_agent
+
         target_actor_params = deepcopy(actor_params)
         self.actor_approximator = TorchApproximator(**actor_params)
         self.target_actor_approximator = TorchApproximator(**target_actor_params)
         target_critic_params = deepcopy(critic_params)
         self.critic_approximator = TorchApproximator(**critic_params)
         self.target_critic_approximator = TorchApproximator(**target_critic_params)
-
         self._update_targets_hard()
-
         self.policy.set_approximator(self.actor_approximator)
         self._optimizer = self.actor_approximator._optimizer
 
@@ -85,7 +86,6 @@ class DDPG(Agent):
         """
         Args:
             state (np.ndarray): the state where the agent is.
-            action_mask (np.ndarray, None): the mask for the actions.
 
         Returns:
             The action to be executed.
@@ -103,7 +103,8 @@ class DDPG(Agent):
             actor_loss, critic_loss = self._fit()
 
         self._n_updates += 1
-        self._update_targets_soft()
+        if self._idx_agent == 0 or self._primary_agent is None:
+            self._update_targets_soft()
 
         return actor_loss, critic_loss
 
@@ -135,6 +136,14 @@ class DDPG(Agent):
             rewards_t = torch.tensor(rewards, dtype=torch.float32)
             next_obs_t = torch.tensor(next_obs, dtype=torch.float32)
             absorbing_t = torch.tensor(absorbing, dtype=torch.bool)
+
+            # move to cuda if needed
+            if self._use_cuda:
+                obs_t = obs_t.cuda()
+                actions_t = actions_t.cuda()
+                rewards_t = rewards_t.cuda()
+                next_obs_t = next_obs_t.cuda()
+                absorbing_t = absorbing_t.cuda()
 
             # Critic update
             q_hat = self.critic_approximator.predict(
@@ -183,11 +192,13 @@ class DDPG(Agent):
     def _next_q(self, next_state_t):
         """
         Args:
-            next_state_t (torch.Tensor): the states where next action has to be
+            next_state (torch.Tensor): the states where next action has to be
                 evaluated;
+            absorbing (torch.Tensor): the absorbing flag for the states in
+                ``next_state``.
 
         Returns:
-            Action-values returned by the critic for ``next_state_t`` and the
+            Action-values returned by the critic for ``next_state`` and the
             action returned by the actor.
 
         """
@@ -287,7 +298,7 @@ def setup_iddpg_agents(
             DDPG(
                 mdp.info,
                 i,
-                policy,
+                GaussianPolicy(np.array([0.4]), Box(low=0, high=1, shape=(1,))),
                 actor_params,
                 critic_params,
                 batch_size,
@@ -302,7 +313,8 @@ def setup_iddpg_agents(
                     False
                 ),
                 use_cuda=True,
-                use_mixer=True,
+                use_mixer=False,
+                primary_agent=None,
             )
         )
 

@@ -86,7 +86,7 @@ class ConsumerAgent(Agent):
         """
         super().__init__(agent_config, agent_type="consumer")
         self.demand_volume_flow_m3h = agent_config.demand
-        self.calculate_demand_volume_flow()
+        self.output_to_FMU[list(self.output_to_FMU.keys())[1]] = self.demand_volume_flow_m3h
         self.volume_flow_m3h_to_PI = 0  # Volume flow in m^3/h, which is transferred to the local PI as a setpoint
         self.measured_delta_pressure_bar = (
             0  # relative pressure difference over valve in bar from FMU

@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 from Mushroom.agents.ddpg_with_mixer_support import setup_iddpg_agents
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all, UnivariateGaussianPolicy
-from Mushroom.core.multi_agent_core_mixer import MultiAgentCoreMixer
+from Mushroom.core.multi_agent_core_labeled import MultiAgentCoreLabeled
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
 from Mushroom.utils.plotting import plot_training_data
 from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset
@@ -12,8 +12,8 @@ from Mushroom.utils.utils import set_seed, parametrized_training, compute_metric
 gamma = 0.99
 gamma_eval = 1.
 
-lr_actor = 5e-6
-lr_critic = 1e-5
+lr_actor = 1e-4
+lr_critic = 1e-4
 
 initial_replay_size = 500
 max_replay_size = 5000
@@ -25,7 +25,7 @@ tau = .005
 sigma_checkpoints = [(0, 0.4), (50, 0.15), (75, 0.05)]
 decay_type = 'linear'
 
-n_epochs = 10
+n_epochs = 3
 n_steps_learn = 1000
 n_steps_test = 300
 n_steps_per_fit = 1
@@ -44,7 +44,7 @@ criteria = {
 def train(p1, p2, seed, save_path):
     criteria["target_speed"]["target"] = p1
     set_seed(seed)
-    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, labeled_step=True)
+    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, labeled_step=True, demand=("constant", 0.5, 0.5))
     agents = setup_iddpg_agents(
         mdp,
         policy=UnivariateGaussianPolicy(
@@ -63,9 +63,8 @@ def train(p1, p2, seed, save_path):
     )
 
     # Core
-    core = MultiAgentCoreMixer(
+    core = MultiAgentCoreLabeled(
         agents=agents,
-        mixer=None,
         mdp=mdp,
     )
 
@@ -88,21 +87,19 @@ def train(p1, p2, seed, save_path):
 
         core.evaluate(n_episodes=1, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
-        set_noise_for_all(core.agents, False)
+        for a in agents:
+            a.policy.set_mode("test")
         dataset, _ = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
-        set_noise_for_all(core.agents, True)
+        for a in agents:
+            a.policy.set_mode("train")
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
 
         data.append(compute_metrics_with_labeled_dataset(dataset, gamma_eval))
         pbar.set_postfix(
             MinMaxMean=np.round(data[-1][0:3], 2),
-            sigma=np.round(core.agents[0].policy._sigma_decay.get(), 2)
         )
 
-        update_sigma_for_all(agents)
-
-    set_noise_for_all(core.agents, False)
-    for i in range(50):
+    for i in range(0):
         core.evaluate(n_episodes=1, quiet=True)
         core.mdp.render(save_path=save_path + f"Final_{i}")
 
@@ -113,7 +110,7 @@ def train(p1, p2, seed, save_path):
 
 training_data, path = parametrized_training(
     __file__,
-    [0, 0.2, 0.4, 0.6, 0.8, 1],
+    [0, 0.4, 0.6, 1],
     [None],
     [1],
     train=train,

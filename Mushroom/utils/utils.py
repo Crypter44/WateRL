@@ -155,7 +155,7 @@ def compute_J_with_labeled_dataset(dataset, gamma=1.):
     j = 0.
     episode_steps = 0
     for i in range(len(dataset)):
-        j += gamma ** episode_steps * dataset[i]["rewards"]
+        j += gamma ** episode_steps * dataset[i]["rewards"][0]
         episode_steps += 1
         if dataset[i]["last"] or i == len(dataset) - 1:
             js.append(j)

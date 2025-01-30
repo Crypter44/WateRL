@@ -54,15 +54,26 @@ class ManualStepSimulator(Simulator):
             logging_step_size: float | None = None,
             get_units: bool = False,
             verbose: bool = False,
+            ignore_warnings: bool = False,
     ):
         """Initialize the simulator."""
         # Set the logging level to INFO if verbose is True, to get more information about the simulation
-        if verbose:
+        if verbose and not ignore_warnings:
             logging.basicConfig(
                 format="Simulation::%(levelname)s::%(message)s",
                 level=logging.INFO,
                 force=True,
             )
+        elif not verbose and ignore_warnings:
+            logging.basicConfig(
+                format="Simulation::%(levelname)s::%(message)s",
+                level=logging.ERROR,
+                force=True,
+            )
+        elif not verbose and not ignore_warnings:
+            pass
+        else:
+            raise ValueError("Both verbose and ignore_warnings cannot be set to True at the same time.")
 
         _validate_input(
             stop_time,
@@ -113,6 +124,7 @@ class ManualStepSimulator(Simulator):
             model_init_args: dict | None = None,
     ) -> None:
         """Reset the simulation to the initial state."""
+        self.conclude_simulation()
         stop_time = float(stop_time)
         step_size = float(step_size)
 

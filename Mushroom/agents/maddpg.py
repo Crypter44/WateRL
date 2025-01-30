@@ -8,7 +8,7 @@ from mushroom_rl.approximators.parametric import TorchApproximator
 from mushroom_rl.core import Agent
 from torch import optim
 
-from Mushroom.agents.ddpg import CriticNetwork, ActorNetwork, SharedCriticNetwork
+from Mushroom.agents.ddpg import CriticNetwork, ActorNetwork
 from Mushroom.agents.ddpg_with_mixer_support import DDPG
 from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
 from Mushroom.utils.replay_memories import ReplayMemoryObsMultiAgent

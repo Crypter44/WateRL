@@ -25,8 +25,9 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             labeled_step: bool = False,
     ):
 
+        self._demand = demand
         if fluid_network_simulator is None:
-            fluid_network_simulator = self._setup_simulator(*demand)
+            fluid_network_simulator = self._setup_simulator()
 
         super().__init__(
             state_space=spaces.Box(low=-500, high=500, shape=(18,)),
@@ -110,31 +111,59 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 ))
 
         simulation_states = []
+        error = False
         for i in range(10):  # simulate 10 time steps, to the next control step
-            self.sim.do_simulation_step(action)
+            try:
+                self.sim.do_simulation_step(action)
+            except Exception as e:
+                if not error:
+                    self.render(title="Critical Simulation Error", save_path=None)
+                raise e
             simulation_states.append(self._get_current_state())  # save each sim state to calculate reward
 
         # calculate reward based on how the network behaved during two control steps
-        reward = self._reward_fun(self._current_state, action, simulation_states)
+        reward = self._reward_fun(simulation_states, error)
 
         self._current_state, absorbing = self._get_current_state()
         self.actions.append(action)
         self.rewards.append(reward)
 
+        absorbing = absorbing if not error else True
+
         step = {
             "state": self._current_state,
             "obs": self._get_observations(),
-            "rewards": reward,
+            "rewards": [reward] * self._mdp_info.n_agents,
             "absorbing": absorbing,
         }
         return step if self.labeled_step else (self._get_observations(), reward, absorbing, {})
 
-    def reset(self, state=None):
+    def reset(self, state=None):  # TODO: recalculate demands
         self.actions = []
         self.rewards = []
         if self.qs:
             self.qs = [[] for _ in range(self._mdp_info.n_agents)]
-        return super().reset(state)
+
+        if state is not None:
+            raise NotImplementedError("Resetting to a specific state is not supported.")
+
+        set_demand_for_consumers(
+            self.sim._model_init_args["control_api"]["agent_configs"],
+            self._configure_demand(*self._demand, num_valves=4)
+        )
+        self.sim.reset_simulation(
+            self._stop_time,
+            1,
+            1,
+            model_init_args=self.sim._model_init_args
+        )
+        self._current_state, _ = self._get_current_state()
+
+        sample = {
+            "state": self._current_state,
+            "obs": self._get_observations(),
+        }
+        return sample if self.labeled_step else self._get_observations()
 
     def stop_renderer(self):
         self._render_executor.shutdown()
@@ -154,12 +183,12 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
     def _get_observations(self):
         return [self._current_state[:4] for _ in range(self._mdp_info.n_agents)]
 
-    def _setup_simulator(self, demand_type, low, high):
+    def _setup_simulator(self):
         config = get_circular_network_config()
 
         set_demand_for_consumers(
             config["model_init_args"]["control_api"]["agent_configs"],
-            self._configure_demand(demand_type, low, high, 4)
+            self._configure_demand(*self._demand, num_valves=4)
         )
 
         return ManualStepSimulator(
@@ -189,10 +218,13 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 final_numbers[final_numbers < high] += excess / np.sum(final_numbers < high)
                 c += 1
             return final_numbers
+        elif kind == "constant":
+            assert low == high, "For constant demand, low and high must be equal."
+            return [low for _ in range(num_valves)]
         else:
             raise ValueError(f"Unknown demand type: {kind}")
 
-    def _reward_fun(self, state: np.ndarray, action: np.ndarray, sim_states: list):
+    def _reward_fun(self, sim_states: list, error: bool = False):
         """
         Calculate the reward based on the current state and the action taken.
 
@@ -284,8 +316,13 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                     )
                 )
             if "negative_flow" in self._criteria.keys():
-                if s[14] < 0 or s[15] < 0:
+                if s[14] < -1e-6 or s[15] < -1e-6:
                     tmp -= self._criteria["negative_flow"]["w"]
+            if "error" in self._criteria.keys():
+                if error:
+                    tmp -= self._criteria["error"]["w"]
+            if "total_power" in self._criteria.keys():
+                tmp -= self._criteria["total_power"]["w"] * (s[16] + s[17])
 
             reward += tmp / len(sim_states_to_use)
 
@@ -308,12 +345,12 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             title=None,
             save_path=None
     ):
-        fig, axs = plt.subplots(2, 4, figsize=(20, 10))
+        fig, axs = plt.subplots(2, 5, figsize=(25, 12))
         valve_colors = ['#FFA500', '#FF8C00', '#FF7F50', '#FF6347']
         pump_colors = ['#1E90FF', '#00BFFF']
 
         for i in range(4):
-            ax2 = axs.flatten()[i].twinx()
+            ax2 = axs[0][i].twinx()
             ax2.plot(
                 time,
                 valve_openings[i],
@@ -325,7 +362,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             ax2.set_ylabel("Opening [%]", color='gray')
             ax2.set_ylim(0, 1)
 
-            axs.flatten()[i].plot(
+            axs[0][i].plot(
                 time,
                 valve_demands[i],
                 label=f"Demand at v_{valves[i]}",
@@ -333,18 +370,43 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 linestyle='--',
                 linewidth=3,
             )
-            axs.flatten()[i].plot(
+
+            axs[0][i].plot(
                 time,
                 valve_flows[i],
                 label=f"Volume flow at v_{valves[i]}",
                 color=valve_colors[i],
                 linewidth=2,
             )
-            axs.flatten()[i].set_xlabel("Time [s]")
-            axs.flatten()[i].set_ylabel("Volume flow [m³/h]")
+            axs[0][i].set_xlabel("Time [s]")
+            axs[0][i].set_ylabel("Volume flow [m³/h]")
+            axs[0][i].legend(loc="upper center", bbox_to_anchor=(0.5, -0.15))
+            ax2.legend(loc="upper center", bbox_to_anchor=(0.5, -0.32))
+            axs[0][i].set_title(f"Consumer v_{valves[i]}")
+
+        for i in range(4):
+            axs[0][4].plot(
+                time,
+                np.sum(valve_demands[:i + 1], axis=0),
+                label=f"Total demand up to v_{valves[i]}",
+                color=valve_colors[i],
+                linewidth=2,
+            )
+            axs[0][4].fill_between(
+                time,
+                np.sum(valve_demands[:i], axis=0) if i > 0 else 0,
+                np.sum(valve_demands[:i + 1], axis=0),
+                color=valve_colors[i],
+                alpha=0.5
+            )
+        axs[0][4].set_xlabel("Time [s]")
+        axs[0][4].set_ylabel("Volume flow [m³/h]")
+        axs[0][4].set_ylim(0, 6)
+        axs[0][4].legend(loc="upper center", bbox_to_anchor=(0.5, -0.15))
+        axs[0][4].set_title("Total demand split by consumers")
 
         for i in range(2):
-            axs.flatten()[i + 5].plot(
+            axs[1][1 + i].plot(
                 time,
                 pump_speeds[i],
                 label=f"Pump speed at p_{pumps[i]}",
@@ -354,7 +416,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             )
 
             if pump_actions is not None:
-                axs.flatten()[i + 5].scatter(
+                axs[1][1 + i].scatter(
                     range(0, len(pump_actions) * 10, 10),
                     np.array(pump_actions)[:, i],
                     label=f"Action p_{pumps[i]}",
@@ -364,7 +426,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                     linewidths=0.5,
                     zorder=2
                 )
-            ax2 = axs.flatten()[i + 5].twinx()
+            ax2 = axs[1][1 + i].twinx()
             ax2.plot(
                 time,
                 pump_powers[i],
@@ -376,9 +438,12 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             )
             ax2.set_ylabel("Power consumption [W]", color='gray')
             ax2.set_ylim((0, 200))
-            axs.flatten()[i + 5].set_xlabel("Time [s]")
-            axs.flatten()[i + 5].set_ylim((0, 1))
-            axs.flatten()[i + 5].set_ylabel("Rotational speed")
+            axs[1][1 + i].set_xlabel("Time [s]")
+            axs[1][1 + i].set_ylim((0, 1))
+            axs[1][1 + i].set_ylabel("Rotational speed")
+            axs[1][1 + i].legend(loc="upper center", bbox_to_anchor=(0.5, -0.15))
+            ax2.legend(loc="upper center", bbox_to_anchor=(0.5, -0.35))
+            axs[1][1 + i].set_title(f"Pump p_{pumps[i]}")
 
             min_power = np.min(pump_powers[i])
             max_power = np.max(pump_powers[i])
@@ -393,7 +458,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                          arrowprops=dict(arrowstyle='-', color='red', linewidth=1.5), color='red',
                          horizontalalignment='right', fontsize=8, alpha=0.8)
 
-            ax = axs.flatten()[4 + 3 * i]
+            ax = axs[1][0 + i * 3]
             ax.plot(
                 time,
                 pump_flows[i],
@@ -420,16 +485,38 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             )
             ax.set_xlabel("Time [s]")
             ax.set_ylabel("Volume flow [m³/h]")
+            ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15))
+            ax.set_title(f"Volume flow @ pump p_{pumps[i]}")
+
+        for i in range(2):
+            axs[1][4].plot(
+                time,
+                np.sum(pump_flows[:i + 1], axis=0),
+                label=f"Total volume flow up to p_{pumps[i]}",
+                color=pump_colors[i],
+                linewidth=2,
+            )
+            axs[1][4].fill_between(
+                time,
+                np.sum(pump_flows[:i], axis=0) if i > 0 else 0,
+                np.sum(pump_flows[:i + 1], axis=0),
+                color=pump_colors[i],
+                alpha=0.5
+            )
+        axs[1][4].set_xlabel("Time [s]")
+        axs[1][4].set_ylabel("Volume flow [m³/h]")
+        axs[1][4].set_ylim(0, 6)
+        axs[1][4].legend(loc="upper center", bbox_to_anchor=(0.5, -0.15))
+        axs[1][4].set_title("Total volume flow split by pumps")
 
         fig.subplots_adjust(
             left=0.05,
-            bottom=0.12,
+            bottom=0.15,
             right=0.95,
             top=0.9,
-            hspace=0.4,
+            hspace=0.7,
             wspace=0.4
         )
-        fig.legend(loc="lower center", ncol=12 if pump_actions is not None else 10)
         fig.suptitle(title)
 
         if save_path is None:

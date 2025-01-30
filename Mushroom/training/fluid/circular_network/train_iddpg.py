@@ -13,7 +13,6 @@ from Mushroom.utils.plotting import plot_training_data
 from Mushroom.utils.utils import set_seed, parametrized_training
 
 # PARAMS
-num_agents = 2
 gamma = 0.99
 gamma_eval = 1.
 
@@ -29,31 +28,39 @@ tau = .005
 
 sigma = [(0, 0.3), (75, 0.2), (150, 0.1)]
 
-n_epochs = 10
+n_epochs = 200
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
 
+num_agents = 2
 n_episodes_final = 500
 n_episodes_final_render = 100
 n_epochs_per_checkpoint = 100
 
 criteria = {
-    "target_speed": {
+    "target_opening": {
         "w": 1.,
-        "target": 0.5
+        "target": 0.95,
+        "smoothness": 0.0001,
+        "left_bound": 0.2,
+        "value_at_left_bound": 0.05,
+        "right_bound": 0.05,
+        "value_at_right_bound": 0.001,
     },
+    "negative_flow": {"w": 1}
 }
+demand = ("uniform_global", 0.4, 1.4)
 # END_PARAMS
 
-mpl.rcParams['figure.max_open_warning'] = n_episodes_final_render
+mpl.rcParams['figure.max_open_warning'] = -1
 
 
 # create a dictionary to store data for each seed
 def train(p1, p2, seed, save_path):
     set_seed(seed)
     # MDP
-    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, demand=("uniform_global", 0.3, 1.5))
+    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, demand=demand)
     agents = [create_ddpg_agent(
         mdp,
         agent_idx=i,
@@ -74,7 +81,7 @@ def train(p1, p2, seed, save_path):
 
     core.learn(
         n_steps=initial_replay_size,
-        n_steps_per_fit_per_agent=[initial_replay_size]*num_agents,
+        n_steps_per_fit_per_agent=[initial_replay_size] * num_agents,
         quiet=True
     )
     data = [compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True), gamma_eval)]
@@ -84,7 +91,7 @@ def train(p1, p2, seed, save_path):
     for n in pbar:
         core.learn(
             n_steps=n_steps_learn,
-            n_steps_per_fit_per_agent=[n_steps_per_fit]*num_agents,
+            n_steps_per_fit_per_agent=[n_steps_per_fit] * num_agents,
             quiet=True
         )
 
@@ -93,7 +100,7 @@ def train(p1, p2, seed, save_path):
         set_noise_for_all(core.agent, False)
         dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
         set_noise_for_all(core.agent, True)
-        core.mdp.render(save_path=save_path + f"Epoch_{n+1}")
+        core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
 
         data.append(compute_metrics(dataset, gamma_eval))
         pbar.set_postfix(
@@ -103,9 +110,9 @@ def train(p1, p2, seed, save_path):
 
         update_sigma_for_all(agents)
 
-        if (n+1) % n_epochs_per_checkpoint == 0:
+        if (n + 1) % n_epochs_per_checkpoint == 0:
             for i, a in enumerate(core.agent):
-                a.save(save_path + f"/checkpoints/Epoch_{n+1}_Agent_{i}")
+                a.save(save_path + f"/checkpoints/Epoch_{n + 1}_Agent_{i}")
 
     set_noise_for_all(core.agent, False)
     for i in range(n_episodes_final_render):
@@ -127,6 +134,7 @@ def train(p1, p2, seed, save_path):
                 "Mean": final[2],
                 "Median": final[3],
                 "Count": final[4],
+                "Took:": pbar.format_dict["elapsed"]
             }, f, indent=4)
 
     return {"metrics": np.array(data), "additional_data": {}}
@@ -136,7 +144,7 @@ training_data, path = parametrized_training(
     __file__,
     [None],
     [None],
-    [0],
+    [1],
     train=train,
     base_path="Plots/IDDPG/",
 )
