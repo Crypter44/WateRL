@@ -1,5 +1,4 @@
 import concurrent.futures
-import traceback
 from copy import deepcopy
 
 import matplotlib.pyplot as plt
@@ -129,11 +128,13 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self.actions.append(action)
         self.rewards.append(reward)
 
+        absorbing = absorbing if not error else True
+
         step = {
             "state": self._current_state,
             "obs": self._get_observations(),
             "rewards": [reward] * self._mdp_info.n_agents,
-            "absorbing": absorbing if not error else True,
+            "absorbing": absorbing,
         }
         return step if self.labeled_step else (self._get_observations(), reward, absorbing, {})
 
@@ -507,7 +508,6 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         axs[1][4].set_ylim(0, 6)
         axs[1][4].legend(loc="upper center", bbox_to_anchor=(0.5, -0.15))
         axs[1][4].set_title("Total volume flow split by pumps")
-
 
         fig.subplots_adjust(
             left=0.05,
