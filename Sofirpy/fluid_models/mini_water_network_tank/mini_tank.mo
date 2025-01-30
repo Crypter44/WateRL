@@ -197,7 +197,7 @@ model mini_tank
       Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=-90,
-        origin={142,502})));
+        origin={144,500})));
 
   Modelica.Blocks.Interfaces.RealOutput level_tank_9
     annotation (Placement(transformation(extent={{10,-10},{-10,10}},
@@ -238,12 +238,16 @@ model mini_tank
     use_N_in=true) annotation (Placement(transformation(
         extent={{-10,-10},{10,10}},
         rotation=-90,
-        origin={92,454})));
+        origin={92,424})));
   Modelica.Blocks.Interfaces.RealOutput P_pum_4 annotation (Placement(
         transformation(
         extent={{-10,-10},{10,10}},
         rotation=90,
         origin={100,550})));
+  Modelica.Blocks.Math.Gain gain(k=3033) annotation (Placement(transformation(
+        extent={{-10,-10},{10,10}},
+        rotation=-90,
+        origin={144,454})));
 equation
   P_pum_4 = pump_4.W_total;
   level_tank_9 = tank_9.level;
@@ -307,8 +311,7 @@ equation
   connect(fixedDelay2.u, w_v_5)
     annotation (Line(points={{300,364},{330,364}},           color={0,0,127}));
   connect(fixedDelay5.u, w_p_4)
-    annotation (Line(points={{142,514},{144,514},{144,546}},
-                                                   color={0,0,127}));
+    annotation (Line(points={{144,512},{144,546}}, color={0,0,127}));
   connect(pressure_7_1.port_b, valve_7_1.port_b) annotation (Line(
       points={{140,266},{140,234},{114,234},{114,242}},
       color={0,127,255},
@@ -348,13 +351,16 @@ equation
   connect(pipe_1.port_b, volumeFlow_5.port_a)
     annotation (Line(points={{80,368},{140,368}}, color={0,127,255}));
   connect(volumeFlow_4.port_b, pump_4.port_a)
-    annotation (Line(points={{92,486},{92,464}}, color={0,127,255}));
+    annotation (Line(points={{92,486},{92,434}}, color={0,127,255}));
   connect(pump_4.port_b, pipe_5.port_a)
-    annotation (Line(points={{92,444},{92,406},{36,406}}, color={0,127,255}));
-  connect(fixedDelay5.y, pump_4.N_in)
-    annotation (Line(points={{142,491},{142,454},{102,454}}, color={0,0,127}));
+    annotation (Line(points={{92,414},{92,406},{36,406}}, color={0,127,255}));
   connect(pressure_4.port_b, pump_4.port_a)
-    annotation (Line(points={{46,472},{92,472},{92,464}}, color={0,127,255}));
+    annotation (Line(points={{46,472},{46,478},{92,478},{92,434}},
+                                                          color={0,127,255}));
+  connect(gain.y, pump_4.N_in)
+    annotation (Line(points={{144,443},{144,424},{102,424}}, color={0,0,127}));
+  connect(gain.u, fixedDelay5.y)
+    annotation (Line(points={{144,466},{144,489}}, color={0,0,127}));
  annotation (Placement(transformation(
         extent={{10,-10},{-10,10}},
         rotation=180,
