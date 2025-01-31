@@ -36,7 +36,6 @@ class Controler(SimulationEntity):
         self.inputs = {
             "V_flow_4": 0.0,
             "p_rel_4": 0.0,
-            "P_pum_4": 0.0,
             "V_flow_5": 0.0,
             "p_rel_5": 0.0,
             "u_v_5": 0.0,
@@ -68,11 +67,15 @@ class Controler(SimulationEntity):
             self.outputs["w_v_7"] = 1
         elif time < 30000:
             self.outputs["w_p_4"] = 1
-            self.outputs["w_v_5"] = 3
+            self.outputs["w_v_5"] = 4
             self.outputs["w_v_7"] = 0
-        elif time > 30000:
+        elif time < 40000:
             self.outputs["w_p_4"] = 1
-            self.outputs["w_v_5"] = 3
+            self.outputs["w_v_5"] = 4
+            self.outputs["w_v_7"] = 1
+        elif time > 50000:
+            self.outputs["w_p_4"] = 0.8
+            self.outputs["w_v_5"] = 4
             self.outputs["w_v_7"] = 1
 
     def set_parameter(
@@ -108,12 +111,18 @@ class Controler(SimulationEntity):
 model_classes = {"control_api": Controler}
 fmu_paths = {"water_network": str(fmu_path)}
 
+
+# tank_9.crossArea in m^2
+# tank_9.height in m
+start_values = {"water_network": {"tank_9.crossArea": 5, "tank_9.height": 2}}
+
 start_time = time.time()
 results, units = simulate(
-    stop_time=50000.0,
+    stop_time=100000.0,
     step_size=10.0,
     fmu_paths=fmu_paths,
     model_classes=model_classes,
+    start_values=start_values,
     connections_config=connections_config,
     parameters_to_log=parameters_to_log,
     logging_step_size=10,
