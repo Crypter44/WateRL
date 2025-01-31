@@ -5,13 +5,8 @@ import torch
 import torch.nn.functional as F
 from mushroom_rl.core import Agent
 from mushroom_rl.utils.torch import get_weights, set_weights
-from torch import optim
 
-from Mushroom.agents.ddpg import ActorNetwork, CriticNetwork
-from Mushroom.agents.ddpg_with_mixer_support import DDPG
 from Mushroom.agents.qmix import QMixer
-from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
-from Mushroom.utils.replay_memories import ReplayMemoryObsMultiAgent
 
 
 class FACMAC(Agent):
@@ -268,107 +263,3 @@ class FACMAC(Agent):
             total_norm += layer_norm.item() ** 2
         total_norm = total_norm ** 0.5
         return total_norm
-
-
-def setup_facmac_agents(
-        mdp,
-        n_agents,
-        policy=None,
-        n_features_actor=80,
-        lr_actor=1e-4,
-        n_features_critic=80,
-        lr_critic=2e-4,
-        batch_size=200,
-        initial_replay_size=500,
-        max_replay_size=5000,
-        tau=0.001,
-        sigma=0.2,
-        target_sigma=0.001,
-        sigma_transition_length=1,
-):
-    agents = []
-    for i in range(n_agents):
-        actor_input_shape = mdp.info.observation_space_for_idx(i).shape
-        actor_params = dict(
-            network=ActorNetwork,
-            optimizer={
-                'class': optim.Adam,
-                'params': {'lr': lr_actor}
-            },
-            n_features=n_features_actor,
-            input_shape=actor_input_shape,
-            output_shape=mdp.info.action_space_for_idx(i).shape,
-            agent_idx=i,
-            use_cuda=True,
-        )
-
-        critic_input_shape = (actor_input_shape[0] + mdp.info.action_space_for_idx(i).shape[0],)
-        critic_params = dict(
-            network=CriticNetwork,
-            optimizer={'class': optim.Adam,
-                       'params': {'lr': lr_critic}},
-            loss=F.mse_loss,
-            n_features=n_features_critic,
-            input_shape=critic_input_shape,
-            output_shape=(1,),
-            agent_idx=i,
-            use_cuda=True
-        )
-
-        if policy is None:
-            policy = UnivariateGaussianPolicy(
-                initial_sigma=sigma,
-                target_sigma=target_sigma,
-                updates_till_target_reached=sigma_transition_length
-            )
-
-        agents.append(
-            DDPG(
-                mdp.info,
-                i,
-                policy,
-                actor_params,
-                critic_params,
-                batch_size,
-                target_update_frequency=-1,
-                tau=tau,
-                warmup_replay_size=initial_replay_size,
-                replay_memory=None,
-                use_cuda=True,
-                use_mixer=True,
-            )
-        )
-
-    facmac = FACMAC(
-        mdp.info,
-        batch_size,
-        replay_memory=ReplayMemoryObsMultiAgent(
-            max_size=max_replay_size,
-            state_dim=mdp.info.state_space.shape[0],
-            obs_dim=[mdp.info.observation_space_for_idx(i).shape[0] for i in range(n_agents)],
-            action_dim=[mdp.info.action_space_for_idx(i).shape[0] for i in range(n_agents)],
-            n_agents=n_agents,
-            discrete_actions=False,
-        ),
-        target_update_frequency=-1,
-        tau=tau,
-        warmup_replay_size=initial_replay_size,
-        target_update_mode="soft",
-        mixing_embed_dim=32,
-        actor_optimizer_params={
-            'class': optim.Adam,
-            'params': {'lr': lr_actor}
-        },
-        critic_optimizer_params={
-            'class': optim.Adam,
-            'params': {'lr': lr_critic}
-        },
-        scale_critic_loss=False,
-        scale_actor_loss=False,
-        grad_norm_clip=0.5,
-        obs_last_action=False,
-        host_agents=agents,
-        use_cuda=True
-    )
-
-    return agents, facmac

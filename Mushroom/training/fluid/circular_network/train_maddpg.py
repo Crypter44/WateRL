@@ -5,7 +5,7 @@ import numpy as np
 from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
-from Mushroom.agents.ddpg import create_maddpg_agents
+from Mushroom.agents.agent_factory import setup_maddpg_agents
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
 from Mushroom.core.multi_agent_core import MultiAgentCore
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
@@ -26,25 +26,31 @@ batch_size = 200
 n_features = 80
 tau = .005
 
-sigma = [(0, 0.3), (75, 0.2), (150, 0.1)]
+sigma = [(0, 0.7), (20, 0.3)]
 
-n_epochs = 3
+n_epochs = 20
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
 
 num_agents = 2
-n_episodes_final = 0
-n_episodes_final_render = 0
+n_episodes_final = 500
+n_episodes_final_render = 100
 n_epochs_per_checkpoint = 100
 
 criteria = {
-    "target_speed": {
-        "w": 1,
-        "target": 0.4,
-    }
+    "target_opening": {
+        "w": 1.0,
+        "target": 0.95,
+        "smoothness": 0.0001,
+        "left_bound": 0.2,
+        "value_at_left_bound": 0.05,
+        "right_bound": 0.05,
+        "value_at_right_bound": 0.001,
+    },
+    "negative_flow": {"w": 0.1}
 }
-demand = ("constant", 0.5, 0.5)
+demand = ("uniform_global", 0.4, 1.4)
 # END_PARAMS
 
 mpl.rcParams['figure.max_open_warning'] = -1
@@ -52,11 +58,10 @@ mpl.rcParams['figure.max_open_warning'] = -1
 
 # create a dictionary to store data for each seed
 def train(p1, p2, seed, save_path):
-    criteria["target_speed"]["target"] = p1
     set_seed(seed)
     # MDP
     mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, demand=demand)
-    agents = create_maddpg_agents(
+    agents = setup_maddpg_agents(
         n_agents=num_agents,
         mdp=mdp,
         n_features_actor=n_features,
@@ -141,7 +146,7 @@ def train(p1, p2, seed, save_path):
 
 training_data, path = parametrized_training(
     __file__,
-    [0, 0.2, 0.4, 0.6, 0.8, 1.0],
+    [None],
     [None],
     [1],
     train=train,

@@ -16,7 +16,7 @@ sim = ManualStepSimulator(
 )
 
 failed_counter = 0
-test_count = 50
+test_count = 1
 
 low = 0.0
 high = 1.0
@@ -48,7 +48,7 @@ for i in range(test_count):
                 low_scale = 0.01  # This scale works without random initialization, then 0/100 sims fail
                 high_scale = 0.1  # This already fails 7/10 times without random initialization
                 completely_random = 1.0  # This works, when the action is clipped to [0, 0.1]
-                action[1] = np.clip(np.random.normal(loc=action[1], scale=low_scale), low, high)
+                action[1] = np.clip(np.random.normal(loc=action[1], scale=high_scale), low, high)
         try:
             sim.do_simulation_step(action)
         except Exception as e:

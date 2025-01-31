@@ -5,7 +5,8 @@ import torch
 import torch.nn.functional as F
 from torch import optim
 
-from aryaman import Environment, MDPInfo, Box, DDPG, GaussianPolicy, ContinuousActorNetwork, ContinuousCriticNetwork, \
+from Mushroom.agents.mixerddpg import MixerDDPG
+from aryaman import Environment, MDPInfo, Box, GaussianPolicy, ContinuousActorNetwork, ContinuousCriticNetwork, \
     ReplayMemoryObs, MultiAgentCore, compute_J_all_agents
 
 
@@ -52,7 +53,7 @@ class CustomEnv(Environment):
         }
 
     def step(self, action):
-        reward = np.exp(-5 * (np.mean(action) - 0.2) ** 2)
+        reward = np.exp(-5 * (np.mean(action) - 0.6) ** 2)
         return {
             "state": np.array([0, 0]),
             "obs": [np.array([0, 0])] * 2,
@@ -63,7 +64,7 @@ class CustomEnv(Environment):
 
 
 mdp = CustomEnv()
-agents = [DDPG(
+agents = [MixerDDPG(
     mdp_info=mdp.info,
     idx_agent=i,
     policy=GaussianPolicy(np.array([0.4]), Box(low=-1, high=1, shape=(1,))),

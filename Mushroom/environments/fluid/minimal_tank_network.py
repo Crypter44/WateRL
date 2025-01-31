@@ -261,7 +261,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             alpha=0.3,
         )
         ax[1, 0].set_xlabel("Time [s]")
-        ax[1, 0].set_ylabel("Level [? unit ?]", color=pump_colors[0])
+        ax[1, 0].set_ylabel("Level [m]", color=pump_colors[0])
         ax[1, 0].set_title("Tank Level")
 
         # Plot inflow and outflow
@@ -269,8 +269,11 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             sim_data["time"],
             sim_data["water_network.V_flow_7"],
             color='green',
-            label="Inflow",
+            label="In/Outflow",
         )
+        ax[1, 1].set_xlabel("Time [s]")
+        ax[1, 1].set_ylabel("Volume flow [m³/h]", color='green')
+        ax[1, 1].set_title("Inflow/Outflow of Tank")
 
         # Plot tank control
         ax[1, 2].plot(
@@ -281,7 +284,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         )
         ax[1, 2].set_xlabel("Time [s]")
         ax[1, 2].set_ylabel("Tank Valve Control", color=tank_colors[0])
-        ax[1, 2].set_title("Tank Control")
+        ax[1, 2].set_title("Tank Valve Control")
 
         fig.subplots_adjust(
             left=0.05,

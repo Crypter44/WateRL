@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 
-from Mushroom.agents.ddpg_with_mixer_support import setup_iddpg_agents
+from Mushroom.agents.mixerddpg import setup_iddpg_agents
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all, UnivariateGaussianPolicy
 from Mushroom.core.multi_agent_core_labeled import MultiAgentCoreLabeled
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
@@ -12,7 +12,7 @@ from Mushroom.utils.utils import set_seed, parametrized_training, compute_metric
 gamma = 0.99
 gamma_eval = 1.
 
-lr_actor = 1e-4
+lr_actor = 5e-5
 lr_critic = 1e-4
 
 initial_replay_size = 500
@@ -25,7 +25,7 @@ tau = .005
 sigma_checkpoints = [(0, 0.4), (50, 0.15), (75, 0.05)]
 decay_type = 'linear'
 
-n_epochs = 3
+n_epochs = 10
 n_steps_learn = 1000
 n_steps_test = 300
 n_steps_per_fit = 1

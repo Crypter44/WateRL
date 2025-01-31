@@ -5,7 +5,7 @@ import matplotlib as mpl
 from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
-from Mushroom.agents.ddpg import create_ddpg_agent
+from Mushroom.agents.agent_factory import create_ddpg_agent
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
 from Mushroom.core.multi_agent_core import MultiAgentCore
@@ -28,27 +28,19 @@ batch_size = 200
 n_features = 80
 tau = .005
 
-sigma = [(0, 0.3), (15, 0.2), (30, 0.1)]
+sigma = [(0, 0.3), (30, 0.1)]
 
 n_epochs = 30
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
 
-n_episodes_final = 10
-n_episodes_final_render = 0
+n_episodes_final = 50
+n_episodes_final_render = 50
 n_epochs_per_checkpoint = 10000000
 
 criteria = {
-    "target_opening": {
-        "w": 1.,
-        "target": 0.95,
-        "smoothness": 0.0001,
-        "left_bound": 0.2,
-        "value_at_left_bound": 0.05,
-        "right_bound": 0.05,
-        "value_at_right_bound": 0.001,
-    },
+    "demand": {"w": 1},
 }
 # END_PARAMS
 

@@ -5,7 +5,7 @@ import matplotlib as mpl
 from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
-from Mushroom.agents.ddpg import create_ddpg_agent
+from Mushroom.agents.agent_factory import create_ddpg_agent
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
 from Mushroom.core.multi_agent_core import MultiAgentCore

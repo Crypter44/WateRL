@@ -1,6 +1,7 @@
 from mushroom_rl.core import Core
 
-from Mushroom.agents.ddpg import create_ddpg_agent, run_ddpg_training
+from Mushroom.agents.maddpg import run_ddpg_training
+from Mushroom.agents.agent_factory import create_ddpg_agent
 from Mushroom.environments.fluid.simple_network_valve import SimpleNetworkValve
 from Mushroom.utils.utils import plot
 from Mushroom.utils.utils import set_seed

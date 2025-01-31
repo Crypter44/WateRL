@@ -7,13 +7,13 @@ from gymnasium.spaces import Box
 from mushroom_rl.approximators.parametric import TorchApproximator
 from torch import optim
 
-from Mushroom.agents.ddpg import CriticNetwork, ActorNetwork
+from Mushroom.agents.networks import CriticNetwork, ActorNetwork
 from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
 from Mushroom.utils.replay_memories import ReplayMemoryObs
-from aryaman import Agent
+from aryaman import Agent, GaussianPolicy
 
 
-class DDPG(Agent):
+class MixerDDPG(Agent):
     """
     Deep Deterministic Policy Gradient algorithm.
     "Continuous Control with Deep Reinforcement Learning".
@@ -154,6 +154,7 @@ class DDPG(Agent):
                     rewards_t + self.mdp_info.gamma * q_next * ~absorbing_t
             ).detach()
             critic_loss = self.critic_approximator._loss(q_hat, q_target)
+            self.critic_approximator._optimizer.zero_grad() # TODO check if this now works
             critic_loss.backward()
             self.critic_approximator._optimizer.step()
 
@@ -295,7 +296,7 @@ def setup_iddpg_agents(
             )
 
         agents.append(
-            DDPG(
+            MixerDDPG(
                 mdp.info,
                 i,
                 GaussianPolicy(np.array([0.4]), Box(low=0, high=1, shape=(1,))),

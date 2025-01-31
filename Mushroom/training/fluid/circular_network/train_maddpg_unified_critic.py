@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 
-from Mushroom.agents.agent_factory import setup_facmac_agents
+from Mushroom.agents.agent_factory import setup_maddpg_agents_with_unified_critic
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all, UnivariateGaussianPolicy
 from Mushroom.core.multi_agent_core_mixer import MultiAgentCoreMixer
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
@@ -12,17 +12,17 @@ from Mushroom.utils.utils import set_seed, parametrized_training, compute_metric
 gamma = 0.99
 gamma_eval = 1.
 
-lr_actor = 1e-3
-lr_critic = 5e-3
+lr_actor = 0.0005
+lr_critic = 0.0025
 
 initial_replay_size = 500
 max_replay_size = 5000
 batch_size = 200
 
 n_features = 80
-tau = .005
+tau = .001
 
-sigma_checkpoints = [(0, 0.4), (50, 0.15), (75, 0.05)]
+sigma_checkpoints = [(0, 0.4), (20, 0.2)]
 decay_type = 'linear'
 
 n_epochs = 10
@@ -43,13 +43,11 @@ demand = ("constant", 0.5, 0.5)
 
 # create a dictionary to store data for each seed
 def train(p1, p2, seed, save_path):
-
     criteria["target_speed"]["target"] = p1
-    base_mul, critic_mul = p2
 
     set_seed(seed)
     mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, labeled_step=True, demand=demand)
-    agents, facmac = setup_facmac_agents(
+    agents, maddpg = setup_maddpg_agents_with_unified_critic(
         mdp,
         policy=UnivariateGaussianPolicy(
             sigma_checkpoints=sigma_checkpoints,
@@ -57,9 +55,9 @@ def train(p1, p2, seed, save_path):
         ),
         n_agents=num_agents,
         n_features_actor=n_features,
-        lr_actor=lr_actor * base_mul,
+        lr_actor=lr_actor,
         n_features_critic=n_features,
-        lr_critic=lr_actor * base_mul * critic_mul,
+        lr_critic=lr_critic,
         batch_size=batch_size,
         initial_replay_size=initial_replay_size,
         max_replay_size=max_replay_size,
@@ -70,7 +68,7 @@ def train(p1, p2, seed, save_path):
     # Core
     core = MultiAgentCoreMixer(
         agents=agents,
-        mixer=facmac,
+        mixer=maddpg,
         mdp=mdp,
     )
 
@@ -107,7 +105,7 @@ def train(p1, p2, seed, save_path):
         update_sigma_for_all(agents)
 
     set_noise_for_all(core.agents, False)
-    for i in range(0):
+    for i in range(50):
         core.evaluate(n_episodes=1, quiet=True)
         core.mdp.render(save_path=save_path + f"Final_{i}")
 
@@ -118,11 +116,11 @@ def train(p1, p2, seed, save_path):
 
 training_data, path = parametrized_training(
     __file__,
-    [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-    [(1, 1), (1, 2), (1, 5), (0.1, 1), (0.1, 2), (0.1, 5)],
+    [0, 0.2, 0.4, 0.6, 0.8, 1],
+    [None],
     [1],
     train=train,
-    base_path="./Plots/FACMAC/",
+    base_path="Plots/MADDPG_unified_critic/",
 )
 
 plot_training_data(training_data, path)

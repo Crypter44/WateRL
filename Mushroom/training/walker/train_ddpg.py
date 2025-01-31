@@ -3,7 +3,8 @@ import time
 from mushroom_rl.environments import DMControl
 from tqdm import tqdm
 
-from Mushroom.agents.ddpg import create_ddpg_agent, run_ddpg_training
+from Mushroom.agents.maddpg import run_ddpg_training
+from Mushroom.agents.agent_factory import create_ddpg_agent
 from Mushroom.core.better_mujoco_core import BetterMujocoCore
 from Mushroom.utils.utils import plot
 from Mushroom.utils.utils import set_seed
