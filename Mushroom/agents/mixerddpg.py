@@ -154,7 +154,7 @@ class MixerDDPG(Agent):
                     rewards_t + self.mdp_info.gamma * q_next * ~absorbing_t
             ).detach()
             critic_loss = self.critic_approximator._loss(q_hat, q_target)
-            self.critic_approximator._optimizer.zero_grad() # TODO check if this now works
+            self.critic_approximator._optimizer.zero_grad()
             critic_loss.backward()
             self.critic_approximator._optimizer.step()
 

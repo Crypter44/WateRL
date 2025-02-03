@@ -26,9 +26,9 @@ batch_size = 200
 n_features = 80
 tau = .005
 
-sigma = [(0, 0.7), (20, 0.3)]
+sigma = [(0, 0.7), (20, 0.3), (300, 0.1)]
 
-n_epochs = 20
+n_epochs = 600
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
@@ -39,16 +39,13 @@ n_episodes_final_render = 100
 n_epochs_per_checkpoint = 100
 
 criteria = {
-    "target_opening": {
-        "w": 1.0,
-        "target": 0.95,
-        "smoothness": 0.0001,
-        "left_bound": 0.2,
-        "value_at_left_bound": 0.05,
-        "right_bound": 0.05,
-        "value_at_right_bound": 0.001,
+    "demand": {
+        "w": 10.0,
+        "bound": 0.1,
+        "value_at_bound": 0.001,
     },
-    "negative_flow": {"w": 0.1}
+    "power_per_flow": {"w": 0.1},
+    "negative_flow": {"w": 1.0},
 }
 demand = ("uniform_global", 0.4, 1.4)
 # END_PARAMS

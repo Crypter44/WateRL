@@ -42,6 +42,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             logging_step_size=1,
             get_units=True,
             verbose=False,
+            ignore_warnings=True,
         )
 
         self.rewards = []
@@ -66,28 +67,32 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         return super().reset(state)
 
     def step(self, action):
-        # action clipping
-        action[0] = np.clip(action[0], 1, 1)
-        # set the tank action to either -1, 0 or 1, whichever is closest
-        action[1] = np.clip(action[1], -1, 1)
-        action[1] = -1 if action[1] < -0.5 else 1 if action[1] > 0.5 else 0
+        np.clip(action, 0, 1)
 
+        error = False
         sim_states = []
         for i in range(ControllerMinimalTank.CONTROL_STEP_INTERVAL):
-            self.sim.do_simulation_step(action)
+            try:
+                self.sim.do_simulation_step(action)
+            except Exception as e:
+                print(f"Error in simulation step: {e}")
+                error = True
+                break
             sim_states.append(self._get_current_state())
 
         reward = self._reward_fun(sim_states, action)
         self._current_state, done = self._get_current_state()
         self.rewards.append(reward)
 
+        absorbing = done or error
+
         step = {
             "state": self._current_state,
             "obs": self._get_observations(),
-            "rewards": reward,
-            "absorbing": done,
+            "rewards": [reward] * self._mdp_info.n_agents,
+            "absorbing": absorbing,
         }
-        return step if self.labeled_step else (self._get_observations(), reward, done, {})
+        return step if self.labeled_step else (self._get_observations(), reward, absorbing, {})
 
     def _reward_fun(self, sim_states, action):
         reward = 0

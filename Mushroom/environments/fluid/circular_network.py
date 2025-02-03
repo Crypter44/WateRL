@@ -115,10 +115,10 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         for i in range(10):  # simulate 10 time steps, to the next control step
             try:
                 self.sim.do_simulation_step(action)
-            except Exception as e:
-                if not error:
-                    self.render(title="Critical Simulation Error", save_path=None)
-                raise e
+            except Exception:
+                self.render(title="Error during simulation", save_path=None)
+                error = True
+                break
             simulation_states.append(self._get_current_state())  # save each sim state to calculate reward
 
         # calculate reward based on how the network behaved during two control steps
@@ -323,6 +323,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                     tmp -= self._criteria["error"]["w"]
             if "total_power" in self._criteria.keys():
                 tmp -= self._criteria["total_power"]["w"] * (s[16] + s[17])
+            if "power_per_flow" in self._criteria.keys():
+                tmp -= self._criteria["power_per_flow"]["w"] * (s[16] + s[17]) / (s[14] + s[15] + 1)
 
             reward += tmp / len(sim_states_to_use)
 
@@ -552,7 +554,6 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             ax.plot(rewards)
             ax.set_xlabel("Action step")
             ax.set_ylabel("Reward")
-            ax.set_ylim(-1, 1.5)
             ax.set_xticks(range(0, len(rewards), 1))
             ax.grid(True)
             fig.suptitle(title)
