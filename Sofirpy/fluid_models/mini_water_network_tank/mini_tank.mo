@@ -7,7 +7,7 @@ model mini_tank
   replaceable package Medium = Modelica.Media.Water.ConstantPropertyLiquidWater
     constrainedby Modelica.Media.Interfaces.PartialMedium;
 
-
+  parameter Real init_level_tank_9 = 0.0 "initial tank level at tank_9";
 
   inner Modelica.Fluid.System system(
     p_ambient=99000,
@@ -26,11 +26,12 @@ model mini_tank
   Modelica.Fluid.Vessels.OpenTank tank_9(
     height=5,
     crossArea=10,
+    level_start=init_level_tank_9,
     redeclare package Medium = Medium,
     use_portsData=false,
     portsData={Modelica.Fluid.Vessels.BaseClasses.VesselPortsData(diameter=0.1)},
     use_HeatTransfer=false,
-    nPorts=1) annotation (Placement(transformation(extent={{-48,208},{-8,248}})));
+    nPorts=1) annotation (Placement(transformation(extent={{-48,210},{-8,250}})));
 
   Modelica.Fluid.Sources.FixedBoundary source_4(
     nPorts=1,
@@ -327,7 +328,7 @@ equation
   connect(to_bar7.y, p_rel_7)
     annotation (Line(points={{281,276},{330,276}}, color={0,0,127}));
   connect(pipe_9.port_a,tank_9. ports[1])
-    annotation (Line(points={{42,186},{-28,186},{-28,208}},
+    annotation (Line(points={{42,186},{-28,186},{-28,210}},
                                                           color={0,127,255}));
   connect(V_flow_7, V_flow_7)
     annotation (Line(points={{330,204},{330,204}}, color={0,0,127}));

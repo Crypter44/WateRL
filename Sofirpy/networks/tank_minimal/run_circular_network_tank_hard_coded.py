@@ -56,26 +56,14 @@ class Controler(SimulationEntity):
             time (float): Simulated timestep
 
         """
-        if time < 10000:
+        if time < 20000:
             # Bedarf ist so gering, dass Tank befüllt werden kann
-            self.outputs["w_p_4"] = 1
+            self.outputs["w_p_4"] = 0
             self.outputs["w_v_5"] = 0.4
-            self.outputs["w_v_7"] = 0
-        elif time < 20000:
-            self.outputs["w_p_4"] = 1
-            self.outputs["w_v_5"] = 0.4
-            self.outputs["w_v_7"] = 1
-        elif time < 30000:
-            self.outputs["w_p_4"] = 1
-            self.outputs["w_v_5"] = 4
-            self.outputs["w_v_7"] = 0
-        elif time < 40000:
-            self.outputs["w_p_4"] = 1
-            self.outputs["w_v_5"] = 4
-            self.outputs["w_v_7"] = 1
+            self.outputs["w_v_7"] = -0.4
         elif time > 50000:
-            self.outputs["w_p_4"] = 0.8
-            self.outputs["w_v_5"] = 4
+            self.outputs["w_p_4"] = 1
+            self.outputs["w_v_5"] = 0
             self.outputs["w_v_7"] = 1
 
     def set_parameter(
@@ -114,11 +102,14 @@ fmu_paths = {"water_network": str(fmu_path)}
 
 # tank_9.crossArea in m^2
 # tank_9.height in m
-start_values = {"water_network": {"tank_9.crossArea": 5, "tank_9.height": 2}}
+# init_level_tank_9 in m
+start_values = {
+    "water_network": {"tank_9.crossArea": 5, "tank_9.height": 2, "init_level_tank_9": 1}
+}
 
 start_time = time.time()
 results, units = simulate(
-    stop_time=100000.0,
+    stop_time=80000.0,
     step_size=10.0,
     fmu_paths=fmu_paths,
     model_classes=model_classes,
