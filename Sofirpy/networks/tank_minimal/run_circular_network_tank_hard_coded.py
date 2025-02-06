@@ -104,7 +104,12 @@ fmu_paths = {"water_network": str(fmu_path)}
 # tank_9.height in m
 # init_level_tank_9 in m
 start_values = {
-    "water_network": {"tank_9.crossArea": 5, "tank_9.height": 2, "init_level_tank_9": 1}
+    "water_network": {
+        "tank_9.crossArea": 5,
+        "tank_9.height": 2,
+        "init_level_tank_9": 1,
+        "elevation_tank_9": 7,
+    }
 }
 
 start_time = time.time()
