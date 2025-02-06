@@ -452,7 +452,18 @@ model mini_circular_water_network
         transformation(
         extent={{-10,-10},{10,10}},
         rotation=90,
-        origin={96,320})));
+        origin={104,326})));
+  Modelica.Blocks.Interfaces.RealOutput eta_pum_1 annotation (Placement(
+        transformation(
+        extent={{-10,-10},{10,10}},
+        rotation=-90,
+        origin={2,-144})));
+  Modelica.Blocks.Interfaces.RealOutput eta_pum_4 annotation (Placement(
+        transformation(
+        extent={{-10,-10},{10,10}},
+        rotation=90,
+        origin={80,326})));
+
   Modelica.Blocks.Nonlinear.FixedDelay fixedDelay(delayTime=1)
     annotation (Placement(transformation(extent={{-150,-52},{-130,-32}})));
   Modelica.Blocks.Nonlinear.FixedDelay fixedDelay1(delayTime=1)
@@ -504,9 +515,12 @@ model mini_circular_water_network
   Modelica.Blocks.Interfaces.RealOutput p_test
     "Relative pressure signal"
     annotation (Placement(transformation(extent={{316,42},{336,62}})));
+
 equation
   P_pum_1 = pump_1.W_total;
   P_pum_4 = pump_4.W_total;
+  eta_pum_1 = (volumeFlow_1.V_flow*pressure_1.p_rel)/pump_1.W_total;
+  eta_pum_4 = (volumeFlow_4.V_flow*pressure_4.p_rel)/pump_4.W_total;
   connect(volumeFlow_1.port_a, source_1.ports[1])
     annotation (Line(points={{-92,-114},{-154,-114}},
                                                    color={0,127,255}));

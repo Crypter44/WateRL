@@ -4,7 +4,7 @@
         "pump_1": {
             "type": "pump",
             "input_FMU": ["w_p_1"],
-            "output_FMU": ["V_flow_1", "p_rel_1", "P_pum_1"]
+            "output_FMU": ["V_flow_1", "p_rel_1", "P_pum_1", "eta_pum_1"]
         },
         "valve_2": {
             "type": "consumer",
@@ -19,7 +19,7 @@
         "pump_4": {
             "type": "pump",
             "input_FMU": ["w_p_4"],
-            "output_FMU": ["V_flow_4", "p_rel_4", "P_pum_4"]
+            "output_FMU": ["V_flow_4", "p_rel_4", "P_pum_4", "eta_pum_4"]
         },
         "valve_5": {
             "type": "consumer",
