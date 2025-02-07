@@ -1,14 +1,14 @@
 import inspect
 import json
 
-from mushroom_rl.algorithms.actor_critic import DDPG
 from torch import optim
 from torch.nn import functional as F
 
-from Mushroom.agents.mixerddpg import MixerDDPG
 from Mushroom.agents.facmac import FACMAC
+from Mushroom.agents.iddpg import IDDPG
 from Mushroom.agents.maddpg import MADDPG
 from Mushroom.agents.maddpg_unified_critic import UnifiedCriticMADDPG
+from Mushroom.agents.mixerddpg import MixerDDPG
 from Mushroom.agents.networks import ActorNetwork, CriticNetwork, MADDPGCriticNetwork
 from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
 from Mushroom.utils.replay_memories import ReplayMemoryObsMultiAgent
@@ -31,6 +31,7 @@ def create_ddpg_agent(
         target_sigma=None,
         sigma_transition_length=None,
         ma_critic=False,
+        use_cuda=False,
         save_path=None
 ):
     # Approximator
@@ -39,13 +40,15 @@ def create_ddpg_agent(
                         n_features=n_features_actor,
                         input_shape=actor_input_shape,
                         output_shape=mdp.info.action_space_for_idx(agent_idx).shape,
-                        agent_idx=agent_idx)
+                        agent_idx=agent_idx,
+                        use_cuda=use_cuda
+                        )
 
     actor_optimizer = {'class': optim.Adam,
                        'params': {'lr': lr_actor}}
 
     if ma_critic:
-        critic_input_shape = actor_input_shape[0]
+        critic_input_shape = mdp.info.state_space.shape[0]
         for i in range(mdp.info.n_agents):
             critic_input_shape += mdp.local_action_space(agent_idx).shape[0]
         critic_input_shape = (critic_input_shape,)
@@ -59,7 +62,9 @@ def create_ddpg_agent(
                          input_shape=critic_input_shape,
                          output_shape=(1,),
                          agent_idx=agent_idx,
-                         ma_critic=ma_critic)
+                         ma_critic=ma_critic,
+                         use_cuda=use_cuda
+                         )
 
     policy_class = UnivariateGaussianPolicy
     policy_params = dict(initial_sigma=sigma, target_sigma=target_sigma, decay_type=decay_type,
@@ -73,15 +78,15 @@ def create_ddpg_agent(
             json.dump({key: str(value) for key, value in args_as_dict.items()}, f, indent=4, )
 
     if not ma_critic:
-        agent = DDPG(mdp.info, policy_class, policy_params,
-                          actor_params, actor_optimizer, critic_params,
-                          batch_size, initial_replay_size, max_replay_size,
-                          tau)
+        agent = IDDPG(agent_idx, mdp.info, policy_class, policy_params,
+                      actor_params, actor_optimizer, critic_params,
+                      batch_size, initial_replay_size, max_replay_size,
+                      tau)
     else:
-        agent = MADDPG(mdp.info, agent_idx, policy_class, policy_params,
-                                    actor_params, actor_optimizer, critic_params,
-                                    batch_size, initial_replay_size, max_replay_size,
-                                    tau)
+        agent = MADDPG(agent_idx, mdp.info, policy_class, policy_params,
+                       actor_params, actor_optimizer, critic_params,
+                       batch_size, initial_replay_size, max_replay_size,
+                       tau)
     return agent
 
 
@@ -101,6 +106,7 @@ def setup_maddpg_agents(
         sigma=None,
         target_sigma=None,
         sigma_transition_length=None,
+        use_cuda=False,
         save_path=None
 ):
     agents = []
@@ -109,7 +115,7 @@ def setup_maddpg_agents(
             create_ddpg_agent(
                 mdp, i, n_features_actor, lr_actor, n_features_critic, lr_critic, batch_size,
                 initial_replay_size, max_replay_size, tau, sigma_checkpoints, decay_type, sigma, target_sigma,
-                sigma_transition_length, True, save_path
+                sigma_transition_length, True, use_cuda, save_path
             )
         )
 

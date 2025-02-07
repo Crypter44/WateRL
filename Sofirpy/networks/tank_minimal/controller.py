@@ -44,14 +44,14 @@ class ControllerMinimalTank(SimulationEntityWithAction):
             self.outputs["w_p_4"] = float(action[0])  # agent 0 controls the pump's speed
             self.outputs["w_v_7"] = float(action[1])  # agent 1 controls the tank's valve
 
-        if time < 10000:
-            # Bedarf ist so gering, dass Tank befüllt werden kann
-            self.outputs["w_v_5"] = 0.4
-        elif time < 20000:
-            # Bedarf ist so groß, dass Tank als zusätzliche Quelle eingesetzt wird
-            self.outputs["w_v_5"] = 3
-        elif time > 20000:
-            self.outputs["w_v_5"] = 2
+        if time < 8_000:
+            self.outputs["w_v_5"] = 0.3
+        elif time < 45_000:
+            self.outputs["w_v_5"] = 2.83
+        elif time < 55_000:
+            self.outputs["w_v_5"] = 2.95
+
+
 
     def get_state(self):
         """

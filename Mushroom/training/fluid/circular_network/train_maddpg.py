@@ -2,15 +2,14 @@ import json
 
 import matplotlib as mpl
 import numpy as np
-from mushroom_rl.utils.dataset import compute_metrics
 from tqdm import tqdm
 
 from Mushroom.agents.agent_factory import setup_maddpg_agents
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
-from Mushroom.core.multi_agent_core import MultiAgentCore
+from Mushroom.core.multi_agent_core_labeled import MultiAgentCoreLabeled
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
 from Mushroom.utils.plotting import plot_training_data
-from Mushroom.utils.utils import set_seed, parametrized_training
+from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset
 
 # PARAMS
 gamma = 0.99
@@ -28,7 +27,7 @@ tau = .005
 
 sigma = [(0, 0.7), (20, 0.3), (300, 0.1)]
 
-n_epochs = 600
+n_epochs = 400
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
@@ -55,9 +54,12 @@ mpl.rcParams['figure.max_open_warning'] = -1
 
 # create a dictionary to store data for each seed
 def train(p1, p2, seed, save_path):
+    length = n_epochs
+    criteria["power_per_flow"]["w"] = p1
+
     set_seed(seed)
     # MDP
-    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, demand=demand)
+    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, demand=demand, labeled_step=True)
     agents = setup_maddpg_agents(
         n_agents=num_agents,
         mdp=mdp,
@@ -73,12 +75,12 @@ def train(p1, p2, seed, save_path):
         decay_type="linear",
     )
     # Core
-    core = MultiAgentCore(agent=agents, mdp=mdp)
+    core = MultiAgentCoreLabeled(agents=agents, mdp=mdp)
 
-    set_noise_for_all(core.agent, False)
-    data = [compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True), gamma_eval)]
+    set_noise_for_all(core.agents, False)
+    data = [compute_metrics_with_labeled_dataset(core.evaluate(n_steps=n_steps_test, render=False, quiet=True)[0])]
     core.mdp.render(save_path=save_path + f"Epoch_0")
-    set_noise_for_all(core.agent, True)
+    set_noise_for_all(core.agents, True)
     core.evaluate(n_episodes=1, render=False, quiet=True)
     core.mdp.render(save_path=save_path + f"Epoch_0_Noisy")
 
@@ -88,7 +90,7 @@ def train(p1, p2, seed, save_path):
         quiet=True
     )
 
-    pbar = tqdm(range(n_epochs), unit='epoch', leave=False)
+    pbar = tqdm(range(length), unit='epoch', leave=False)
     for n in pbar:
         core.learn(
             n_steps=n_steps_learn,
@@ -98,35 +100,35 @@ def train(p1, p2, seed, save_path):
 
         core.evaluate(n_steps=200, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
-        set_noise_for_all(core.agent, False)
-        dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
-        set_noise_for_all(core.agent, True)
+        set_noise_for_all(core.agents, False)
+        dataset, _ = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+        set_noise_for_all(core.agents, True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
 
-        data.append(compute_metrics(dataset, gamma_eval))
+        data.append(compute_metrics_with_labeled_dataset(dataset, gamma_eval))
         pbar.set_postfix(
             MinMaxMean=np.round(data[-1][0:3], 2),
-            sigma=np.round(core.agent[0].policy._sigma, 2)
+            sigma=np.round(core.agents[0].policy.get_sigma(), 2)
         )
 
         update_sigma_for_all(agents)
 
         if (n + 1) % n_epochs_per_checkpoint == 0:
-            for i, a in enumerate(core.agent):
+            for i, a in enumerate(core.agents):
                 a.save(save_path + f"/checkpoints/Epoch_{n + 1}_Agent_{i}")
 
-    set_noise_for_all(core.agent, False)
+    set_noise_for_all(core.agents, False)
     for i in range(n_episodes_final_render):
         core.evaluate(n_episodes=1, quiet=True)
         core.mdp.render(save_path=save_path + f"Final_{i}")
 
-    for i, a in enumerate(core.agent):
+    for i, a in enumerate(core.agents):
         a.save(save_path + f"/checkpoints/Final_Agent_{i}")
 
     if n_episodes_final > 0:
         with open(save_path + "Evaluation.json", "w") as f:
-            final = compute_metrics(
-                core.evaluate(n_episodes=n_episodes_final, render=False, quiet=False),
+            final = compute_metrics_with_labeled_dataset(
+                core.evaluate(n_episodes=n_episodes_final, render=False, quiet=False)[0],
                 gamma_eval
             )
             json.dump({
@@ -143,7 +145,7 @@ def train(p1, p2, seed, save_path):
 
 training_data, path = parametrized_training(
     __file__,
-    [None],
+    [0.1, 0.2],
     [None],
     [1],
     train=train,

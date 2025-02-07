@@ -1,7 +1,6 @@
 import logging
-import shutil
 from abc import abstractmethod
-from typing import final, Tuple
+from typing import final
 
 import numpy as np
 import sofirpy.common as co

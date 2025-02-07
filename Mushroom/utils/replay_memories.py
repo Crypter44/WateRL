@@ -229,12 +229,12 @@ class ReplayMemoryObsMultiAgent(ReplayMemoryObs):
 
     def __init__(
         self,
-        max_size,
-        state_dim,
-        obs_dim,
-        action_dim,
-        n_agents,
-        discrete_actions=False,
+        max_size: int,
+        state_dim: int,
+        obs_dim: list,
+        action_dim: list,
+        n_agents: int,
+        discrete_actions: bool = False,
     ):
         self._n_agents = n_agents
         super().__init__(max_size, state_dim, obs_dim, action_dim, discrete_actions)

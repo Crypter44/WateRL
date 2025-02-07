@@ -10,7 +10,7 @@ class CriticNetwork(nn.Module):
         n_input = input_shape[-1]
         n_output = output_shape[0]
 
-        self._agent_idx = agent_idx
+        self._agent_idx = agent_idx if not ma_critic else -1
         self._ma_critic = ma_critic
         self._h1 = nn.Linear(n_input, n_features)
         self._h2 = nn.Linear(n_features, n_features)

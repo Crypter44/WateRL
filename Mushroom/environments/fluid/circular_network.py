@@ -30,7 +30,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             fluid_network_simulator = self._setup_simulator()
 
         super().__init__(
-            state_space=spaces.Box(low=-500, high=500, shape=(18,)),
+            state_space=spaces.Box(low=-500, high=500, shape=(4,)),  # TODO make this dynamic based on a parameter
             observation_spaces=(
                 observation_spaces
                 if observation_spaces is not None
@@ -131,14 +131,14 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         absorbing = absorbing if not error else True
 
         step = {
-            "state": self._current_state,
+            "state": self._current_state[:4],
             "obs": self._get_observations(),
             "rewards": [reward] * self._mdp_info.n_agents,
             "absorbing": absorbing,
         }
         return step if self.labeled_step else (self._get_observations(), reward, absorbing, {})
 
-    def reset(self, state=None):  # TODO: recalculate demands
+    def reset(self, state=None):
         self.actions = []
         self.rewards = []
         if self.qs:
@@ -160,7 +160,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self._current_state, _ = self._get_current_state()
 
         sample = {
-            "state": self._current_state,
+            "state": self._current_state[:4],
             "obs": self._get_observations(),
         }
         return sample if self.labeled_step else self._get_observations()
@@ -245,7 +245,6 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         :param sim_states: The states of the simulation during the control step.
         :return: The reward.
         """
-        num_valves = 4
 
         reward = 0
         sim_states_to_use = sim_states[-1:]
@@ -253,18 +252,16 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             tmp = 0
 
             if "demand" in self._criteria.keys():
-                for i in range(num_valves):
-                    tmp += (
-                            1 / num_valves *
-                            self._criteria["demand"]["w"] *
-                            exponential_reward(
-                                s[i] - s[i + 4],
-                                0,
-                                self._criteria["demand"].get("smoothness", 0.0001),
-                                self._criteria["demand"].get("bound", 0.1),
-                                self._criteria["demand"].get("value_at_bound", 0.01),
-                            )
-                    )
+                tmp += (
+                        self._criteria["demand"]["w"] *
+                        exponential_reward(
+                            max([s[i] - s[i + 4] for i in range(4)]),
+                            0,
+                            self._criteria["demand"].get("smoothness", 0.0001),
+                            self._criteria["demand"].get("bound", 0.1),
+                            self._criteria["demand"].get("value_at_bound", 0.01),
+                        )
+                )
             if "max_power" in self._criteria.keys():
                 tmp += self._criteria["max_power"]["w"] * linear_reward(max(s[16], s[17]), 6, 193)
             if "mean_power" in self._criteria.keys():

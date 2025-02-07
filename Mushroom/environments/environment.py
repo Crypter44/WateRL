@@ -65,7 +65,7 @@ class MAEnvironment(Serializable):
         """
         raise NotImplementedError
 
-    def render(self):
+    def render(self, **kwargs):
         raise NotImplementedError
 
     def stop(self):

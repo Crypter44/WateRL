@@ -12,8 +12,8 @@ from Mushroom.utils.utils import set_seed, parametrized_training, compute_metric
 gamma = 0.99
 gamma_eval = 1.
 
-lr_actor = 1e-3
-lr_critic = 5e-3
+lr_actor = 1e-5
+lr_critic = 1e-5
 
 initial_replay_size = 500
 max_replay_size = 5000
@@ -25,7 +25,7 @@ tau = .005
 sigma_checkpoints = [(0, 0.4), (50, 0.15), (75, 0.05)]
 decay_type = 'linear'
 
-n_epochs = 10
+n_epochs = 20
 n_steps_learn = 1000
 n_steps_test = 300
 n_steps_per_fit = 1
@@ -119,7 +119,10 @@ def train(p1, p2, seed, save_path):
 training_data, path = parametrized_training(
     __file__,
     [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-    [(1, 1), (1, 2), (1, 5), (0.1, 1), (0.1, 2), (0.1, 5)],
+    [
+        (1, 0.2), (1, 0.5), (1, 1), (1, 2), (1, 5),
+        (2, 0.2), (2, 0.5), (2, 1), (2, 2), (2, 5),
+    ],
     [1],
     train=train,
     base_path="./Plots/FACMAC/",

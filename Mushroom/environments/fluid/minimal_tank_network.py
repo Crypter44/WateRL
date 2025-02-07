@@ -34,15 +34,16 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             spaces.Box(low=0, high=1, shape=(1,)),  # pump speed
             spaces.Box(low=-1, high=1, shape=(1,))  # control of the tank
         ]
-        stop_time = 50000.0
+        stop_time = 55000.0
         sim = ManualStepSimulator(
             stop_time=stop_time,
             step_size=1.0,
             **get_minimal_tank_network_config(),
+            start_values={"water_network": {"tank_9.crossArea": 1.25, "tank_9.height": 2}},
             logging_step_size=1,
             get_units=True,
             verbose=False,
-            ignore_warnings=True,
+            ignore_warnings=False,
         )
 
         self.rewards = []
@@ -64,10 +65,20 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
 
     def reset(self, state=None) -> dict:
         self.rewards = []
-        return super().reset(state)
+        if state is not None:
+            raise NotImplementedError("Resetting to a specific state is not supported.")
+
+        self.sim.reset_simulation(self._stop_time, 1, 1)
+        self._current_state, _ = self._get_current_state()
+
+        sample = {
+            "state": self._current_state,
+            "obs": self._get_observations(),
+        }
+        return sample if self.labeled_step else self._get_observations()
 
     def step(self, action):
-        np.clip(action, 0, 1)
+        action = np.clip(action, 0, 1)
 
         error = False
         sim_states = []
