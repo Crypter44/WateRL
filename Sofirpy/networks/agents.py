@@ -111,22 +111,20 @@ class ConsumerAgent(Agent):
         (Tagesganglinie eines städischen Versogungsgebiets - Figure C2). A random value from the curve is selected as
         current demand.
         """
-        omega = 2.65711342e-01
+        omega = 2*np.pi/24
         time_demand_curve = np.linspace(0, 24, 100)
         demand_volume_flow_curve = (
                 20  # daily demand in m3
                 # the following function gives a demand per time unit in % of the daily demand
                 # the total daily demand is reached after 24 time units
                 * (
-                        4.21452027e-02
-                        - 1.41579420e-02 * np.cos(omega * time_demand_curve)
-                        - 1.62752679e-02 * np.sin(omega * time_demand_curve)
-                        + 5.94972876e-03 * np.cos(2 * omega * time_demand_curve)
-                        - 1.82545802e-02 * np.sin(2 * omega * time_demand_curve)
-                        - 2.72810544e-03 * np.cos(3 * omega * time_demand_curve)
-                        + 2.15704832e-03 * np.sin(3 * omega * time_demand_curve)
-                        - 5.15308835e-03 * np.cos(4 * omega * time_demand_curve)
-                        - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve)
+                        0.04171752
+                        - 0.01535547 * np.cos(omega * time_demand_curve)
+                        - 0.01584253 * np.sin(omega * time_demand_curve)
+                        + 0.0038021 * np.cos(2 * omega * time_demand_curve)
+                        - 0.01817066 * np.sin(2 * omega * time_demand_curve)
+                        - 0.00305664 * np.cos(3 * omega * time_demand_curve)
+                        + 0.00332155 * np.sin(3 * omega * time_demand_curve)
                 )
         )
         self.demand_volume_flow_m3h = np.random.uniform(0.3, 1.5)
