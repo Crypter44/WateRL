@@ -12,7 +12,12 @@ sim = ManualStepSimulator(
     stop_time=50000.0,
     step_size=s,
     **get_minimal_tank_network_config(),
-    start_values={"water_network": {"tank_9.crossArea": 1.25, "tank_9.height": 2}},
+    start_values={"water_network": {
+        "tank_9.crossArea": 1.25,
+        "tank_9.height": 2,
+        "init_level_tank_9": 1,
+        "elevation_tank_9": 7,
+    }},
     logging_step_size=s,
     verbose=False,
     ignore_warnings=False,
