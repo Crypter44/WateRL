@@ -9,9 +9,11 @@ class ControllerMinimalTank(SimulationEntityWithAction):
 
     It connects the input and output values for the FMU to a custom code.
     """
-    CONTROL_STEP_INTERVAL = 1000
+    CONTROL_STEP_INTERVAL = 300
+    DEMAND_STEP_INTERVAL = 3000
+    ENSURE_POSSIBLE_DEMAND = True
 
-    def __init__(self) -> None:
+    def __init__(self, demand_curve="tagesgang") -> None:
         self.inputs = {
             "V_flow_4": 0.0,
             "p_rel_4": 0.0,
@@ -19,17 +21,61 @@ class ControllerMinimalTank(SimulationEntityWithAction):
             "V_flow_5": 0.0,
             "p_rel_5": 0.0,
             "u_v_5": 0.0,
-            "V_flow_7_1": 0.0,
-            "V_flow_7_2": 0.0,
-            "p_rel_7_1": 0.0,
-            "p_rel_7_2": 0.0,
-            "u_v_7:1": 0.0,
-            "u_v_7_2": 0.0,
+            "V_flow_7": 0.0,
+            "p_rel_7": 0.0,
+            "u_v_7": 0.0,
             "level_tank_9": 0.0,
         }
+
+        if demand_curve == "tagesgang":
+            omega = 2.65711342e-01
+            time_demand_curve = np.linspace(0, 86_400, 86_401)
+            scale = 1 / 3_600
+            self.demand_curve = (
+                    56  # daily demand in m3
+                    # the following function gives a demand per time unit in % of the daily demand
+                    # the total daily demand is reached after 24 time units
+                    * (
+                            4.21452027e-02
+                            - 1.41579420e-02 * np.cos(omega * time_demand_curve * scale)
+                            - 1.62752679e-02 * np.sin(omega * time_demand_curve * scale)
+                            + 5.94972876e-03 * np.cos(2 * omega * time_demand_curve * scale)
+                            - 1.82545802e-02 * np.sin(2 * omega * time_demand_curve * scale)
+                            - 2.72810544e-03 * np.cos(3 * omega * time_demand_curve * scale)
+                            + 2.15704832e-03 * np.sin(3 * omega * time_demand_curve * scale)
+                            - 5.15308835e-03 * np.cos(4 * omega * time_demand_curve * scale)
+                            - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve * scale)
+                    )
+            )
+        elif demand_curve == "tagesgang_noisy":
+            omega = 2.65711342e-01
+            time_demand_curve = np.linspace(0, 86_400, 86_401)
+            scale = 1 / 3_600
+            self.demand_curve = (
+                    54.5  # daily demand in m3
+                    # the following function gives a demand per time unit in % of the daily demand
+                    # the total daily demand is reached after 24 time units
+                    * (
+                            4.21452027e-02
+                            - 1.41579420e-02 * np.cos(omega * time_demand_curve * scale)
+                            - 1.62752679e-02 * np.sin(omega * time_demand_curve * scale)
+                            + 5.94972876e-03 * np.cos(2 * omega * time_demand_curve * scale)
+                            - 1.82545802e-02 * np.sin(2 * omega * time_demand_curve * scale)
+                            - 2.72810544e-03 * np.cos(3 * omega * time_demand_curve * scale)
+                            + 2.15704832e-03 * np.sin(3 * omega * time_demand_curve * scale)
+                            - 5.15308835e-03 * np.cos(4 * omega * time_demand_curve * scale)
+                            - 1.10491878e-04 * np.sin(4 * omega * time_demand_curve * scale)
+                    )
+            )
+            self.demand_curve += np.random.normal(0, 0.2, len(self.demand_curve))
+        elif demand_curve == "linear":
+            self.demand_curve = np.linspace(0, 4.00, 86_401)
+        else:
+            raise ValueError("Unknown demand curve")
+
         self.outputs = {
             "w_p_4": 0.0,
-            "w_v_5": 0.0,
+            "w_v_5": self.demand_curve[0],
             "w_v_7": 0.0,
         }
 
@@ -44,14 +90,15 @@ class ControllerMinimalTank(SimulationEntityWithAction):
             self.outputs["w_p_4"] = float(action[0])  # agent 0 controls the pump's speed
             self.outputs["w_v_7"] = float(action[1])  # agent 1 controls the tank's valve
 
-        if time < 8_000:
-            self.outputs["w_v_5"] = 0.3
-        elif time < 45_000:
-            self.outputs["w_v_5"] = 2.83
-        elif time < 55_000:
-            self.outputs["w_v_5"] = 2.95
+        if self.inputs["level_tank_9"] < 0.01 and self.inputs["p_rel_7"] <= 0:
+            self.outputs["w_v_7"] = 0.0
 
-
+        # demand of the valve
+        if time % self.DEMAND_STEP_INTERVAL == 0:
+            demand = self.demand_curve[int(time)]
+            if self.ENSURE_POSSIBLE_DEMAND:
+                demand = np.clip(demand, 0.0, 4.0)
+            self.outputs["w_v_5"] = demand
 
     def get_state(self):
         """
@@ -84,9 +131,7 @@ class ControllerMinimalTank(SimulationEntityWithAction):
             # level of the tank
             + [self.get_parameter_value("level_tank_9")]
             # inflow to the tank
-            + [self.get_parameter_value("V_flow_7_1")]
-            # outflow from the tank
-            + [self.get_parameter_value("V_flow_7_2")]
+            + [self.get_parameter_value("V_flow_7")]
             # tank control
             + [self.outputs["w_v_7"]]
         )

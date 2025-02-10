@@ -39,7 +39,6 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             stop_time=stop_time,
             step_size=1.0,
             **get_minimal_tank_network_config(),
-            start_values={"water_network": {"tank_9.crossArea": 1.25, "tank_9.height": 2}},
             logging_step_size=1,
             get_units=True,
             verbose=False,
@@ -170,7 +169,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
 
     @staticmethod
     def _render_task(sim_data, rewards=None, save_path=None, title=None):
-        fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
+        fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(27, 18))
         valve_colors = ['#FFA500']
         pump_colors = ['#1E90FF']
         tank_colors = ['#FF4500']
@@ -191,6 +190,16 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             label="Volume flow",
             linewidth=2,
         )
+        # shade the area between the demand and the volume flow red
+        ax[0, 0].fill_between(
+            sim_data["time"],
+            sim_data["control_api.w_v_5"],
+            sim_data["water_network.V_flow_5"],
+            where=sim_data["control_api.w_v_5"] > sim_data["water_network.V_flow_5"],
+            color='red',
+            alpha=0.3,
+            label="Deviation from demand",
+        )
         ax2 = ax[0, 0].twinx()
         ax2.plot(
             sim_data["time"],
@@ -204,7 +213,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         ax2.set_ylim(0, 1)
         ax[0, 0].set_xlabel("Time [s]")
         ax[0, 0].set_ylabel("Volume flow [m³/h]", color=valve_colors[0])
-        ax[0, 0].set_ylim((0, 3.5))
+        ax[0, 0].set_ylim((0, 4.5))
         ax[0, 0].set_title("Valve 5")
 
         # Plot pump speed and power
