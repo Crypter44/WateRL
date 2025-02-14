@@ -10,7 +10,7 @@ stop_time = 86_400.0
 sim = ManualStepSimulator(
     stop_time=stop_time,
     step_size=20.0,
-    **get_minimal_tank_network_config("tagesgang_noisy"),
+    **get_minimal_tank_network_config("tagesgang"),
     logging_step_size=20.0,
     verbose=False,
     ignore_warnings=False,
@@ -27,10 +27,10 @@ while not sim.is_done():
     v = 0.0
     if demand < 1.45:
         v = 1.0
-    if demand > 3.65:
+    if demand > 3.68:
         v = 1.0
 
-    action = np.array([1.3, v])
+    action = np.array([1.0, v])
     try:
         sim.do_simulation_step(action)
     except Exception as e:

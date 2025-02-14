@@ -43,6 +43,12 @@ class Decay:
     def get(self):
         return self.current
 
+    def skip_to_next_checkpoint(self):
+        self.current = self.next_checkpoint[1]
+        if len(self.checkpoints) > 0:
+            self.next_checkpoint = self.checkpoints.pop(0)
+        self.num_updates = self.next_checkpoint[0]
+
 
 class OUPolicyWithNoiseDecay(OrnsteinUhlenbeckPolicy):
     def __init__(self, mu, initial_sigma, target_sigma, updates_till_target_reached, theta, dt):
@@ -139,7 +145,15 @@ def set_noise_for_all(agents, active):
             agent.policy.deactivate_noise()
 
 
-def update_sigma_for_all(agents):
+def update_sigma_for_all(agents, sigma=None):
     # Ensure agents is always iterable
     for agent in (agents if hasattr(agents, '__iter__') and not isinstance(agents, (str, bytes)) else [agents]):
-        agent.policy.update_sigma()
+        if sigma is None:
+            agent.policy.update_sigma()
+        elif type(sigma) in (int, float):
+            agent.policy.set_sigma(sigma)
+        elif sigma == "next" or sigma == "skip":
+            agent.policy.skip_to_next_checkpoint()
+        else:
+            raise ValueError('Invalid sigma value! Must be a number or "next" or "skip" or None')
+

@@ -1,5 +1,6 @@
 import inspect
 import json
+from copy import deepcopy
 
 from torch import optim
 from torch.nn import functional as F
@@ -137,9 +138,14 @@ def setup_maddpg_agents_with_unified_critic(
         initial_replay_size=500,
         max_replay_size=5000,
         tau=0.001,
-        sigma=0.2,
-        target_sigma=0.001,
-        sigma_transition_length=1,
+        grad_norm_clip=0.5,
+        scale_critic_loss=False,
+        scale_actor_loss=False,
+        sigma_checkpoints=None,
+        initial_sigma=None,
+        target_sigma=None,
+        sigma_transition_length=None,
+        use_cuda=True,
 ):
     agents = []
     for i in range(n_agents):
@@ -154,7 +160,7 @@ def setup_maddpg_agents_with_unified_critic(
             input_shape=actor_input_shape,
             output_shape=mdp.info.action_space_for_idx(i).shape,
             agent_idx=i,
-            use_cuda=True,
+            use_cuda=use_cuda,
         )
 
         critic_input_shape = (actor_input_shape[0] + mdp.info.action_space_for_idx(i).shape[0],)
@@ -167,15 +173,18 @@ def setup_maddpg_agents_with_unified_critic(
             input_shape=critic_input_shape,
             output_shape=(1,),
             agent_idx=i,
-            use_cuda=True
+            use_cuda=use_cuda
         )
 
         if policy is None:
             policy = UnivariateGaussianPolicy(
-                initial_sigma=sigma,
+                sigma_checkpoints=sigma_checkpoints,
+                initial_sigma=initial_sigma,
                 target_sigma=target_sigma,
                 updates_till_target_reached=sigma_transition_length
             )
+        else:
+            policy = deepcopy(policy)
 
         agents.append(
             MixerDDPG(
@@ -210,6 +219,7 @@ def setup_maddpg_agents_with_unified_critic(
         tau=tau,
         warmup_replay_size=initial_replay_size,
         target_update_mode="soft",
+        grad_norm_clip=grad_norm_clip,
         actor_optimizer_params={
             "class": optim.Adam,
             "params": {"lr": lr_actor},
@@ -223,11 +233,11 @@ def setup_maddpg_agents_with_unified_critic(
             "output_shape": (1,),
             "use_cuda": True,
         },
-        scale_critic_loss=False,
-        scale_actor_loss=False,
+        scale_critic_loss=scale_critic_loss,
+        scale_actor_loss=scale_actor_loss,
         obs_last_action=False,
         host_agents=agents,
-        use_cuda=True,
+        use_cuda=use_cuda,
     )
 
     return agents, maddpg
@@ -245,9 +255,14 @@ def setup_facmac_agents(
         initial_replay_size=500,
         max_replay_size=5000,
         tau=0.001,
-        sigma=0.2,
-        target_sigma=0.001,
-        sigma_transition_length=1,
+        grad_norm_clip=0.5,
+        scale_critic_loss=False,
+        scale_actor_loss=False,
+        sigma_checkpoints=None,
+        initial_sigma=None,
+        target_sigma=None,
+        sigma_transition_length=None,
+        use_cuda=True,
 ):
     agents = []
     for i in range(n_agents):
@@ -262,7 +277,7 @@ def setup_facmac_agents(
             input_shape=actor_input_shape,
             output_shape=mdp.info.action_space_for_idx(i).shape,
             agent_idx=i,
-            use_cuda=True,
+            use_cuda=use_cuda,
         )
 
         critic_input_shape = (actor_input_shape[0] + mdp.info.action_space_for_idx(i).shape[0],)
@@ -275,15 +290,18 @@ def setup_facmac_agents(
             input_shape=critic_input_shape,
             output_shape=(1,),
             agent_idx=i,
-            use_cuda=True
+            use_cuda=use_cuda
         )
 
         if policy is None:
             policy = UnivariateGaussianPolicy(
-                initial_sigma=sigma,
+                sigma_checkpoints=sigma_checkpoints,
+                initial_sigma=initial_sigma,
                 target_sigma=target_sigma,
                 updates_till_target_reached=sigma_transition_length
             )
+        else:
+            policy = deepcopy(policy)
 
         agents.append(
             MixerDDPG(
@@ -297,7 +315,7 @@ def setup_facmac_agents(
                 tau=tau,
                 warmup_replay_size=initial_replay_size,
                 replay_memory=None,
-                use_cuda=True,
+                use_cuda=use_cuda,
                 use_mixer=True,
                 primary_agent=None,
             )
@@ -327,12 +345,12 @@ def setup_facmac_agents(
             'class': optim.Adam,
             'params': {'lr': lr_critic}
         },
-        scale_critic_loss=False,
-        scale_actor_loss=False,
-        grad_norm_clip=0.5,
+        scale_critic_loss=scale_critic_loss,
+        scale_actor_loss=scale_actor_loss,
+        grad_norm_clip=grad_norm_clip,
         obs_last_action=False,
         host_agents=agents,
-        use_cuda=True
+        use_cuda=use_cuda
     )
 
     return agents, facmac

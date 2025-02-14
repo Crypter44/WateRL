@@ -14,21 +14,22 @@ class UnifiedCriticMADDPG(Agent):
     """
 
     def __init__(
-        self,
-        mdp_info,
-        batch_size,
-        replay_memory,
-        target_update_frequency,
-        tau,
-        warmup_replay_size,
-        target_update_mode,
-        actor_optimizer_params,
-        critic_params,
-        scale_critic_loss,
-        scale_actor_loss,
-        obs_last_action,
-        host_agents,
-        use_cuda=False,
+            self,
+            mdp_info,
+            batch_size,
+            replay_memory,
+            target_update_frequency,
+            tau,
+            warmup_replay_size,
+            target_update_mode,
+            actor_optimizer_params,
+            critic_params,
+            grad_norm_clip,
+            scale_critic_loss,
+            scale_actor_loss,
+            obs_last_action,
+            host_agents,
+            use_cuda=False,
     ):
         super().__init__(mdp_info, policy=None)
 
@@ -38,6 +39,7 @@ class UnifiedCriticMADDPG(Agent):
         self._tau = tau
         self._warmup_replay_size = warmup_replay_size
         self._target_update_mode = target_update_mode
+        self._grad_norm_clip = grad_norm_clip
         self._scale_critic_loss = scale_critic_loss
         self._scale_actor_loss = scale_actor_loss
         self._obs_last_action = obs_last_action
@@ -46,8 +48,8 @@ class UnifiedCriticMADDPG(Agent):
 
         self._n_updates = 0
 
-
         target_critic_params = deepcopy(critic_params)
+
         self.critic_approximator = TorchApproximator(**critic_params)
         self.target_critic_approximator = TorchApproximator(**target_critic_params)
 
@@ -59,6 +61,7 @@ class UnifiedCriticMADDPG(Agent):
                 ]
             )
         )
+        self.critic_params = self.critic_approximator.network.parameters()
 
         self._actor_optimizer = actor_optimizer_params["class"](
             self.actor_params, **actor_optimizer_params["params"]
@@ -141,6 +144,10 @@ class UnifiedCriticMADDPG(Agent):
                 critic_loss /= self.mdp_info.n_agents
             self._critic_optimizer.zero_grad()
             critic_loss.backward()
+            if self._grad_norm_clip is not None:
+                critic_grad_norm = torch.nn.utils.clip_grad_norm_(
+                    self.critic_params, self._grad_norm_clip
+                )
             self._critic_optimizer.step()
 
             # Update actors
@@ -159,6 +166,10 @@ class UnifiedCriticMADDPG(Agent):
                 actor_loss /= self.mdp_info.n_agents
             self._actor_optimizer.zero_grad()
             actor_loss.backward()
+            if self._grad_norm_clip is not None:
+                actor_grad_norm = torch.nn.utils.clip_grad_norm_(
+                    self.actor_params, self._grad_norm_clip
+                )
             self._actor_optimizer.step()
 
             # Update target mixer

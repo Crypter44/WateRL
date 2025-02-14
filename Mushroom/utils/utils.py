@@ -73,6 +73,7 @@ def parametrized_training(
         seeds,
         train: Callable,
         base_path,
+        save_whole_file=False
 ):
     print("You are using parametrized training!\n"
           "This is a friendly reminder to make sure "
@@ -87,6 +88,8 @@ def parametrized_training(
         begin, end = code.find("# PARAMS") + 8, code.find("# END_PARAMS")
         if begin == -1 or end == -1:
             raise ValueError("Parameters not found in file!")
+        if save_whole_file:
+            end = len(code)
         code = code[begin:end]
         with open(base_path + 'params.txt', 'w') as f2:
             f2.write(code)

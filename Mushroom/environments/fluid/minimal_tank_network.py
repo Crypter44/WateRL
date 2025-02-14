@@ -17,7 +17,8 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
     def __init__(
             self,
             criteria: dict = None,
-            labeled_step: bool = False
+            labeled_step: bool = False,
+            demand_curve: str = "tagesgang",
     ):
         self._criteria = criteria or {
             "target_opening": {
@@ -25,27 +26,29 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             }
         }
 
-        state_space = spaces.Box(low=-500, high=500, shape=(10,))
+        state_space = spaces.Box(low=-500, high=500, shape=(3,))
         observation_spaces = [
-            spaces.Box(low=-np.inf, high=np.inf, shape=(2,)),  # demand of the valve and level of the tank
-            spaces.Box(low=-np.inf, high=np.inf, shape=(2,))  # for both agents
+            spaces.Box(low=-np.inf, high=np.inf, shape=(3,)),  # demand of the valve and level of the tank
+            spaces.Box(low=-np.inf, high=np.inf, shape=(3,))  # for both agents
         ]
         action_spaces = [
             spaces.Box(low=0, high=1, shape=(1,)),  # pump speed
             spaces.Box(low=-1, high=1, shape=(1,))  # control of the tank
         ]
-        stop_time = 55000.0
+        stop_time = 86400.0
+        self._step_size = 20
         sim = ManualStepSimulator(
             stop_time=stop_time,
-            step_size=1.0,
-            **get_minimal_tank_network_config(),
-            logging_step_size=1,
+            step_size=self._step_size,
+            **get_minimal_tank_network_config(demand_curve),
+            logging_step_size=self._step_size,
             get_units=True,
             verbose=False,
             ignore_warnings=False,
         )
 
         self.rewards = []
+        self.actions = []
 
         # Configure the rendering of the environment
         self._render_executor = concurrent.futures.ThreadPoolExecutor()
@@ -56,7 +59,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             action_spaces=action_spaces,
             fluid_network_simulator=sim,
             gamma=0.99,
-            horizon=stop_time // ControllerMinimalTank.CONTROL_STEP_INTERVAL,
+            horizon=int(stop_time // ControllerMinimalTank.CONTROL_STEP_INTERVAL),
             stop_time=int(stop_time),
             n_agents=2,
             labeled_step=labeled_step
@@ -64,24 +67,26 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
 
     def reset(self, state=None) -> dict:
         self.rewards = []
+        self.actions = []
         if state is not None:
             raise NotImplementedError("Resetting to a specific state is not supported.")
 
-        self.sim.reset_simulation(self._stop_time, 1, 1)
+        self.sim.reset_simulation(self._stop_time, self._step_size, self._step_size)
         self._current_state, _ = self._get_current_state()
 
         sample = {
-            "state": self._current_state,
+            "state": self._current_state[[0, 1, 6]],
             "obs": self._get_observations(),
         }
         return sample if self.labeled_step else self._get_observations()
 
     def step(self, action):
         action = np.clip(action, 0, 1)
+        self.actions.append(action)
 
         error = False
         sim_states = []
-        for i in range(ControllerMinimalTank.CONTROL_STEP_INTERVAL):
+        for i in range(ControllerMinimalTank.CONTROL_STEP_INTERVAL // self._step_size):
             try:
                 self.sim.do_simulation_step(action)
             except Exception as e:
@@ -97,7 +102,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         absorbing = done or error
 
         step = {
-            "state": self._current_state,
+            "state": self._current_state[[0, 1, 6]],
             "obs": self._get_observations(),
             "rewards": [reward] * self._mdp_info.n_agents,
             "absorbing": absorbing,
@@ -121,6 +126,21 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                             self._criteria["demand"].get("value_at_bound", 0.01),
                         )
                 )
+            if "demand_switch" in self._criteria.keys():
+                diff = s[0] - s[1]
+                if abs(diff) > self._criteria["demand_switch"]["tolerance"]:
+                    tmp -= self._criteria["demand_switch"].get("neg_w", 5)
+                else:
+                    tmp += (
+                            self._criteria["demand_switch"]["w"] *
+                            exponential_reward(
+                                diff,
+                                0,
+                                self._criteria["demand_switch"].get("smoothness", 0.0001),
+                                self._criteria["demand_switch"]["tolerance"],
+                                self._criteria["demand_switch"].get("value_at_bound", 0.01),
+                            )
+                    )
             if "target_opening" in self._criteria.keys():
                 x = s[2]
                 target = self._criteria["target_opening"].get("target", 0.95)
@@ -151,6 +171,14 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                             value_at_right_bound,
                         )
                     )
+            if "target_action" in self._criteria.keys():
+                tmp += self._criteria["target_action"]["w"] * exponential_reward(
+                    np.mean(action),
+                    self._criteria["target_action"]["target"],
+                    self._criteria["target_action"].get("smoothness", 0.01),
+                    self._criteria["target_action"].get("bound", 0.1),
+                    self._criteria["target_action"].get("value_at_bound", 0.01),
+                )
             if "negative_flow" in self._criteria.keys():
                 if s[4] < -1e-6:
                     tmp -= self._criteria["negative_flow"]["w"]
@@ -162,17 +190,19 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
     def render(self, save_path=None, title=None):
         sim_data, _ = self.sim.get_results()
         rewards = deepcopy(self.rewards)
-        return self._render_executor.submit(self._render_task, sim_data, rewards, save_path, title)
+        actions = deepcopy(self.actions)
+        return self._render_executor.submit(self._render_task, sim_data, rewards, actions, save_path, title)
 
     def stop_renderer(self):
         self._render_executor.shutdown()
 
     @staticmethod
-    def _render_task(sim_data, rewards=None, save_path=None, title=None):
+    def _render_task(sim_data, rewards=None, actions=None, save_path=None, title=None):
         fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(27, 18))
         valve_colors = ['#FFA500']
         pump_colors = ['#1E90FF']
         tank_colors = ['#FF4500']
+        stop_time = np.array(sim_data["time"])[-1]
 
         # Plot the valve
         ax[0, 0].plot(
@@ -190,7 +220,6 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             label="Volume flow",
             linewidth=2,
         )
-        # shade the area between the demand and the volume flow red
         ax[0, 0].fill_between(
             sim_data["time"],
             sim_data["control_api.w_v_5"],
@@ -211,7 +240,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         )
         ax2.set_ylabel("Opening", color='gray')
         ax2.set_ylim(0, 1)
-        ax[0, 0].set_xlabel("Time [s]")
+        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.1))
         ax[0, 0].set_ylabel("Volume flow [m³/h]", color=valve_colors[0])
         ax[0, 0].set_ylim((0, 4.5))
         ax[0, 0].set_title("Valve 5")
@@ -225,6 +254,16 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             zorder=0,
             linewidth=2,
         )
+        if actions is not None:
+            ax[0, 1].plot(
+                np.linspace(0, np.array(sim_data["time"])[-1], len(actions)),
+                [a[0]*1.3 for a in actions],
+                color='black',
+                label="Pump action",
+                alpha=0.35,
+                zorder=1,
+                linestyle='--',
+            )
         ax2 = ax[0, 1].twinx()
         ax2.plot(
             sim_data["time"],
@@ -236,9 +275,9 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             label="Power consumption",
         )
         ax2.set_ylabel("Power consumption [W]", color='gray')
-        ax2.set_ylim((0, 200))
-        ax[0, 1].set_ylim((0, 1))
-        ax[0, 1].set_xlabel("Time [s]")
+        ax2.set_ylim((0, 450))
+        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.1))
+        ax[0, 1].set_ylim((0, 1.31))
         ax[0, 1].set_ylabel("Rotational speed", color=pump_colors[0])
         ax[0, 1].set_title("Pump")
 
@@ -266,7 +305,6 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             linewidth=1,
             zorder=1,
         )
-        ax[0, 2].set_xlabel("Time [s]")
         ax[0, 2].set_ylabel("Volume flow [m³/h]", color=pump_colors[0])
         ax[0, 2].set_title("Volume Flow through Pump")
 
@@ -285,7 +323,6 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             color=pump_colors[0],
             alpha=0.3,
         )
-        ax[1, 0].set_xlabel("Time [s]")
         ax[1, 0].set_ylabel("Level [m]", color=pump_colors[0])
         ax[1, 0].set_title("Tank Level")
 
@@ -296,7 +333,6 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             color='green',
             label="In/Outflow",
         )
-        ax[1, 1].set_xlabel("Time [s]")
         ax[1, 1].set_ylabel("Volume flow [m³/h]", color='green')
         ax[1, 1].set_title("Inflow/Outflow of Tank")
 
@@ -305,11 +341,30 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             sim_data["time"],
             sim_data["control_api.w_v_7"],
             color=tank_colors[0],
-            label="Control",
+            label="Tank action (corrected)",
         )
-        ax[1, 2].set_xlabel("Time [s]")
+        if actions is not None:
+            ax[1, 2].plot(
+                np.linspace(0, np.array(sim_data["time"])[-1], len(actions)),
+                [a[1] for a in actions],
+                color='black',
+                label="Tank action",
+                alpha=0.35,
+                linestyle='--',
+            )
         ax[1, 2].set_ylabel("Tank Valve Control", color=tank_colors[0])
         ax[1, 2].set_title("Tank Valve Control")
+        ax[1, 2].set_ylim((0, 1.01))
+
+        for a in ax.flatten():
+            a.set_xlabel("Time [h]")
+            ticks = range(0, int(stop_time), 60 * 60 * 3)
+            custom_labels = [i // 3600 for i in ticks]
+            a.set_xticks(ticks)
+            a.set_xticklabels(custom_labels)
+            a.set_xlim((0, stop_time))
+            a.grid(axis='x')
+            a.legend(loc='upper left', bbox_to_anchor=(0, -0.1))
 
         fig.subplots_adjust(
             left=0.05,
@@ -327,6 +382,33 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             fig.savefig(save_path + ".png")
         plt.close(fig)
 
+        if rewards is not None:
+            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
+            ax.plot(
+                np.linspace(0, np.array(sim_data["time"])[-1], len(rewards)),
+                rewards,
+                color='blue',
+                label="Reward",
+            )
+            ax.set_xlabel("Time [h]")
+            ax.set_ylabel("Reward")
+            ax.set_title("Reward")
+            ax.legend(loc='upper left', bbox_to_anchor=(0, -0.1))
+            ax.set_xticks(range(0, int(stop_time), 60 * 60 * 3))
+            ax.set_xticklabels([i // 3600 for i in range(0, int(stop_time), 60 * 60 * 3)])
+            fig.subplots_adjust(
+                left=0.05,
+                bottom=0.12,
+                right=0.95,
+                top=0.9,
+                hspace=0.4,
+                wspace=0.4
+            )
+            path = str.replace(save_path, "Epoch", "Epoch_reward")
+            path = str.replace(path, "Final", "Final_reward")
+            fig.savefig(path + ".png")
+            plt.close(fig)
+
     def _get_current_state(self) -> (np.ndarray, bool):
         sim_state, done = self.sim.get_current_state()
         try:
@@ -336,4 +418,4 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             raise KeyError("The key 'control_api' was not found in the global state.")
 
     def _get_observations(self) -> List:
-        return [self._current_state[:2] for _ in range(self._mdp_info.n_agents)]
+        return [self._current_state[[0, 1, 6]] for _ in range(self._mdp_info.n_agents)]
