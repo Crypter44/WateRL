@@ -38,11 +38,6 @@
       "connect_to_external_parameter": "P_pum_1"
     },
     {
-      "parameter_name": "eta_pum_1",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "eta_pum_1"
-    },
-    {
       "parameter_name": "V_flow_1",
       "connect_to_system": "water_network",
       "connect_to_external_parameter": "V_flow_1"
@@ -86,11 +81,6 @@
       "parameter_name": "P_pum_4",
       "connect_to_system": "water_network",
       "connect_to_external_parameter": "P_pum_4"
-    },
-    {
-      "parameter_name": "eta_pum_4",
-      "connect_to_system": "water_network",
-      "connect_to_external_parameter": "eta_pum_4"
     },
     {
       "parameter_name": "V_flow_4",
