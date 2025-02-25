@@ -124,3 +124,17 @@ def plot_training_data(
             plt.savefig(path + f"{data_name}.png")
             fig.show()
             plt.close(fig)
+
+
+def plot_debug_data(debug_info: dict, path: str = None):
+    for key, value in debug_info.items():
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        ax.plot(value)
+        ax.set_title(key)
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Value")
+        if path is not None:
+            plt.savefig(path + f"debug_{key}.png")
+        else:
+            fig.show()
+        plt.close(fig)

@@ -6,12 +6,12 @@ from Sofirpy.networks.tank_minimal.config import get_minimal_tank_network_config
 from Sofirpy.networks.tank_minimal.controller import ControllerMinimalTank
 from Sofirpy.simulation import ManualStepSimulator
 
-s = 10
+s = 5
 
 sim = ManualStepSimulator(
-    stop_time=50000.0,
+    stop_time=86400.0,
     step_size=s,
-    **get_minimal_tank_network_config(),
+    **get_minimal_tank_network_config(demand_curve="constant"),
     logging_step_size=s,
     verbose=False,
     ignore_warnings=False,
@@ -28,7 +28,7 @@ use_random_initialization = True
 
 for i in range(test_count):
     sim.reset_simulation(
-        stop_time=50000.0,
+        stop_time=86400.0,
         step_size=s,
     )
     if use_random_initialization:

@@ -132,8 +132,8 @@ class ControllerMinimalTank(SimulationEntityWithAction):
         [5] power consumption of the pump
         [6] level of the tank
         [7] inflow to the tank
-        [8] outflow from the tank
-        [9] tank control
+        [8] tank control
+        [9] pressure at the tank valve
         """
         state = (
             # demand of the valve
@@ -154,6 +154,8 @@ class ControllerMinimalTank(SimulationEntityWithAction):
             + [self.get_parameter_value("V_flow_7")]
             # tank control
             + [self.outputs["w_v_7"]]
+            # pressure at the tank valve
+            + [self.get_parameter_value("p_rel_7")]
         )
         return state
 

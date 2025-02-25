@@ -1,3 +1,4 @@
+import json
 import os
 import random
 from datetime import datetime
@@ -180,3 +181,25 @@ def linear_reward(x, min_x, max_x, min_reward=0, max_reward=1.0):
     r = (max_x - x) / (max_x - min_x)
     r = np.clip(r, 0, 1)
     return min_reward + r * (max_reward - min_reward)
+
+
+def final_evaluation(n_episodes_final, n_episodes_final_render, core, save_path):
+    for i in range(n_episodes_final_render):
+        core.evaluate(n_episodes=1, quiet=True)
+        core.mdp.render(save_path=save_path + f"Final_{i}")
+
+    for i, a in enumerate(core.agents):
+        a.save(save_path + f"/checkpoints/Final_Agent_{i}")
+
+    if n_episodes_final > 0:
+        with open(save_path + "Evaluation.json", "w") as f:
+            final = compute_metrics_with_labeled_dataset(
+                core.evaluate(n_episodes=n_episodes_final, render=False)[0],
+            )
+            json.dump({
+                "Min": final[0],
+                "Max": final[1],
+                "Mean": final[2],
+                "Median": final[3],
+                "Count": final[4],
+            }, f, indent=4)

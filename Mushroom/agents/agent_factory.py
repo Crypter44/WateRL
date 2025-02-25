@@ -20,6 +20,7 @@ def create_ddpg_agent(
         agent_idx=-1,
         n_features_actor=80,
         lr_actor=1e-4,
+        actor_activation="sigmoid",
         n_features_critic=80,
         lr_critic=1e-3,
         batch_size=200,
@@ -42,7 +43,8 @@ def create_ddpg_agent(
                         input_shape=actor_input_shape,
                         output_shape=mdp.info.action_space_for_idx(agent_idx).shape,
                         agent_idx=agent_idx,
-                        use_cuda=use_cuda
+                        use_cuda=use_cuda,
+                        activation=actor_activation
                         )
 
     actor_optimizer = {'class': optim.Adam,
@@ -96,6 +98,7 @@ def setup_maddpg_agents(
         mdp,
         n_features_actor=80,
         lr_actor=1e-4,
+        actor_activation="sigmoid",
         n_features_critic=80,
         lr_critic=1e-3,
         batch_size=200,
@@ -114,7 +117,7 @@ def setup_maddpg_agents(
     for i in range(n_agents):
         agents.append(
             create_ddpg_agent(
-                mdp, i, n_features_actor, lr_actor, n_features_critic, lr_critic, batch_size,
+                mdp, i, n_features_actor, lr_actor, actor_activation, n_features_critic, lr_critic, batch_size,
                 initial_replay_size, max_replay_size, tau, sigma_checkpoints, decay_type, sigma, target_sigma,
                 sigma_transition_length, True, use_cuda, save_path
             )
@@ -132,6 +135,7 @@ def setup_maddpg_agents_with_unified_critic(
         policy=None,
         n_features_actor=80,
         lr_actor=1e-4,
+        actor_activation="sigmoid",
         n_features_critic=80,
         lr_critic=2e-4,
         batch_size=200,
@@ -161,6 +165,7 @@ def setup_maddpg_agents_with_unified_critic(
             output_shape=mdp.info.action_space_for_idx(i).shape,
             agent_idx=i,
             use_cuda=use_cuda,
+            activation=actor_activation
         )
 
         critic_input_shape = (actor_input_shape[0] + mdp.info.action_space_for_idx(i).shape[0],)
@@ -249,6 +254,7 @@ def setup_facmac_agents(
         policy=None,
         n_features_actor=80,
         lr_actor=1e-4,
+        actor_activation="sigmoid",
         n_features_critic=80,
         lr_critic=2e-4,
         batch_size=200,
@@ -270,7 +276,7 @@ def setup_facmac_agents(
         actor_params = dict(
             network=ActorNetwork,
             optimizer={
-                'class': optim.Adam,
+                'class': optim.RMSprop,
                 'params': {'lr': lr_actor}
             },
             n_features=n_features_actor,
@@ -278,12 +284,13 @@ def setup_facmac_agents(
             output_shape=mdp.info.action_space_for_idx(i).shape,
             agent_idx=i,
             use_cuda=use_cuda,
+            activation=actor_activation,
         )
 
         critic_input_shape = (actor_input_shape[0] + mdp.info.action_space_for_idx(i).shape[0],)
         critic_params = dict(
             network=CriticNetwork,
-            optimizer={'class': optim.Adam,
+            optimizer={'class': optim.RMSprop,
                        'params': {'lr': lr_critic}},
             loss=F.mse_loss,
             n_features=n_features_critic,
@@ -338,11 +345,11 @@ def setup_facmac_agents(
         target_update_mode="soft",
         mixing_embed_dim=32,
         actor_optimizer_params={
-            'class': optim.Adam,
+            'class': optim.RMSprop,
             'params': {'lr': lr_actor}
         },
         critic_optimizer_params={
-            'class': optim.Adam,
+            'class': optim.RMSprop,
             'params': {'lr': lr_critic}
         },
         scale_critic_loss=scale_critic_loss,

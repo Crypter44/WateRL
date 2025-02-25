@@ -2,14 +2,15 @@ import json
 
 import matplotlib as mpl
 import numpy as np
+from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from Mushroom.agents.agent_factory import create_ddpg_agent
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
 from Mushroom.core.multi_agent_core_labeled import MultiAgentCoreLabeled
 from Mushroom.environments.fluid.minimal_tank_network import MinimalTankNetwork
-from Mushroom.utils.plotting import plot_training_data
-from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset
+from Mushroom.utils.plotting import plot_training_data, plot_debug_data
+from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset, final_evaluation
 
 # PARAMS
 num_agents = 2
@@ -17,6 +18,7 @@ gamma = 0.99
 gamma_eval = 1.
 
 lr_actor = 5e-5
+actor_activation = 'linear'
 lr_critic = 1e-4
 
 initial_replay_size_episodes = 5
@@ -24,12 +26,14 @@ max_replay_size_episodes = 5000
 batch_size = 200
 
 n_features = 80
-tau = .005
+tau = .001
+grad_norm_clipping = 0.5
 
-sigma = [(0, 0.6), (30, 0.1), (50, 0.01)]
+sigma = [(0, 0.7), (10, 0.2)]
 decay_type = 'exponential'
+cut_of_exploration_when_converged = False
 
-n_epochs = 30
+n_epochs = 20
 n_episodes_learn = 10
 n_episodes_test = 3
 n_steps_per_fit = 1
@@ -39,13 +43,15 @@ n_episodes_final_render = 1
 n_epochs_per_checkpoint = 5
 
 criteria = {
-    "demand_switch": {
+    "demand": {
         "w": 1,
-        "tolerance": 0.02,
+        "max": 0,
+        "min": -2,
+        "value_at_bound": 0.001,
+        "bound": 0.3
     },
 }
-
-demand_curve = "tagesgang_24"
+demand_curve = "tagesgang"
 # END_PARAMS
 
 mpl.rcParams['figure.max_open_warning'] = n_episodes_final_render
@@ -61,6 +67,7 @@ def train(p1, p2, seed, save_path):
         agent_idx=i,
         n_features_actor=n_features,
         lr_actor=lr_actor,
+        actor_activation=actor_activation,
         n_features_critic=n_features,
         lr_critic=lr_actor,
         batch_size=batch_size,
@@ -73,6 +80,12 @@ def train(p1, p2, seed, save_path):
 
     # Core
     core = MultiAgentCoreLabeled(agents=agents, mdp=mdp)
+
+    agents[0].set_debug_logging(True)
+    agents[1].set_debug_logging(True)
+
+    debug_info0 = None
+    debug_info1 = None
 
     core.learn(
         n_steps=initial_replay_size_episodes * mdp.info.horizon,
@@ -89,6 +102,8 @@ def train(p1, p2, seed, save_path):
             n_episodes=n_episodes_learn,
             n_steps_per_fit_per_agent=[n_steps_per_fit] * num_agents,
         )
+        debug_info0 = agents[0].get_debug_info(debug_info0)
+        debug_info1 = agents[1].get_debug_info(debug_info1)
 
         core.evaluate(n_episodes=1, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
@@ -110,28 +125,12 @@ def train(p1, p2, seed, save_path):
                 a.save(save_path + f"/checkpoints/Epoch_{n + 1}_Agent_{i}")
 
     set_noise_for_all(core.agents, False)
-    for i in range(n_episodes_final_render):
-        core.evaluate(n_episodes=1, quiet=True)
-        core.mdp.render(save_path=save_path + f"Final_{i}")
-
-    for i, a in enumerate(core.agents):
-        a.save(save_path + f"/checkpoints/Final_Agent_{i}")
-
-    if n_episodes_final > 0:
-        with open(save_path + "Evaluation.json", "w") as f:
-            final = compute_metrics_with_labeled_dataset(
-                core.evaluate(n_episodes=n_episodes_final, render=False)[0],
-                gamma_eval
-            )
-            json.dump({
-                "Min": final[0],
-                "Max": final[1],
-                "Mean": final[2],
-                "Median": final[3],
-                "Count": final[4],
-            }, f, indent=4)
+    plot_debug_data(debug_info0, save_path)
+    final_evaluation(n_episodes_final, n_episodes_final_render, core, save_path)
 
     return {"metrics": np.array(data), "additional_data": {}}
+
+
 
 
 training_data, path = parametrized_training(

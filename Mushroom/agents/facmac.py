@@ -84,14 +84,26 @@ class FACMAC(Agent):
             )
         )
 
-        self._actor_optimizer = actor_optimizer_params["class"](
-            self.actor_params, **actor_optimizer_params["params"]
-        )
-        self._critic_optimizer = critic_optimizer_params["class"](
-            self.critic_params, **critic_optimizer_params["params"]
-        )
+        self._actor_optimizer_params = actor_optimizer_params
+        self._critic_optimizer_params = critic_optimizer_params
+        self.reset_optimizers()
 
         self.update_target_mixer()
+
+        self._debug_logging = False
+        self._debug_info = {
+            "actor_loss": [],
+            "critic_loss": [],
+            "actor_grad_norm": [],
+            "actor_grad_norm_clipped": [],
+            "critic_grad_norm": [],
+            "critic_grad_norm_clipped": [],
+            "q_tot": [],
+            "q_tot_target": [],
+            "q_tot_next": [],
+            "q_hats": [],
+            "q_nexts": [],
+        }
 
         self._add_save_attr(
             _batch_size="primitive",
@@ -178,16 +190,25 @@ class FACMAC(Agent):
                     rewards_t + self.mdp_info.gamma * q_tot_next * ~absorbing_t
             ).detach()
 
+            if self._debug_logging:
+                self._debug_info["q_tot"].append(q_tot.mean().item())
+                self._debug_info["q_tot_target"].append(q_tot_target.mean().item())
+                self._debug_info["q_tot_next"].append(q_tot_next.mean().item())
+                self._debug_info["q_hats"].append(q_hat.mean().item())
+                self._debug_info["q_nexts"].append(q_next.mean().item())
+
             # Compute critic loss and back-propagate
             critic_loss = F.mse_loss(q_tot, q_tot_target)
             if self._scale_critic_loss:
                 critic_loss /= self.mdp_info.n_agents
             self._critic_optimizer.zero_grad()
             critic_loss.backward()
+            critic_grad_norm = self.critic_grad_norm()
             if self._grad_norm_clip is not None:
-                critic_grad_norm = torch.nn.utils.clip_grad_norm_(
+                torch.nn.utils.clip_grad_norm_(
                     self.critic_params, self._grad_norm_clip
-                )
+                ).item()
+            critic_grad_norm_clipped = self.critic_grad_norm()
             self._critic_optimizer.step()
 
             # Compute actor loss
@@ -206,11 +227,25 @@ class FACMAC(Agent):
                 actor_loss /= self.mdp_info.n_agents
             self._actor_optimizer.zero_grad()
             actor_loss.backward()
+            self.critic_grad_norm()
+            actor_grad_norm = self.actor_grad_norm()
             if self._grad_norm_clip is not None:
-                actor_grad_norm = torch.nn.utils.clip_grad_norm_(
+                torch.nn.utils.clip_grad_norm_(
                     self.actor_params, self._grad_norm_clip
-                )
+                ).item()
             self._actor_optimizer.step()
+
+            if self._debug_logging:
+                self._debug_info["actor_loss"].append(actor_loss.item())
+                self._debug_info["critic_loss"].append(critic_loss.item())
+                self._debug_info["actor_grad_norm"].append(actor_grad_norm)
+                self._debug_info["actor_grad_norm_clipped"].append(
+                    self.actor_grad_norm()
+                )
+                self._debug_info["critic_grad_norm"].append(critic_grad_norm)
+                self._debug_info["critic_grad_norm_clipped"].append(
+                    critic_grad_norm_clipped
+                )
 
             # Update target mixer
             self._n_updates += 1
@@ -263,3 +298,32 @@ class FACMAC(Agent):
             total_norm += layer_norm.item() ** 2
         total_norm = total_norm ** 0.5
         return total_norm
+
+    def critic_grad_norm(self):
+        total_norm = 0.0
+        for layer in self.critic_params:
+            layer_norm = layer.grad.data.norm(2)
+            total_norm += layer_norm.item() ** 2
+        total_norm = total_norm ** 0.5
+        return total_norm
+
+    def set_debug_logging(self, enabled):
+        self._debug_logging = enabled
+
+    def get_debug_info(self, previous_info=None):
+        averaged_info = {
+            key: [np.mean(value).item()] for key, value in self._debug_info.items()
+        }
+        if previous_info is not None:
+            for key, _ in previous_info.items():
+                previous_info[key] += averaged_info[key]
+            return previous_info
+        return averaged_info
+
+    def reset_optimizers(self):
+        self._actor_optimizer = self._actor_optimizer_params["class"](
+            self.actor_params, **self._actor_optimizer_params["params"]
+        )
+        self._critic_optimizer = self._critic_optimizer_params["class"](
+            self.critic_params, **self._critic_optimizer_params["params"]
+        )

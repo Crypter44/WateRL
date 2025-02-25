@@ -1,13 +1,13 @@
 import numpy as np
-from mushroom_rl.utils.dataset import compute_metrics
+from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from Mushroom.agents.agent_factory import create_ddpg_agent
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
-from Mushroom.core.multi_agent_core import MultiAgentCore
+from Mushroom.core.multi_agent_core_labeled import MultiAgentCoreLabeled
 from Mushroom.utils.plotting import plot_training_data
 from Mushroom.environments.test.constant_value_env import ConstantValueEnv
-from Mushroom.utils.utils import parametrized_training, set_seed
+from Mushroom.utils.utils import parametrized_training, set_seed, compute_metrics_with_labeled_dataset
 
 # PARAMS
 gamma = 0.99
@@ -27,7 +27,7 @@ sigma = 0.5
 target_sigma = 0.2
 sigma_transition_length = 20
 
-n_epochs = 30
+n_epochs = 80
 n_steps_learn = 1400
 n_steps_test = 600
 n_steps_per_fit = 1
@@ -50,6 +50,9 @@ reset_to_start_state = True
 
 # END_PARAMS
 
+agns = []
+cgns = []
+
 
 def train(p1, p2, seed, save_path):
     set_seed(seed)
@@ -61,10 +64,11 @@ def train(p1, p2, seed, save_path):
         reset_to_start=reset_to_start_state,
         num_agents=num_agents,
         state_length=state_length,
+        labeled_state=True
     )
-    agent = [create_ddpg_agent(
+    agents = [create_ddpg_agent(
         mdp,
-        agent_idx=i,
+        agent_idx=-1,
         n_features_actor=n_features,
         lr_actor=lr_actor,
         n_features_critic=n_features,
@@ -77,35 +81,51 @@ def train(p1, p2, seed, save_path):
         target_sigma=target_sigma,
         sigma_transition_length=sigma_transition_length,
     ) for i in range(num_agents)]
-    core = MultiAgentCore(agent=agent, mdp=mdp)
+    core = MultiAgentCoreLabeled(agents=agents, mdp=mdp)
 
     core.learn(
         n_steps=initial_replay_size,
         n_steps_per_fit_per_agent=[initial_replay_size] * num_agents,
         quiet=True
     )
-    data = [compute_metrics(core.evaluate(n_steps=n_steps_test, render=False, quiet=True), gamma_eval)]
+    data = [compute_metrics_with_labeled_dataset(core.evaluate(n_steps=n_steps_test, render=False, quiet=True)[0])]
     core.mdp.render(save_path=save_path + f"Epoch_0")
 
     pbar = tqdm(range(n_epochs), unit='epoch', leave=False)
     for n in pbar:
         core.learn(n_steps=n_steps_learn, n_steps_per_fit_per_agent=[n_steps_per_fit] * num_agents, quiet=True)
 
-        dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+        dataset, _ = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noise")
-        set_noise_for_all(core.agent, False)
-        dataset = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+        set_noise_for_all(core.agents, False)
+        dataset, _ = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
-        data.append(compute_metrics(dataset, gamma_eval))
-        set_noise_for_all(core.agent, True)
+        data.append(compute_metrics_with_labeled_dataset(dataset))
+        set_noise_for_all(core.agents, True)
 
         if n > 9:
-            update_sigma_for_all(core.agent)
+            update_sigma_for_all(core.agents)
 
-    set_noise_for_all(core.agent, False)
+        agns.append(core.agents[0].actor_grad_norm())
+        cgns.append(core.agents[0].critic_grad_norm())
+
+    set_noise_for_all(core.agents, False)
     for i in range(1):
         core.evaluate(n_episodes=1, quiet=True)
         core.mdp.render(save_path=save_path + f"Final_{i}")
+
+    plt.plot(
+        range(n_epochs),
+        agns,
+        label="Actor Gradient Norm"
+    )
+    plt.plot(
+        range(n_epochs),
+        cgns,
+        label="Critic Gradient Norm"
+    )
+    plt.legend()
+    plt.savefig(save_path + "GradientNorms")
 
     return {"metrics": np.array(data[:]), "additional_data": {}}
 

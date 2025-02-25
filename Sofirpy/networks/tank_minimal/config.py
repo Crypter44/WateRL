@@ -4,7 +4,7 @@ from pathlib import Path
 from Sofirpy.networks.tank_minimal.controller import ControllerMinimalTank
 
 
-def get_minimal_tank_network_config(demand_curve: str = "tagesgang"):
+def get_minimal_tank_network_config(demand_curve: str = "tagesgang", exclude_start_values: bool = False) -> dict:
     fmu_dir_path = Path(__file__).parent.parent.parent / "fluid_models" / "mini_water_network_tank"
     fmu_path = fmu_dir_path / "mini_tank.fmu"
 
@@ -19,6 +19,15 @@ def get_minimal_tank_network_config(demand_curve: str = "tagesgang"):
     model_classes = {"control_api": ControllerMinimalTank}
     fmu_paths = {"water_network": str(fmu_path)}
 
+    if exclude_start_values:
+        return {
+            "fmu_paths": fmu_paths,
+            "model_classes": model_classes,
+            "model_init_args": {"control_api": {"demand_curve": demand_curve}},
+            "connections_config": connections_config,
+            "parameters_to_log": parameters_to_log,
+        }
+
     return {
         "fmu_paths": fmu_paths,
         "model_classes": model_classes,
@@ -29,8 +38,8 @@ def get_minimal_tank_network_config(demand_curve: str = "tagesgang"):
             "water_network": {
                 "tank_9.crossArea": 3,
                 "tank_9.height": 3,
-                "init_level_tank_9": 0.3,
-                "elevation_tank_9": 15.5,
+                "init_level_tank_9": 0.03,
+                "elevation_tank_9": 14.5,
             }
         }
     }

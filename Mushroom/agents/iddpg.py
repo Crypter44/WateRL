@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+import numpy as np
 from mushroom_rl.algorithms.actor_critic.deep_actor_critic import DeepAC
 from mushroom_rl.approximators import Regressor
 from mushroom_rl.approximators.parametric import TorchApproximator
@@ -25,9 +26,28 @@ class IDDPG(DeepAC):
             actor_predict_params=None,
             critic_predict_params=None
     ):
-        """
-        """
+        self.reset_params = {
+            "agent_idx": agent_idx,
+            "mdp_info": mdp_info,
+            "policy_class": policy_class,
+            "policy_params": policy_params,
+            "actor_params": actor_params,
+            "actor_optimizer": actor_optimizer,
+            "critic_params": critic_params,
+            "batch_size": batch_size,
+            "initial_replay_size": initial_replay_size,
+            "max_replay_size": max_replay_size,
+            "tau": tau,
+            "policy_delay": policy_delay,
+            "critic_fit_params": critic_fit_params,
+            "actor_predict_params": actor_predict_params,
+            "critic_predict_params": critic_predict_params
+        }
+
         self.agent_idx = agent_idx
+        self._actor_params = actor_params
+        self._actor_optimizer_params = actor_optimizer
+        self._critic_params = critic_params
         self._critic_fit_params = dict() if critic_fit_params is None else critic_fit_params
         self._actor_predict_params = dict() if actor_predict_params is None else actor_predict_params
         self._critic_predict_params = dict() if critic_predict_params is None else critic_predict_params
@@ -68,6 +88,15 @@ class IDDPG(DeepAC):
 
         policy_parameters = self._actor_approximator.model.network.parameters()
 
+        self._debug_logging = False
+        self._debug_info = {
+            "actor_loss": [],
+            "actor_grad_norm": [],
+            "critic_grad_norm": [],
+            "q_next": [],
+            "q": [],
+        }
+
         self._add_save_attr(
             _critic_fit_params='pickle',
             _critic_predict_params='pickle',
@@ -84,6 +113,27 @@ class IDDPG(DeepAC):
 
         super().__init__(mdp_info, policy, actor_optimizer, policy_parameters)
 
+    def get_reset_copy(self):
+        actor_weights = self._actor_approximator.get_weights()
+        critic_weights = self._critic_approximator.get_weights()
+        target_actor_weights = self._target_actor_approximator.get_weights()
+        target_critic_weights = self._target_critic_approximator.get_weights()
+        replay_buffer = self._replay_memory
+        debug_enabled = self._debug_logging
+
+        agent = IDDPG(**self.reset_params)
+
+        agent._actor_approximator.set_weights(actor_weights)
+        agent._critic_approximator.set_weights(critic_weights)
+        agent._target_actor_approximator.set_weights(target_actor_weights)
+        agent._target_critic_approximator.set_weights(target_critic_weights)
+        agent._replay_memory = replay_buffer
+        agent.reset_optimizers()
+        agent.set_debug_logging(debug_enabled)
+
+        return agent
+
+
     def fit(self, dataset, **info):
         self._replay_memory.add(dataset)
         if self._replay_memory.size > self._initial_replay_size:
@@ -94,6 +144,7 @@ class IDDPG(DeepAC):
             q = rewards[:, self.agent_idx] + self.mdp_info.gamma * q_next
 
             self._fit_critic(states, obs, actions, q)
+            critic_grad_norm = self.critic_grad_norm()
 
             if self._fit_count % self._policy_delay() == 0:
                 loss = self._loss(states, obs)
@@ -103,6 +154,14 @@ class IDDPG(DeepAC):
                                 self._target_critic_approximator)
             self._update_target(self._actor_approximator,
                                 self._target_actor_approximator)
+
+            if self._debug_logging:
+                self._debug_info["q_next"].append(q_next.mean().item())
+                self._debug_info["q"].append(q.mean().item())
+                self._debug_info["critic_grad_norm"].append(critic_grad_norm)
+                if self._fit_count % self._policy_delay() == 0:
+                    self._debug_info["actor_loss"].append(loss.item())
+                    self._debug_info["actor_grad_norm"].append(self.actor_grad_norm())
 
             self._fit_count += 1
 
@@ -136,6 +195,12 @@ class IDDPG(DeepAC):
 
         return q
 
+    def _optimize_actor_parameters(self, loss):
+        self._optimizer.zero_grad()
+        loss.backward()
+        self._clip_gradient()
+        self._optimizer.step()
+
     def _fit_critic(self, states, obs, actions, q):
         self._critic_approximator.fit(obs[self.agent_idx], actions[self.agent_idx], q,
                                       **self._critic_fit_params)
@@ -143,3 +208,39 @@ class IDDPG(DeepAC):
     def _post_load(self):
         self._actor_approximator = self.policy._approximator
         self._update_optimizer_parameters(self._actor_approximator.model.network.parameters())
+
+    def actor_grad_norm(self):
+        total_norm = 0.0
+        for layer in self._actor_approximator.model.network.parameters():
+            layer_norm = layer.grad.data.norm(2)
+            total_norm += layer_norm.item() ** 2
+        total_norm = total_norm ** 0.5
+        return total_norm
+
+    def critic_grad_norm(self):
+        total_norm = 0.0
+        for layer in self._critic_approximator.model.network.parameters():
+            layer_norm = layer.grad.data.norm(2)
+            total_norm += layer_norm.item() ** 2
+        total_norm = total_norm ** 0.5
+        return total_norm
+
+    def set_debug_logging(self, enabled):
+        self._debug_logging = enabled
+
+    def get_debug_info(self, previous_info=None):
+        averaged_info = {
+            key: [np.mean(value).item()] for key, value in self._debug_info.items()
+        }
+        if previous_info is not None:
+            for key, _ in previous_info.items():
+                previous_info[key] += averaged_info[key]
+            return previous_info
+        return averaged_info
+
+    def reset_optimizers(self):
+        self._critic_approximator.model._optimizer = self._critic_params['optimizer']['class'](
+            self._critic_approximator.model.network.parameters(), **self._critic_params['optimizer']['params']
+        )
+        self._optimizer = self._actor_optimizer_params['class'](self._actor_approximator.model.network.parameters(),
+                                                                **self._actor_optimizer_params['params'])

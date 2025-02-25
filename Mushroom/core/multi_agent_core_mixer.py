@@ -236,6 +236,7 @@ class MultiAgentCoreMixer(object):
             if all(fit_condition() for fit_condition in fit_condition_per_agent):
                 actor_losses = []
                 critic_losses = []
+
                 for idx_agent in range(len(self.agents)):
                     actor_loss, critic_loss = self.agents[idx_agent].fit(dataset)
                     self._current_episodes_counter_per_agent[idx_agent] = 0
@@ -248,8 +249,12 @@ class MultiAgentCoreMixer(object):
                     al, cl = self.mixer.fit(dataset)
                     actor_losses.append(al)
                     critic_losses.append(cl)
+
                 dataset = list()
                 dataset_info = list()
+
+                info["actor_loss"] = actor_losses
+                info["critic_loss"] = critic_losses
 
             self._get_callbacks(sample, info)
 

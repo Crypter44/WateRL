@@ -71,6 +71,8 @@ class ActorNetwork(nn.Module):
     def __init__(self, input_shape, output_shape, n_features, agent_idx=-1, **kwargs):
         super(ActorNetwork, self).__init__()
 
+        self._activation = kwargs.get('activation', None)
+
         self._n_input = input_shape[-1]
         self._n_output = output_shape[0]
 
@@ -84,7 +86,7 @@ class ActorNetwork(nn.Module):
         nn.init.xavier_uniform_(self._h2.weight,
                                 gain=nn.init.calculate_gain('relu'))
         nn.init.xavier_uniform_(self._h3.weight,
-                                gain=nn.init.calculate_gain('sigmoid'))
+                                gain=nn.init.calculate_gain(self._activation))
 
     def forward(self, state):
         if self._agent_idx != -1:
@@ -95,7 +97,13 @@ class ActorNetwork(nn.Module):
                 state = torch.squeeze(state, 1)
         features1 = F.relu(self._h1(state.float()))
         features2 = F.relu(self._h2(features1))
-        a = F.sigmoid(self._h3(features2))
-        # a = a * (self.mdp.info.action_space.high - self.mdp.info.action_space.low) + self.mdp.info.action_space.low
+        if self._activation == 'tanh':
+            a = F.tanh(self._h3(features2))
+        elif self._activation == 'sigmoid':
+            a = F.sigmoid(self._h3(features2))
+        elif self._activation == 'linear':
+            a = self._h3(features2)
+        else:
+            raise ValueError(f"Activation {self._activation} not supported")
 
         return a

@@ -20,6 +20,7 @@ class ConstantValueEnv(AbstractEnvironment):
             action_max=1,
             reward_fn=None,
             num_agents=1,
+            labeled_state=False
     ):
         self._value = value
         self._start_state = start_state
@@ -31,6 +32,7 @@ class ConstantValueEnv(AbstractEnvironment):
         self._action_min = action_min
         self._action_max = action_max
         self._num_agents = num_agents
+        self._labeled_state = labeled_state
 
         if reward_fn is None:
             raise ValueError("reward_fn must be provided")
@@ -39,12 +41,13 @@ class ConstantValueEnv(AbstractEnvironment):
         observation_space = spaces.Box(low=state_min, high=state_max, shape=(self._state_length,))
         action_space = spaces.Box(low=action_min, high=action_max, shape=(1,))
         mdp_info = MAMDPInfo(
-            [observation_space],
+            observation_space,
             [observation_space],
             [action_space],
             False,
             .99,
-            10
+            10,
+            n_agents=num_agents
         )
         super().__init__(mdp_info)
 
@@ -63,9 +66,15 @@ class ConstantValueEnv(AbstractEnvironment):
             self._state = np.random.uniform(self._state_min, self._state_max, self._state_length)
         self._state_log = [self._state]
         self._action_log = []
-        if self._num_agents == 1:
-            return self._state
-        return self._state.repeat(self._num_agents).reshape((self._num_agents, self._state_length))
+
+        sample = {
+            'state': self._state,
+            'obs': [self._state] * self._num_agents,
+        }
+        if self._labeled_state:
+            return sample
+        else:
+            return sample['obs']
 
     def step(self, action):
         action = np.clip(action, self._action_min, self._action_max)
@@ -74,9 +83,19 @@ class ConstantValueEnv(AbstractEnvironment):
         self._state_log.append(self._state)
         self._action_log.append(action)
         reward = self._reward_fn(action)
-        if self._num_agents == 1:
-            return self._state, reward, False, {}
-        return self._state.repeat(self._num_agents).reshape((self._num_agents, self._state_length)), reward, False, {}
+
+        sample = {
+            'state': self._state,
+            'obs': [self._state] * self._num_agents,
+            'rewards': [reward] * self._num_agents,
+            'absorbing': False,
+            'info': {}
+        }
+
+        if self._labeled_state:
+            return sample
+        else:
+            return sample['obs'], sample['rewards'], sample['absorbing'], sample['info']
 
     def render(self, save_path=None):
         fig, ax = plt.subplots(1, 3, figsize=(18, 6))
