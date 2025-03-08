@@ -64,8 +64,8 @@ def train(p1, p2, seed, save_path):
     data = [compute_metrics(core.evaluate(n_steps=n_steps_eval, render=False, quiet=True))]
     temp = [[core.agent[0]._alpha_np], [core.agent[1]._alpha_np]]
     entropy = [
-        [core.agent[0].policy.entropy(core.mdp._current_state)],
-        [core.agent[1].policy.entropy(core.mdp._current_state)]
+        [core.agent[0].policy.entropy(core.mdp._current_sim_state)],
+        [core.agent[1].policy.entropy(core.mdp._current_sim_state)]
     ]
 
     core.evaluate(n_steps=n_steps_eval, render=False, quiet=True)
@@ -88,8 +88,8 @@ def train(p1, p2, seed, save_path):
 
         temp[0].append(core.agent[0]._alpha_np)
         temp[1].append(core.agent[1]._alpha_np)
-        entropy[0].append(core.agent[0].policy.entropy(core.mdp._current_state))
-        entropy[1].append(core.agent[1].policy.entropy(core.mdp._current_state))
+        entropy[0].append(core.agent[0].policy.entropy(core.mdp._current_sim_state))
+        entropy[1].append(core.agent[1].policy.entropy(core.mdp._current_sim_state))
 
     for i in range(renders_on_completion):
         core.evaluate(n_episodes=1, quiet=True)

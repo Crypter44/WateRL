@@ -24,7 +24,8 @@ class IDDPG(DeepAC):
             policy_delay=1,
             critic_fit_params=None,
             actor_predict_params=None,
-            critic_predict_params=None
+            critic_predict_params=None,
+            replay_memory=None
     ):
         self.reset_params = {
             "agent_idx": agent_idx,
@@ -54,6 +55,7 @@ class IDDPG(DeepAC):
 
         self._batch_size = to_parameter(batch_size)
         self._tau = to_parameter(tau)
+        self._critic_tau = None
         self._policy_delay = to_parameter(policy_delay)
         self._fit_count = 0
 
@@ -65,7 +67,7 @@ class IDDPG(DeepAC):
             [mdp_info.action_space_for_idx(i).shape[0] for i in range(mdp_info.n_agents)],
             mdp_info.n_agents,
             False
-        )
+        ) if replay_memory is None else replay_memory
 
         target_critic_params = deepcopy(critic_params)
         self._critic_approximator = Regressor(TorchApproximator,
@@ -91,10 +93,12 @@ class IDDPG(DeepAC):
         self._debug_logging = False
         self._debug_info = {
             "actor_loss": [],
+            "critic_loss": [],
             "actor_grad_norm": [],
             "critic_grad_norm": [],
+            "rewards": [],
             "q_next": [],
-            "q": [],
+            "q_target": []
         }
 
         self._add_save_attr(
@@ -105,7 +109,7 @@ class IDDPG(DeepAC):
             _tau='mushroom',
             _policy_delay='mushroom',
             _fit_count='primitive',
-            _replay_memory='mushroom',
+            _replay_memory='pickle',
             _critic_approximator='mushroom',
             _target_critic_approximator='mushroom',
             _target_actor_approximator='mushroom'
@@ -133,7 +137,6 @@ class IDDPG(DeepAC):
 
         return agent
 
-
     def fit(self, dataset, **info):
         self._replay_memory.add(dataset)
         if self._replay_memory.size > self._initial_replay_size:
@@ -141,9 +144,9 @@ class IDDPG(DeepAC):
                 self._replay_memory.get(self._batch_size())
 
             q_next = self._next_q(next_states, next_obs, absorbing)
-            q = rewards[:, self.agent_idx] + self.mdp_info.gamma * q_next
+            q_target = rewards[:, self.agent_idx] + self.mdp_info.gamma * q_next
 
-            self._fit_critic(states, obs, actions, q)
+            critic_loss = self._fit_critic(states, obs, actions, q_target)
             critic_grad_norm = self.critic_grad_norm()
 
             if self._fit_count % self._policy_delay() == 0:
@@ -151,14 +154,19 @@ class IDDPG(DeepAC):
                 self._optimize_actor_parameters(loss)
 
             self._update_target(self._critic_approximator,
-                                self._target_critic_approximator)
+                                self._target_critic_approximator,
+                                self._critic_tau if self._critic_tau is not None else self._tau())
+
             self._update_target(self._actor_approximator,
-                                self._target_actor_approximator)
+                                self._target_actor_approximator,
+                                self._tau())
 
             if self._debug_logging:
                 self._debug_info["q_next"].append(q_next.mean().item())
-                self._debug_info["q"].append(q.mean().item())
+                self._debug_info["q_target"].append(q_target.mean().item())
+                self._debug_info["rewards"].append(rewards[:, self.agent_idx].mean().item())
                 self._debug_info["critic_grad_norm"].append(critic_grad_norm)
+                self._debug_info["critic_loss"].append(critic_loss)
                 if self._fit_count % self._policy_delay() == 0:
                     self._debug_info["actor_loss"].append(loss.item())
                     self._debug_info["actor_grad_norm"].append(self.actor_grad_norm())
@@ -204,6 +212,7 @@ class IDDPG(DeepAC):
     def _fit_critic(self, states, obs, actions, q):
         self._critic_approximator.fit(obs[self.agent_idx], actions[self.agent_idx], q,
                                       **self._critic_fit_params)
+        return self._critic_approximator.model._last_loss
 
     def _post_load(self):
         self._actor_approximator = self.policy._approximator
@@ -228,7 +237,7 @@ class IDDPG(DeepAC):
     def set_debug_logging(self, enabled):
         self._debug_logging = enabled
 
-    def get_debug_info(self, previous_info=None):
+    def get_debug_info(self, previous_info=None, entries_as_list=True):
         averaged_info = {
             key: [np.mean(value).item()] for key, value in self._debug_info.items()
         }
@@ -236,7 +245,16 @@ class IDDPG(DeepAC):
             for key, _ in previous_info.items():
                 previous_info[key] += averaged_info[key]
             return previous_info
+
+        if not entries_as_list:
+            return {key: value[0] for key, value in averaged_info.items()}
         return averaged_info
+
+    def _update_target(self, online, target, tau):
+        for i in range(len(target)):
+            weights = tau * online[i].get_weights()
+            weights += (1 - tau) * target[i].get_weights()
+            target[i].set_weights(weights)
 
     def reset_optimizers(self):
         self._critic_approximator.model._optimizer = self._critic_params['optimizer']['class'](

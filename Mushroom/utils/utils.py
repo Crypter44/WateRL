@@ -1,6 +1,8 @@
 import json
+import logging
 import os
 import random
+import sys
 from datetime import datetime
 from typing import Callable
 
@@ -105,7 +107,12 @@ def parametrized_training(
                 set_seed(seed)
                 path = base_path + f"{p1}-{p2}/s{seed}/"
                 os.makedirs(path, exist_ok=True)
-                data[p1][p2][seed] = train(p1, p2, seed, path)
+                data[p1][p2][seed] = train(
+                    p1, p2,
+                    seed,
+                    path,
+                    last=(p1 == tuning_params1[-1] and p2 == tuning_params2[-1] and seed == seeds[-1])
+                )
             experiment_bar.update()
     return data, base_path
 

@@ -119,19 +119,19 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 self.render(title="Error during simulation", save_path=None)
                 error = True
                 break
-            simulation_states.append(self._get_current_state())  # save each sim state to calculate reward
+            simulation_states.append(self._get_simulation_state())  # save each sim state to calculate reward
 
         # calculate reward based on how the network behaved during two control steps
         reward = self._reward_fun(simulation_states, error)
 
-        self._current_state, absorbing = self._get_current_state()
+        self._current_sim_state, absorbing = self._get_simulation_state()
         self.actions.append(action)
         self.rewards.append(reward)
 
         absorbing = absorbing if not error else True
 
         step = {
-            "state": self._current_state[:4],
+            "state": self._current_sim_state[:4],
             "obs": self._get_observations(),
             "rewards": [reward] * self._mdp_info.n_agents,
             "absorbing": absorbing,
@@ -157,10 +157,10 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             1,
             model_init_args=self.sim._model_init_args
         )
-        self._current_state, _ = self._get_current_state()
+        self._current_sim_state, _ = self._get_simulation_state()
 
         sample = {
-            "state": self._current_state[:4],
+            "state": self._current_sim_state[:4],
             "obs": self._get_observations(),
         }
         return sample if self.labeled_step else self._get_observations()
@@ -169,7 +169,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self._render_executor.shutdown()
         plt.close("all")
 
-    def _get_current_state(self):
+    def _get_simulation_state(self):
         """
         Return the current state of the simulation, even if it is not observable.
         """
@@ -181,7 +181,10 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             raise KeyError("The key 'control_api' was not found in the global state.")
 
     def _get_observations(self):
-        return [self._current_state[:4] for _ in range(self._mdp_info.n_agents)]
+        return [self._current_sim_state[:4] for _ in range(self._mdp_info.n_agents)]
+
+    def _get_state(self):
+        return self._current_sim_state[:4]
 
     def _setup_simulator(self):
         config = get_circular_network_config()

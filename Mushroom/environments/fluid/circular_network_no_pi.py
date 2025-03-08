@@ -53,11 +53,11 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
             save_path=save_path,
         )
 
-    def _get_current_state(self):
+    def _get_simulation_state(self):
         """
         Return the observable state of the environment.
         """
-        state, absorbing = super()._get_current_state()
+        state, absorbing = super()._get_simulation_state()
         return state[:4].reshape((4, 1)), absorbing
 
     def local_observation_space(self, agent_index: int):

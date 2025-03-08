@@ -1,8 +1,5 @@
-import json
-
 import matplotlib as mpl
 import numpy as np
-from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from Mushroom.agents.agent_factory import create_ddpg_agent
@@ -18,22 +15,20 @@ gamma = 0.99
 gamma_eval = 1.
 
 lr_actor = 5e-5
-actor_activation = 'linear'
+actor_activation = 'sigmoid'
 lr_critic = 1e-4
 
-initial_replay_size_episodes = 5
+initial_replay_size_episodes = 10
 max_replay_size_episodes = 5000
 batch_size = 200
 
 n_features = 80
-tau = .001
-grad_norm_clipping = 0.5
+tau = .01
 
-sigma = [(0, 0.7), (10, 0.2)]
+sigma = [(0, 0.6), (10, 0.2)]
 decay_type = 'exponential'
-cut_of_exploration_when_converged = False
 
-n_epochs = 20
+n_epochs = 25
 n_episodes_learn = 10
 n_episodes_test = 3
 n_steps_per_fit = 1
@@ -48,9 +43,11 @@ criteria = {
         "max": 0,
         "min": -2,
         "value_at_bound": 0.001,
-        "bound": 0.3
+        "bound": 0.8
     },
 }
+
+
 demand_curve = "tagesgang"
 # END_PARAMS
 
@@ -61,7 +58,7 @@ mpl.rcParams['figure.max_open_warning'] = n_episodes_final_render
 def train(p1, p2, seed, save_path):
     set_seed(seed)
     # MDP
-    mdp = MinimalTankNetwork(criteria=criteria, labeled_step=True, demand_curve=demand_curve)
+    mdp = MinimalTankNetwork(criteria=criteria, labeled_step=True, demand_curve=demand_curve, gamma=p1)
     agents = [create_ddpg_agent(
         mdp,
         agent_idx=i,
@@ -135,7 +132,7 @@ def train(p1, p2, seed, save_path):
 
 training_data, path = parametrized_training(
     __file__,
-    [None],
+    [0.99, 0.999],
     [None],
     [0],
     train=train,

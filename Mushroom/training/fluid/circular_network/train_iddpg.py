@@ -28,8 +28,8 @@ tau = .005
 sigma = [(0, 0.7), (20, 0.3), (300, 0.1)]
 
 n_epochs = 30
-n_episodes_learn = 10
-n_episodes_test = 3
+n_episodes_learn = 20
+n_episodes_test = 6
 n_steps_per_fit = 1
 
 num_agents = 2

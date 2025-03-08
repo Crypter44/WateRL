@@ -75,10 +75,10 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             raise NotImplementedError("Resetting to a specific state is not supported.")
 
         self.sim.reset_simulation(self._stop_time, self._step_size, self._step_size)
-        self._current_state, _ = self._get_current_state()
+        self._current_sim_state, _ = self._get_simulation_state()
 
         sample = {
-            "state": self._current_state[[0, 1, 6, 9]],
+            "state": self._get_state(),
             "obs": self._get_observations(),
             "info": {},
         }
@@ -97,16 +97,19 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                 print(f"Error in simulation step: {e}")
                 error = True
                 break
-            sim_states.append(self._get_current_state())
+            sim_states.append(self._get_simulation_state())
 
         reward = self._reward_fun(sim_states, action)
-        self._current_state, done = self._get_current_state()
+        self._current_sim_state, done = self._get_simulation_state()
         self.rewards.append(reward)
+
+        if done:
+            print("Done!")
 
         absorbing = done or error
 
         step = {
-            "state": self._current_state[[0, 1, 6, 9]],
+            "state": self._get_state(),
             "obs": self._get_observations(),
             "rewards": [reward] * self._mdp_info.n_agents,
             "absorbing": absorbing,
@@ -181,9 +184,12 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                         )
                     )
             if "target_action" in self._criteria.keys():
+                scaled_action = deepcopy(action)
+                scaled_action[0] = scaled_action[0] * 1.3
+                scaled_action -= self._criteria["target_action"]["target"]
                 tmp += self._criteria["target_action"]["w"] * exponential_reward(
-                    np.mean(action),
-                    self._criteria["target_action"]["target"],
+                    np.max(np.abs(scaled_action)),
+                    0,
                     self._criteria["target_action"].get("smoothness", 0.01),
                     self._criteria["target_action"].get("bound", 0.8),
                     self._criteria["target_action"].get("value_at_bound", 0.01),
@@ -425,7 +431,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                 fig.savefig(path + ".png")
             plt.close(fig)
 
-    def _get_current_state(self) -> (np.ndarray, bool):
+    def _get_simulation_state(self) -> (np.ndarray, bool):
         sim_state, done = self.sim.get_current_state()
         try:
             controller_state = sim_state["control_api"]
@@ -435,10 +441,19 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
 
         return sim_state, done
 
+    def _get_state(self) -> np.ndarray:
+        state = self._current_sim_state
+        state = np.array([0, 0, 0, 0])
+        return state
+
     def _get_observations(self) -> List:
-        state = self._current_state
+        state = self._current_sim_state
         obs = [
             state[[0]],
             state[[6, 9]],
+        ]
+        obs = [
+            np.array([0]),
+            np.array([0, 0])
         ]
         return obs

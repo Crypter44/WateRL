@@ -34,7 +34,7 @@ class AbstractFluidNetworkEnv(AbstractEnvironment):
             n_agents: int = 1,
             labeled_step: bool = False
     ):
-        self._current_state = None
+        self._current_sim_state = None
         mdp_info = MAMDPInfo(
             state_space,
             observation_spaces,
@@ -59,16 +59,16 @@ class AbstractFluidNetworkEnv(AbstractEnvironment):
             raise NotImplementedError("Resetting to a specific state is not supported.")
 
         self.sim.reset_simulation(self._stop_time, 1, 1)
-        self._current_state, _ = self._get_current_state()
+        self._current_sim_state, _ = self._get_simulation_state()
 
         sample = {
-            "state": self._current_state,
+            "state": self._current_sim_state,
             "obs": self._get_observations(),
         }
         return sample if self.labeled_step else self._get_observations()
 
     def _get_observations(self) -> List:
-        return [self._current_state for _ in range(self._mdp_info.n_agents)]
+        return [self._current_sim_state for _ in range(self._mdp_info.n_agents)]
 
     @abstractmethod
     def step(self, action):
@@ -78,5 +78,5 @@ class AbstractFluidNetworkEnv(AbstractEnvironment):
         super().seed(seed)
 
     @abstractmethod
-    def _get_current_state(self) -> np.ndarray:
+    def _get_simulation_state(self) -> np.ndarray:
         pass

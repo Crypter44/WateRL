@@ -14,9 +14,9 @@ sim = ManualStepSimulator(
     start_values={
         "water_network": {
             "tank_9.crossArea": 3,
-            "tank_9.height": 3,
+            "tank_9.height": 10,
             "init_level_tank_9": 0.05,
-            "elevation_tank_9": 14.5,
+            "elevation_tank_9": 10,
         }
     },
     logging_step_size=20.0,
@@ -32,13 +32,13 @@ sim.reset_simulation(
 pbar = tqdm(total=len(sim._time_series))
 while not sim.is_done():
     demand = sim.get_current_state()[0]["control_api"][0]
-    v = 0.0
-    if demand < 1.45:
-        v = 0.0
+    v = 1.0
+    if demand < 0.6:
+        v = 1
     if demand > 3.58:
-        v = 0.0
+        v = 1.0
 
-    action = np.array([1.0, v])
+    action = np.array([1, v])
     try:
         sim.do_simulation_step(action)
     except Exception as e:
