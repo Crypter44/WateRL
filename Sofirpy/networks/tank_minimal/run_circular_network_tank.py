@@ -14,9 +14,9 @@ sim = ManualStepSimulator(
     start_values={
         "water_network": {
             "tank_9.crossArea": 3,
-            "tank_9.height": 10,
+            "tank_9.height": 5,
             "init_level_tank_9": 0.05,
-            "elevation_tank_9": 10,
+            "elevation_tank_9": 12,
         }
     },
     logging_step_size=20.0,
@@ -33,8 +33,8 @@ pbar = tqdm(total=len(sim._time_series))
 while not sim.is_done():
     demand = sim.get_current_state()[0]["control_api"][0]
     v = 1.0
-    if demand < 0.6:
-        v = 1
+    if demand < 0.7:
+        v = 1.0
     if demand > 3.58:
         v = 1.0
 

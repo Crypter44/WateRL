@@ -107,7 +107,7 @@ class ControllerMinimalTank(SimulationEntityWithAction):
 
         """
         if time % self.CONTROL_STEP_INTERVAL == 0:
-            self.outputs["w_p_4"] = float(1 * action[0])  # agent 0 controls the pump's speed
+            self.outputs["w_p_4"] = float(1.3 * action[0])  # agent 0 controls the pump's speed
             self.outputs["w_v_7"] = float(action[1])  # agent 1 controls the tank's valve
 
         if self.inputs["level_tank_9"] < 0.025 and self.inputs["p_rel_7"] <= 1e-6:
