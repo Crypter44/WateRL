@@ -20,6 +20,9 @@ class AbstractEnvironment(MAEnvironment):
     def local_action_space(self, agent_index: int):
         return self._mdp_info.action_space_for_idx(agent_index)
 
+    def get_debug_info(self):
+        return {}
+
 
 class AbstractFluidNetworkEnv(AbstractEnvironment):
     def __init__(

@@ -90,7 +90,7 @@ class IDDPG(DeepAC):
 
         policy_parameters = self._actor_approximator.model.network.parameters()
 
-        self._debug_logging = False
+        self._debug_logging = True
         self._debug_info = {
             "actor_loss": [],
             "critic_loss": [],

@@ -255,14 +255,19 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             tmp = 0
 
             if "demand" in self._criteria.keys():
+                max_val = self._criteria["demand"].get("max", 1)
+                min_val = self._criteria["demand"].get("min", 0)
                 tmp += (
                         self._criteria["demand"]["w"] *
-                        exponential_reward(
-                            max([s[i] - s[i + 4] for i in range(4)]),
-                            0,
-                            self._criteria["demand"].get("smoothness", 0.0001),
-                            self._criteria["demand"].get("bound", 0.1),
-                            self._criteria["demand"].get("value_at_bound", 0.01),
+                        (
+                                (max_val - min_val) *
+                                exponential_reward(
+                                    max([s[i] - s[i + 4] for i in range(4)]),
+                                    0,
+                                    self._criteria["demand"].get("smoothness", 0.0001),
+                                    self._criteria["demand"].get("bound", 0.1),
+                                    self._criteria["demand"].get("value_at_bound", 0.01),
+                                ) + min_val
                         )
                 )
             if "max_power" in self._criteria.keys():

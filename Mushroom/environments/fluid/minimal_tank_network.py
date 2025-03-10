@@ -127,16 +127,18 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                 tmp += (
                         self._criteria["demand"]["w"] *
                         (
-                                self._criteria["demand"].get("max", 1) -
-                                self._criteria["demand"].get("min", 0)
-                        ) *
-                        exponential_reward(
-                            s[0] - s[1],
-                            0,
-                            self._criteria["demand"].get("smoothness", 0.0001),
-                            self._criteria["demand"].get("bound", 0.1),
-                            self._criteria["demand"].get("value_at_bound", 0.01),
-                        ) + self._criteria["demand"].get("min", 0)
+                                (
+                                        self._criteria["demand"].get("max", 1) -
+                                        self._criteria["demand"].get("min", 0)
+                                ) *
+                                exponential_reward(
+                                    s[0] - s[1],
+                                    0,
+                                    self._criteria["demand"].get("smoothness", 0.0001),
+                                    self._criteria["demand"].get("bound", 0.1),
+                                    self._criteria["demand"].get("value_at_bound", 0.01),
+                                ) + self._criteria["demand"].get("min", 0)
+                        )
                 )
             if "demand_switch" in self._criteria.keys():
                 diff = s[0] - s[1]

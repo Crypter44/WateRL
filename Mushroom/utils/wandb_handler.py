@@ -38,7 +38,7 @@ def wandb_training(
         update_param_in_config(config, "automated_training_params", ps)
         update_param_in_config(config, "job_counter", job_counter)
 
-        path = base_path + f"/{name}"
+        path = base_path + f"/{name}/"
         os.makedirs(path, exist_ok=True)
 
         print(f"Creating run with name: {name}")
@@ -52,7 +52,7 @@ def wandb_training(
         )
 
         start = datetime.now()
-        train(run, base_path)
+        train(run, path)
         end = datetime.now()
 
         run.alert(
@@ -90,3 +90,22 @@ def update_param_in_config(config: dict, param_to_update: str, value) -> dict:
 
     param[keys[-1]] = value
     return config
+
+
+def create_log_dict(agents, mdp, score):
+    log = {
+        "score/score": score[2],
+        "score/min_score": score[0],
+        "score/max_score": score[1],
+    }
+    for i, a in enumerate(agents):
+        log |= {
+            f"agent_{i}/{key}": value for key, value in a.get_debug_info(entries_as_list=False).items()
+        }
+        log |= {
+            f"agent_{i}/sigma": a.policy.get_sigma()
+        }
+    log |= {
+        f"mdp/eval/{key}": value for key, value in mdp.get_debug_info().items()
+    }
+    return log
