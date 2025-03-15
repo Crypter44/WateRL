@@ -1,4 +1,5 @@
 import itertools
+import json
 import os
 from copy import deepcopy
 from datetime import datetime
@@ -16,7 +17,6 @@ def wandb_training(
         base_path: str,
         **wandb_args
 ):
-    base_path += datetime.now().strftime("%y-%m-%d__%H:%M/")
     api = wandb.Api()
     past_runs = api.runs(path=f'bt-fluidnetop/{project}', order='-created_at')
     try:
@@ -24,6 +24,7 @@ def wandb_training(
         job_counter = latest_run.config.get('job_counter', -1) + 1
     except IndexError:
         job_counter = 0
+    base_path += str(job_counter)
 
     if type(params) is dict:
         param_sets = build_param_product(params)
@@ -41,7 +42,7 @@ def wandb_training(
         path = base_path + f"/{name}/"
         os.makedirs(path, exist_ok=True)
 
-        print(f"Creating run with name: {name}")
+        print(f"Creating run {i + 1}/{len(param_sets)} with name {name}")
         run = wandb.init(
             project=project,
             group=group,
@@ -60,10 +61,15 @@ def wandb_training(
             f"In job \'{job_counter}\' the run \'{run.name}\' is done. "
             f"In total {i + 1} / {len(param_sets)} runs are completed.\n"
             f"This run took: {str(end - start).split('.')[0]}\n"
-            f"Estimated time until completion of all runs:"
+            f"Estimated time until completion of all runs: "
             f"{str(((end - start) * (len(param_sets) - (i+1)))).split('.')[0]}",
             level="INFO"
         )
+
+        # save run config dict to json file
+        with open(f"{path}/config.json", "w") as f:
+            json.dump(run.config, f, indent=4)
+
         run.finish()
 
 

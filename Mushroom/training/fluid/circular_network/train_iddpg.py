@@ -11,11 +11,11 @@ from Mushroom.utils.wandb_handler import wandb_training, create_log_dict
 
 # PARAMS
 config = dict(
-    seed=0,
+    seed=1,
     gamma=0.99,
 
-    lr_actor=1e-3,
-    lr_critic=2e-3,
+    lr_actor=1e-4,
+    lr_critic=5e-4,
 
     initial_replay_size=5000,
     max_replay_size=15000,
@@ -46,10 +46,12 @@ config = dict(
             "min": -1
         },
         "power_per_flow": {"w": 0.06},
-        "negative_flow": {"w": 2.0},
+        "negative_flow": {"w": 3.0},
         "target_opening": {
-            "w": 1.0,
-            "left_bound": 0.5,
+            "max": 1,
+            "min": 0,
+            "w": 5.0,
+            "left_bound": 0.7,
             "value_at_left_bound": 0.001,
             "right_bound": 0.04,
             "value_at_right_bound": 0.001,
@@ -77,7 +79,7 @@ def train(run, save_path):
         n_features_actor=run.config.n_features,
         lr_actor=run.config.lr_actor * run.config.lr_multiplier,
         n_features_critic=run.config.n_features,
-        lr_critic=run.config.lr_actor * run.config.lr_multiplier,
+        lr_critic=run.config.lr_actor * run.config.lr_multiplier * run.config.critic_multiplier,
         batch_size=run.config.batch_size,
         initial_replay_size=run.config.initial_replay_size,
         max_replay_size=run.config.max_replay_size,
@@ -139,16 +141,19 @@ def train(run, save_path):
     # Log final metrics dict for wandb
     run.summary.update({"final": final})
 
-    return {"metrics": np.array(score), "additional_data": {}}
+    return
 
 
 wandb_training(
     project="CircularNetworkIDDPG",
-    group="FirstTest",
+    group="PartialObservability",
     train=train,
     base_path="./Plots/IDDPG/",
     base_config=config,
     params={
-        'lr_multiplier': [1, 0.5, 0.1],
-    }
+        'lr_multiplier': [10, 1, 0.1],
+        'critic_multiplier': [10, 5],
+    },
+    notes="""Each pump only sees the demand of the first / last 3 consumers. 
+    Meaning only 2 / 4 consumers are partially observable."""
 )

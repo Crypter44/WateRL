@@ -10,131 +10,157 @@ from Mushroom.core.multi_agent_core_labeled import MultiAgentCoreLabeled
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
 from Mushroom.utils.plotting import plot_training_data, plot_debug_data
 from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset, final_evaluation
+from Mushroom.utils.wandb_handler import wandb_training, create_log_dict
 
 # PARAMS
-gamma = 0.99
-gamma_eval = 1.
+config = dict(
+    seed=1,
+    gamma=0.99,
 
-lr_actor = 2e-3
-lr_critic = 4e-3
+    lr_actor=1e-4,
+    lr_critic=5e-4,
 
-initial_replay_size = 1000
-max_replay_size = 50000
-batch_size = 200
+    initial_replay_size=5000,
+    max_replay_size=15000,
+    batch_size=200,
 
-n_features = 80
-tau = .005
+    n_features=80,
+    tau=.005,
 
-sigma = [(0, 0.7), (20, 0.5), (40, 0.1)]
-decay_type = "exponential"
+    sigma=[(0, 0.6), (1, 0.075), (50, 0.025), (70, 0.01)],
+    decay_type="exponential",
 
-n_epochs = 50
-n_steps_learn = 1400
-n_steps_test = 600
-n_steps_per_fit = 1
+    n_epochs=200,
+    n_episodes_learn=100,
+    n_episodes_test=6,
+    n_steps_per_fit=1,
 
-num_agents = 2
-n_episodes_final = 500
-n_episodes_final_render = 100
-n_epochs_per_checkpoint = 100
+    num_agents=2,
+    n_episodes_final=1000,
+    n_episodes_final_render=200,
+    n_epochs_per_checkpoint=100,
 
-criteria = {
-    "demand": {
-        "w": 10.0,
-        "bound": 0.1,
-        "value_at_bound": 0.001,
+    observation_selectors=[
+        [0, 1],
+        [2, 3],
+    ],
+
+    criteria={
+        "demand": {
+            "w": 10.0,
+            "bound": 0.1,
+            "value_at_bound": 0.001,
+            "max": 0,
+            "min": -1
+        },
+        "power_per_flow": {"w": 0.06},
+        "negative_flow": {"w": 3.0},
+        "target_opening": {
+            "max": 1,
+            "min": 0,
+            "w": 5.0,
+            "left_bound": 0.7,
+            "value_at_left_bound": 0.001,
+            "right_bound": 0.04,
+            "value_at_right_bound": 0.001,
+        }
     },
-    "power_per_flow": {"w": 0.175},
-    "negative_flow": {"w": 1.0},
-}
-demand = ("uniform_global", 0.4, 1.4)
+    demand=("uniform_global", 0.4, 1.4)
+)
 # END_PARAMS
 
 mpl.rcParams['figure.max_open_warning'] = -1
 
 
-# create a dictionary to store data for each seed
-def train(p1, p2, seed, save_path):
-    length = n_epochs
-
-    set_seed(seed)
+def train(run, save_path):
+    set_seed(run.config.seed)
     # MDP
-    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, demand=demand, labeled_step=True)
+    mdp = CircularFluidNetwork(gamma=run.config.gamma, criteria=run.config.criteria, demand=run.config.demand,
+                               labeled_step=True)
     agents = setup_maddpg_agents(
-        n_agents=num_agents,
+        n_agents=run.config.num_agents,
         mdp=mdp,
-        n_features_actor=n_features,
-        lr_actor=lr_actor,
-        n_features_critic=n_features,
-        lr_critic=lr_actor,
-        batch_size=batch_size,
-        initial_replay_size=initial_replay_size,
-        max_replay_size=max_replay_size,
-        tau=tau,
-        sigma_checkpoints=sigma,
-        decay_type=decay_type,
+        n_features_actor=run.config.n_features,
+        lr_actor=run.config.lr_actor * run.config.lr_multiplier,
+        n_features_critic=run.config.n_features,
+        lr_critic=run.config.lr_actor * run.config.lr_multiplier * run.config.critic_multiplier,
+        batch_size=run.config.batch_size,
+        initial_replay_size=run.config.initial_replay_size,
+        max_replay_size=run.config.max_replay_size,
+        tau=run.config.tau,
+        sigma_checkpoints=run.config.sigma,
+        decay_type=run.config.decay_type,
     )
-    debug_infos = [None for _ in range(num_agents)]
-    for a in agents:
-        a.set_debug_logging(True)
 
     # Core
     core = MultiAgentCoreLabeled(agents=agents, mdp=mdp)
 
-    set_noise_for_all(core.agents, False)
-    data = [compute_metrics_with_labeled_dataset(core.evaluate(n_steps=n_steps_test, render=False, quiet=True)[0])]
-    core.mdp.render(save_path=save_path + f"Epoch_0")
-    set_noise_for_all(core.agents, True)
-    core.evaluate(n_episodes=1, render=False, quiet=True)
-    core.mdp.render(save_path=save_path + f"Epoch_0_Noisy")
-
+    # Fill replay buffer
     core.learn(
-        n_steps=initial_replay_size,
-        n_steps_per_fit_per_agent=[initial_replay_size] * num_agents,
+        n_steps=run.config.initial_replay_size,
+        n_steps_per_fit_per_agent=[run.config.initial_replay_size] * run.config.num_agents,
     )
 
-    pbar = tqdm(range(length), unit='epoch', leave=False)
-    for n in pbar:
-        core.learn(
-            n_steps=n_steps_learn,
-            n_steps_per_fit_per_agent=[n_steps_per_fit] * num_agents,
-        )
-        for i, a in enumerate(agents):
-            debug_infos[i] = a.get_debug_info(debug_infos[i])
+    # Initial evaluation for comparison
+    set_noise_for_all(core.agents, False)
+    score = compute_metrics_with_labeled_dataset(core.evaluate(n_episodes=run.config.n_episodes_test, render=False)[0])
+    set_noise_for_all(core.agents, True)
+    core.mdp.render(save_path=save_path + f"Epoch_0")
 
-        core.evaluate(n_steps=200, render=False, quiet=True)
+    pbar = tqdm(range(run.config.n_epochs), unit='epoch', leave=False)
+    for n in pbar:
+        # Train
+        core.learn(
+            n_episodes=run.config.n_episodes_learn,
+            n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
+        )
+
+        # Eval
+        core.evaluate(n_episodes=1, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
         set_noise_for_all(core.agents, False)
-        dataset, _ = core.evaluate(n_steps=n_steps_test, render=False)
+        dataset, _ = core.evaluate(n_episodes=run.config.n_episodes_test, render=False, )
         set_noise_for_all(core.agents, True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
+        score = compute_metrics_with_labeled_dataset(dataset)
 
-        data.append(compute_metrics_with_labeled_dataset(dataset, gamma_eval))
+        # Log
+        run.log(create_log_dict(agents, mdp, score))
         pbar.set_postfix(
-            MinMaxMean=np.round(data[-1][0:3], 2),
+            MinMaxMean=np.round(score[0:3], 2),
             sigma=np.round(core.agents[0].policy.get_sigma(), 2)
         )
 
         update_sigma_for_all(agents)
 
-        if (n + 1) % n_epochs_per_checkpoint == 0:
+        if (n + 1) % run.config.n_epochs_per_checkpoint == 0:
             for i, a in enumerate(core.agents):
                 a.save(save_path + f"/checkpoints/Epoch_{n + 1}_Agent_{i}")
 
     set_noise_for_all(core.agents, False)
-    plot_debug_data(debug_infos[0], save_path)
-    final_evaluation(n_episodes_final, n_episodes_final_render, core, save_path)
+    run.summary.update(
+        {
+            "final": final_evaluation(
+                run.config.n_episodes_final,
+                run.config.n_episodes_final_render,
+                core,
+                save_path
+            )
+        }
+    )
 
-    return {"metrics": np.array(data), "additional_data": {}}
+    return
 
 
-training_data, path = parametrized_training(
-    __file__,
-    [None],
-    [None],
-    [1],
+wandb_training(
+    project="CircularNetworkMADDPG",
+    group="PartialObservability",
+    base_config=config,
+    params={
+        'lr_multiplier': [10, 1, 0.1],
+        'critic_multiplier': [10, 5, 2],
+    },
     train=train,
-    base_path="Plots/MADDPG/",
+    base_path="./Plots/MADDPG/",
+    notes="""MADDPG training with partial observability.""",
 )
-
-plot_training_data(training_data, path)

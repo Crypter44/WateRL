@@ -16,6 +16,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
     def __init__(
             self,
             observation_spaces=None,
+            observation_selectors=None,
             action_spaces=None,
             fluid_network_simulator=None,
             horizon=50,
@@ -23,18 +24,21 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             criteria: dict[str, dict[str, float]] = None,
             demand=("uniform_individual", 0.3, 1.5),
             labeled_step: bool = False,
+            multi_threaded_rendering: bool = True,
+            plot_rewards: bool = True,
     ):
 
         self._demand = demand
         if fluid_network_simulator is None:
             fluid_network_simulator = self._setup_simulator()
 
+        self._obs_selectors = observation_selectors if observation_selectors is not None else [[0, 1], [2, 3]]
         super().__init__(
             state_space=spaces.Box(low=-500, high=500, shape=(4,)),  # TODO make this dynamic based on a parameter
             observation_spaces=(
                 observation_spaces
                 if observation_spaces is not None
-                else [spaces.Box(low=-10, high=10, shape=(4,))]
+                else [spaces.Box(low=-10, high=10, shape=(len(sel),)) for sel in observation_selectors]
             ),
             action_spaces=(
                 action_spaces
@@ -56,47 +60,81 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self.qs = None
 
         # Init rendering using matplotlib
+        self._multi_threaded_rendering = multi_threaded_rendering
+        self._plot_rewards = plot_rewards
         self._render_executor = concurrent.futures.ThreadPoolExecutor()
+
+    def _setup_simulator(self):
+        config = get_circular_network_config()
+
+        set_demand_for_consumers(
+            config["model_init_args"]["control_api"]["agent_configs"],
+            self._configure_demand(*self._demand, num_valves=4)
+        )
+
+        return ManualStepSimulator(
+            stop_time=50,
+            step_size=1,
+            **config,
+            logging_step_size=1,
+            get_units=False,
+            verbose=False,
+        )
 
     def render(self, title=None, save_path=None):
         results = self.sim.get_results()
         actions = deepcopy(self.actions)
-        rewards = deepcopy(self.rewards)
+        rewards = deepcopy(self.rewards) if self._plot_rewards else None
         qs = deepcopy(self.qs) if self.qs else None
-        self._render_executor.submit(
-            self._render_task,
-            title,
-            save_path,
-            results,
-            rewards=rewards,
-            qs=qs,
-            actions=actions
-        )
+        if self._multi_threaded_rendering:
+            self._render_executor.submit(
+                self._render_task,
+                title,
+                save_path,
+                results,
+                rewards=rewards,
+                qs=qs,
+                actions=actions
+            )
+        else:
+            self._render_task(
+                title,
+                save_path,
+                results,
+                rewards=rewards,
+                qs=qs,
+                actions=actions
+            )
 
-    def _render_task(self, title=None, save_path=None, results=None, actions=None, rewards=None, qs=None):
-        valves = [2, 3, 5, 6]
-        pumps = [1, 4]
-        self.plot_valve_and_pump_data(
-            time=results["time"],
-            valves=valves,
-            valve_openings=[results[f"water_network.u_v_{v}"] for v in valves],
-            valve_demands=[results[f"control_api.demand_v_{v}"] for v in valves],
-            valve_flows=[results[f"water_network.V_flow_{v}"] for v in valves],
-            pumps=pumps,
-            pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
-            pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
-            pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
-            pump_actions=actions,
-            title=title,
-            save_path=save_path,
-            rewards=rewards,
-            qs=qs,
-        )
+    def reset(self, state=None, demand=None):
+        self.actions = []
+        self.rewards = []
+        if self.qs:
+            self.qs = [[] for _ in range(self._mdp_info.n_agents)]
 
-    def enable_q_logging(self, agents):
-        assert len(agents) == self._mdp_info.n_agents
-        self.qs = [[] for _ in range(self._mdp_info.n_agents)]
-        self._agents = agents
+        if state is not None:
+            raise NotImplementedError("Resetting to a specific state is not supported.")
+
+        if demand is not None:
+            self._demand = demand
+
+        set_demand_for_consumers(
+            self.sim._model_init_args["control_api"]["agent_configs"],
+            self._configure_demand(*self._demand, num_valves=4)
+        )
+        self.sim.reset_simulation(
+            self._stop_time,
+            1,
+            1,
+            model_init_args=self.sim._model_init_args
+        )
+        self._current_sim_state, _ = self._get_simulation_state()
+
+        sample = {
+            "state": self._current_sim_state[:4],
+            "obs": self._get_observations(),
+        }
+        return sample if self.labeled_step else self._get_observations()
 
     def step(self, action):
         # clip action to action space
@@ -138,36 +176,14 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         }
         return step if self.labeled_step else (self._get_observations(), reward, absorbing, {})
 
-    def reset(self, state=None):
-        self.actions = []
-        self.rewards = []
-        if self.qs:
-            self.qs = [[] for _ in range(self._mdp_info.n_agents)]
-
-        if state is not None:
-            raise NotImplementedError("Resetting to a specific state is not supported.")
-
-        set_demand_for_consumers(
-            self.sim._model_init_args["control_api"]["agent_configs"],
-            self._configure_demand(*self._demand, num_valves=4)
-        )
-        self.sim.reset_simulation(
-            self._stop_time,
-            1,
-            1,
-            model_init_args=self.sim._model_init_args
-        )
-        self._current_sim_state, _ = self._get_simulation_state()
-
-        sample = {
-            "state": self._current_sim_state[:4],
-            "obs": self._get_observations(),
-        }
-        return sample if self.labeled_step else self._get_observations()
-
     def stop_renderer(self):
         self._render_executor.shutdown()
         plt.close("all")
+
+    def enable_q_logging(self, agents):
+        assert len(agents) == self._mdp_info.n_agents
+        self.qs = [[] for _ in range(self._mdp_info.n_agents)]
+        self._agents = agents
 
     def _get_simulation_state(self):
         """
@@ -181,30 +197,15 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             raise KeyError("The key 'control_api' was not found in the global state.")
 
     def _get_observations(self):
-        return [self._current_sim_state[:4] for _ in range(self._mdp_info.n_agents)]
+        state = self._current_sim_state[:4]
+        obs = [state[selector] for selector in self._obs_selectors]
+        return obs
 
     def _get_state(self):
         return self._current_sim_state[:4]
 
-    def _setup_simulator(self):
-        config = get_circular_network_config()
-
-        set_demand_for_consumers(
-            config["model_init_args"]["control_api"]["agent_configs"],
-            self._configure_demand(*self._demand, num_valves=4)
-        )
-
-        return ManualStepSimulator(
-            stop_time=50,
-            step_size=1,
-            **config,
-            logging_step_size=1,
-            get_units=False,
-            verbose=False,
-        )
-
     @staticmethod
-    def _configure_demand(kind, low, high, num_valves) -> list[float]:
+    def _configure_demand(kind, low, high, test_case=None, num_valves=4) -> list[float]:
         if kind == "uniform_individual":
             return [np.random.uniform(low, high) for _ in range(num_valves)]
         elif kind == "uniform_global":
@@ -224,6 +225,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         elif kind == "constant":
             assert low == high, "For constant demand, low and high must be equal."
             return [low for _ in range(num_valves)]
+        elif kind == "test":
+            return test_case
         else:
             raise ValueError(f"Unknown demand type: {kind}")
 
@@ -277,6 +280,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             if "opening" in self._criteria.keys():
                 tmp += self._criteria["opening"]["w"] * max(s[8], s[9], s[10], s[11])
             if "target_opening" in self._criteria.keys():
+                r = 0
                 x = max(s[8], s[9], s[10], s[11])
                 target = self._criteria["target_opening"].get("target", 0.95)
                 smoothness = self._criteria["target_opening"].get("smoothness", 0.01)
@@ -285,27 +289,27 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 right_bound = self._criteria["target_opening"].get("right_bound", 0.05)
                 value_at_right_bound = self._criteria["target_opening"].get("value_at_right_bound", 0.01)
                 if x < target:
-                    tmp += self._criteria["target_opening"]["w"] * (
-                        exponential_reward(
-                            x,  # only consider the valve with the highest opening
-                            target,
-                            smoothness,
-                            left_bound,
-                            value_at_left_bound,
-                        )
+                    r += exponential_reward(
+                        x,  # only consider the valve with the highest opening
+                        target,
+                        smoothness,
+                        left_bound,
+                        value_at_left_bound,
                     )
                 elif x > 0.9999:
-                    tmp -= self._criteria["target_opening"]["w"]
+                    r -= 1
                 else:
-                    tmp += self._criteria["target_opening"]["w"] * (
-                        exponential_reward(
-                            x,
-                            target,
-                            smoothness,
-                            right_bound,
-                            value_at_right_bound,
-                        )
+                    r += exponential_reward(
+                        x,
+                        target,
+                        smoothness,
+                        right_bound,
+                        value_at_right_bound,
                     )
+                tmp += self._criteria["target_opening"]["w"] * (
+                    (self._criteria["target_opening"].get("max", 1) - self._criteria["target_opening"].get("min", 0)) *
+                    r + self._criteria["target_opening"].get("min", 0)
+                )
             if "max_speed" in self._criteria.keys():
                 tmp += self._criteria["max_speed"]["w"] * min(1 - s[12], 1 - s[13])
             if "mean_speed" in self._criteria.keys():
@@ -334,6 +338,26 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             reward += tmp / len(sim_states_to_use)
 
         return reward
+
+    def _render_task(self, title=None, save_path=None, results=None, actions=None, rewards=None, qs=None):
+        valves = [2, 3, 5, 6]
+        pumps = [1, 4]
+        self.plot_valve_and_pump_data(
+            time=results["time"],
+            valves=valves,
+            valve_openings=[results[f"water_network.u_v_{v}"] for v in valves],
+            valve_demands=[results[f"control_api.demand_v_{v}"] for v in valves],
+            valve_flows=[results[f"water_network.V_flow_{v}"] for v in valves],
+            pumps=pumps,
+            pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
+            pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
+            pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
+            pump_actions=actions,
+            title=title,
+            save_path=save_path,
+            rewards=rewards,
+            qs=qs,
+        )
 
     @staticmethod
     def plot_valve_and_pump_data(

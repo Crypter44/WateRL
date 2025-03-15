@@ -72,3 +72,4 @@ class MADDPG(IDDPG):
             q,
             **self._critic_fit_params
         )
+        return self._critic_approximator.model._last_loss
