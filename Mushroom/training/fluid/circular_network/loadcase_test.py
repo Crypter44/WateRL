@@ -14,7 +14,7 @@ from Mushroom.utils.utils import compute_metrics_with_labeled_dataset
 num_agents = 2
 
 path = input("Enter the path to the first agent: ")
-save_path = "./LoadcasePlots/" + input("Enter the name of the folder to save the test results: ")
+save_path = "./LoadcaseTestResults/" + input("Enter the name of the folder to save the test results: ")
 os.makedirs(save_path, exist_ok=True)
 
 state_selector = [

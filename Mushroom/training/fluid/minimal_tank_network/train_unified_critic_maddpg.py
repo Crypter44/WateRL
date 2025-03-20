@@ -15,20 +15,20 @@ config = dict(
     gamma=0.99,
 
     lr_actor=5e-4,
-    lr_critic=25e-3,
+    lr_critic=5e-4,
 
-    initial_replay_size=5000,
-    max_replay_size=20000,
+    initial_replay_size=5_000,
+    max_replay_size=30_000,
     batch_size=200,
 
     n_features=80,
     tau=.005,
-    grad_norm_clipping=1.0,
+    grad_norm_clipping=None,
 
-    sigma=[(0, 0.8), (10, 0.1)],
+    sigma=[(0, 0.4), (10, 0.1), (20, 0.05)],
     decay_type="exponential",
 
-    n_epochs=20,
+    n_epochs=25,
     n_episodes_learn=6,
     n_episodes_test=3,
     n_steps_per_fit=1,
@@ -55,9 +55,9 @@ config = dict(
             "max": 0,
             "min": -1
         },
-        "power_per_flow": {
-            "w": 0.0006,
-        }
+        # "power_per_flow": {
+        #     "w": 0.0006,
+        # }
     },
     demand="tagesgang"
 )
@@ -87,9 +87,9 @@ def train(run, save_path):
         ),
         n_agents=run.config.num_agents,
         n_features_actor=run.config.n_features,
-        lr_actor=run.config.lr_actor,
+        lr_actor=run.config.lr_actor * run.config.lr_multiplier,
         n_features_critic=run.config.n_features,
-        lr_critic=run.config.lr_critic,
+        lr_critic=run.config.lr_critic * run.config.lr_multiplier * run.config.critic_multiplier,
         batch_size=run.config.batch_size,
         initial_replay_size=run.config.initial_replay_size,
         max_replay_size=run.config.max_replay_size,
@@ -164,7 +164,8 @@ wandb_training(
     base_path="./Plots/MADDPG_unified_critic/",
     base_config=config,
     params={
-        'criteria.power_per_flow.w': [0.0006, 0.0003, 0.0001],
+        'critic_multiplier': [15, 25, 50],
+        'lr_multiplier': [1, 0.2]
     },
     notes="""Tuning of the DDPG algorithm for the minimal tank network."""
 )

@@ -12,22 +12,22 @@ from Mushroom.utils.wandb_handler import wandb_training, create_log_dict
 # PARAMS
 config = dict(
     seed=0,
-    gamma=0.99,
+    gamma=0.999,
 
-    lr_actor=5e-4,
-    lr_critic=25e-3,
+    lr_actor=1e-4,
+    lr_critic=5e-4,
 
-    initial_replay_size=5000,
-    max_replay_size=20000,
+    initial_replay_size=5_000,
+    max_replay_size=30_000,
     batch_size=200,
 
     n_features=80,
     tau=.005,
 
-    sigma=[(0, 0.8), (10, 0.1)],
+    sigma=[(0, 0.2), (1, 0.1), (20, 0.05)],
     decay_type="exponential",
 
-    n_epochs=30,
+    n_epochs=70,
     n_episodes_learn=6,
     n_episodes_test=3,
     n_steps_per_fit=1,
@@ -38,12 +38,12 @@ config = dict(
     n_epochs_per_checkpoint=50,
 
     state_selector=[
-        0, 6, 9
+        0
     ],
 
     observation_selector=[
         [0],
-        [9]
+        [0]
     ],
 
     criteria={
@@ -51,12 +51,12 @@ config = dict(
             "w": 1.0,
             "bound": 0.1,
             "value_at_bound": 0.001,
-            "max": 0,
-            "min": -1
+            "max": 1,
+            "min": 0,
         },
-        "power_per_flow": {
-            "w": 0.0006,
-        }
+        # "power_per_flow": {
+        #     "w": 0.0006,
+        # }
     },
     demand="tagesgang"
 )
@@ -106,6 +106,7 @@ def train(run, save_path):
     set_noise_for_all(core.agents, True)
     core.mdp.render(save_path=save_path + f"Epoch_0")
 
+
     pbar = tqdm(range(run.config.n_epochs), unit='epoch', leave=False)
     for n in pbar:
         # Train
@@ -113,6 +114,7 @@ def train(run, save_path):
             n_episodes=run.config.n_episodes_learn,
             n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
         )
+        mdp.warmup = False
 
         # Eval
         core.evaluate(n_episodes=1, render=False, quiet=True)
@@ -154,7 +156,8 @@ wandb_training(
     base_path="./Plots/IDDPG/",
     base_config=config,
     params={
-        'criteria.power_per_flow.w': [0.0006, 0.0003, 0.0001],
+        'seed': [0],
+        # 'criteria.power_per_flow.w': [0.001, 0.003],
     },
     notes="""Tuning of the DDPG algorithm for the minimal tank network."""
 )

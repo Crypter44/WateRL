@@ -50,7 +50,7 @@ while not sim.is_done():
 
         action = np.array([s, v])
     else:
-        action = np.array([1, 1])
+        action = np.array([1, 0])
     try:
         sim.do_simulation_step(action)
     except Exception as e:

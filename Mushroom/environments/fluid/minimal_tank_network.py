@@ -31,6 +31,8 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             }
         }
 
+        self.warmup = False
+
         self.state_selector = state_selector or [0, 6, 9]
         self.observation_selector = observation_selector or [[0], [9]]
 
@@ -93,6 +95,9 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         action = np.clip(action, 0, 1)
         self.actions.append(action)
 
+        if self.warmup:
+            action[1] = np.random.uniform(0.9, 1)
+
         error = False
         sim_states = []
         for i in range(ControllerMinimalTank.CONTROL_STEP_INTERVAL // self._step_size):
@@ -121,7 +126,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
 
     def _reward_fun(self, sim_states, action):
         reward = 0
-        sim_states_to_use = sim_states[-1:]
+        sim_states_to_use = sim_states[-15:]
         for s, _ in sim_states_to_use:
             tmp = 0
 
