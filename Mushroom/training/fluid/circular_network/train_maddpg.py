@@ -1,5 +1,3 @@
-import json
-
 import matplotlib as mpl
 import numpy as np
 from tqdm import tqdm
@@ -8,8 +6,7 @@ from Mushroom.agents.agent_factory import setup_maddpg_agents
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
 from Mushroom.core.multi_agent_core_labeled import MultiAgentCoreLabeled
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
-from Mushroom.utils.plotting import plot_training_data, plot_debug_data
-from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset, final_evaluation
+from Mushroom.utils.utils import set_seed, compute_metrics_with_labeled_dataset, final_evaluation
 from Mushroom.utils.wandb_handler import wandb_training, create_log_dict
 
 # PARAMS
@@ -38,9 +35,13 @@ config = dict(
     num_agents=2,
     n_episodes_final=1000,
     n_episodes_final_render=200,
-    n_epochs_per_checkpoint=100,
+    n_epochs_per_checkpoint=50,
 
-    observation_selectors=[
+    state_selector=[
+        0, 1, 2, 3
+    ],
+
+    observation_selector=[
         [0, 1],
         [2, 3],
     ],
@@ -48,18 +49,21 @@ config = dict(
     criteria={
         "demand": {
             "w": 10.0,
-            "bound": 0.1,
+            "bound": 0.05,
             "value_at_bound": 0.001,
             "max": 0,
             "min": -1
         },
-        "power_per_flow": {"w": 0.06},
-        "negative_flow": {"w": 3.0},
+        "power_per_flow": {"w": .05},
+        "negative_flow": {
+            "w": 2.0,
+            "threshold": -1e-6,
+        },
         "target_opening": {
             "max": 1,
             "min": 0,
-            "w": 5.0,
-            "left_bound": 0.7,
+            "w": 1.0,
+            "left_bound": 0.5,
             "value_at_left_bound": 0.001,
             "right_bound": 0.04,
             "value_at_right_bound": 0.001,
@@ -81,9 +85,9 @@ def train(run, save_path):
         n_agents=run.config.num_agents,
         mdp=mdp,
         n_features_actor=run.config.n_features,
-        lr_actor=run.config.lr_actor * run.config.lr_multiplier,
+        lr_actor=run.config.lr_actor,
         n_features_critic=run.config.n_features,
-        lr_critic=run.config.lr_actor * run.config.lr_multiplier * run.config.critic_multiplier,
+        lr_critic=run.config.lr_actor,
         batch_size=run.config.batch_size,
         initial_replay_size=run.config.initial_replay_size,
         max_replay_size=run.config.max_replay_size,
@@ -154,13 +158,13 @@ def train(run, save_path):
 
 wandb_training(
     project="CircularNetworkMADDPG",
-    group="PartialObservability",
-    base_config=config,
-    params={
-        'lr_multiplier': [10, 1, 0.1],
-        'critic_multiplier': [10, 5, 2],
-    },
+    group="ComparisonWithMultipleSeeds",
     train=train,
     base_path="./Plots/MADDPG/",
-    notes="""MADDPG training with partial observability.""",
+    base_config=config,
+    params={
+        'seed': [1],
+        'criteria.power_per_flow.w': [0.06],
+    },
+    notes="""Test run of partially observable MADDPG with different seeds."""
 )

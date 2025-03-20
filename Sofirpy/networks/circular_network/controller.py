@@ -27,7 +27,19 @@ class ControllerCircular(SimulationEntityWithAction):
         [12:14] rotational speeds of the pumps
         [14:16] volume flows at the pumps
         [16:18] power consumption of the pumps
+        [18:20] pressure at the pumps
+        [20:22] difference between pump flow and corresponding consumer demand
         """
+
+        diff1 = self.get_parameter_value("V_flow_1") - (
+            self.mas.consumer_agents[0].demand_volume_flow_m3h +
+            self.mas.consumer_agents[1].demand_volume_flow_m3h
+        )
+        diff4 = self.get_parameter_value("V_flow_4") - (
+            self.mas.consumer_agents[2].demand_volume_flow_m3h +
+            self.mas.consumer_agents[3].demand_volume_flow_m3h
+        )
+
         state = (
                 # demands of the valves
                 [c.demand_volume_flow_m3h for c in self.mas.consumer_agents]
@@ -41,6 +53,10 @@ class ControllerCircular(SimulationEntityWithAction):
                 + [self.get_parameter_value(f"V_flow_{i}") for i in [1, 4]]
                 # power consumption of the pumps
                 + [self.get_parameter_value(f"P_pum_{i}") for i in [1, 4]]
+                # pressure at the pumps
+                + [self.get_parameter_value(f"p_rel_{i}") for i in [1, 4]]
+                # difference between pump flow and valve demands
+                + [diff1, diff4]
         )
         return state
 

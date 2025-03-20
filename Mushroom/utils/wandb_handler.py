@@ -42,7 +42,7 @@ def wandb_training(
         path = base_path + f"/{name}/"
         os.makedirs(path, exist_ok=True)
 
-        print(f"Creating run {i + 1}/{len(param_sets)} with name {name}")
+        print(f"Creating run {i + 1}/{len(param_sets)} with name {name} in job {job_counter}.")
         run = wandb.init(
             project=project,
             group=group,
@@ -68,7 +68,7 @@ def wandb_training(
 
         # save run config dict to json file
         with open(f"{path}/config.json", "w") as f:
-            json.dump(run.config, f, indent=4)
+            json.dump(run.config.as_dict(), f, indent=4)
 
         run.finish()
 
@@ -108,9 +108,10 @@ def create_log_dict(agents, mdp, score):
         log |= {
             f"agent_{i}/{key}": value for key, value in a.get_debug_info(entries_as_list=False).items()
         }
-        log |= {
-            f"agent_{i}/sigma": a.policy.get_sigma()
-        }
+        if hasattr(a, "policy") and hasattr(a.policy, "get_sigma"):
+            log |= {
+                f"agent_{i}/sigma": a.policy.get_sigma()
+            }
     log |= {
         f"mdp/eval/{key}": value for key, value in mdp.get_debug_info().items()
     }

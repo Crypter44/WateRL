@@ -117,26 +117,6 @@ class IDDPG(DeepAC):
 
         super().__init__(mdp_info, policy, actor_optimizer, policy_parameters)
 
-    def get_reset_copy(self):
-        actor_weights = self._actor_approximator.get_weights()
-        critic_weights = self._critic_approximator.get_weights()
-        target_actor_weights = self._target_actor_approximator.get_weights()
-        target_critic_weights = self._target_critic_approximator.get_weights()
-        replay_buffer = self._replay_memory
-        debug_enabled = self._debug_logging
-
-        agent = IDDPG(**self.reset_params)
-
-        agent._actor_approximator.set_weights(actor_weights)
-        agent._critic_approximator.set_weights(critic_weights)
-        agent._target_actor_approximator.set_weights(target_actor_weights)
-        agent._target_critic_approximator.set_weights(target_critic_weights)
-        agent._replay_memory = replay_buffer
-        agent.reset_optimizers()
-        agent.set_debug_logging(debug_enabled)
-
-        return agent
-
     def fit(self, dataset, **info):
         self._replay_memory.add(dataset)
         if self._replay_memory.size > self._initial_replay_size:

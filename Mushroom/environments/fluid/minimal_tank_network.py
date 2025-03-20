@@ -17,10 +17,13 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
     def __init__(
             self,
             gamma: float = 0.99,
+            state_selector: List[int] = None,
+            observation_selector: List[List[int]] = None,
             criteria: dict = None,
             labeled_step: bool = False,
             demand_curve: str = "tagesgang",
             multi_threaded_rendering: bool = True,
+            sim_step_size: int = 10,
     ):
         self._criteria = criteria or {
             "target_opening": {
@@ -28,17 +31,19 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             }
         }
 
-        state_space = spaces.Box(low=-500, high=500, shape=(4,))
+        self.state_selector = state_selector or [0, 6, 9]
+        self.observation_selector = observation_selector or [[0], [9]]
+
+        state_space = spaces.Box(low=-500, high=500, shape=(len(self.state_selector),))
         observation_spaces = [
-            spaces.Box(low=-np.inf, high=np.inf, shape=(1,)),  # demand of the valve and level of the tank
-            spaces.Box(low=-np.inf, high=np.inf, shape=(2,))  # for both agents
+            spaces.Box(low=-500, high=500, shape=(len(obs),)) for obs in self.observation_selector
         ]
         action_spaces = [
             spaces.Box(low=0, high=1, shape=(1,)),  # pump speed
             spaces.Box(low=-1, high=1, shape=(1,))  # control of the tank
         ]
         stop_time = 86400.0
-        self._step_size = 10
+        self._step_size = sim_step_size
         sim = ManualStepSimulator(
             stop_time=stop_time,
             step_size=self._step_size,
@@ -103,9 +108,6 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         self._current_sim_state, done = self._get_simulation_state()
         self.rewards.append(reward)
 
-        if done:
-            print("Done!")
-
         absorbing = done or error
 
         step = {
@@ -156,7 +158,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                             )
                     )
             if "target_opening" in self._criteria.keys():
-                x = s[2]
+                x = max(s[2], s[8])
                 target = self._criteria["target_opening"].get("target", 0.95)
                 smoothness = self._criteria["target_opening"].get("smoothness", 0.01)
                 left_bound = self._criteria["target_opening"].get("left_bound", 0.3)
@@ -186,11 +188,10 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                         )
                     )
             if "target_action" in self._criteria.keys():
-                scaled_action = deepcopy(action)
-                scaled_action[0] = scaled_action[0] * 1.3
-                scaled_action -= self._criteria["target_action"]["target"]
+                action_to_reward = deepcopy(action)
+                action_to_reward -= self._criteria["target_action"]["target"]
                 tmp += self._criteria["target_action"]["w"] * exponential_reward(
-                    np.max(np.abs(scaled_action)),
+                    np.max(np.abs(action_to_reward)),
                     0,
                     self._criteria["target_action"].get("smoothness", 0.01),
                     self._criteria["target_action"].get("bound", 0.8),
@@ -199,6 +200,8 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             if "negative_flow" in self._criteria.keys():
                 if s[4] < -1e-6:
                     tmp -= self._criteria["negative_flow"]["w"]
+            if "power_per_flow" in self._criteria.keys():
+                tmp -= self._criteria["power_per_flow"]["w"] * s[5] / (s[4] + 1)
 
             reward += tmp / len(sim_states_to_use)
 
@@ -216,6 +219,28 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
 
     def stop_renderer(self):
         self._render_executor.shutdown()
+
+    def _get_simulation_state(self) -> (np.ndarray, bool):
+        sim_state, done = self.sim.get_current_state()
+        try:
+            controller_state = sim_state["control_api"]
+            sim_state = np.array(controller_state)
+        except KeyError:
+            raise KeyError("The key 'control_api' was not found in the global state.")
+
+        return sim_state, done
+
+    def _get_state(self) -> np.ndarray:
+        state = np.array(self._current_sim_state)
+        state = state[self.state_selector]
+        return state
+
+    def _get_observations(self) -> List:
+        state = np.array(self._current_sim_state)
+        obs = [
+            state[obs_sel] for obs_sel in self.observation_selector
+        ]
+        return obs
 
     @staticmethod
     def _render_task(sim_data, rewards=None, actions=None, save_path=None, title=None):
@@ -269,7 +294,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         # Plot pump speed and power
         ax[0, 1].plot(
             sim_data["time"],
-            sim_data["control_api.w_p_4"],
+            sim_data["control_api.w_p_4"] * 10 / 13,
             color=pump_colors[0],
             label="Speed",
             zorder=0,
@@ -278,7 +303,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         if actions is not None:
             ax[0, 1].plot(
                 np.linspace(0, np.array(sim_data["time"])[-1], len(actions)),
-                [a[0] * 1.3 for a in actions],
+                [a[0] for a in actions],
                 color='black',
                 label="Pump action",
                 alpha=0.35,
@@ -298,7 +323,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         ax2.set_ylabel("Power consumption [W]", color='gray')
         ax2.set_ylim((0, 450))
         ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.1))
-        ax[0, 1].set_ylim((0, 1.31))
+        ax[0, 1].set_ylim((0, 1.01))
         ax[0, 1].set_ylabel("Rotational speed", color=pump_colors[0])
         ax[0, 1].set_title("Pump")
 
@@ -355,6 +380,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             label="In/Outflow",
         )
         ax[1, 1].set_ylabel("Volume flow [m³/h]", color='green')
+        ax[1, 1].set_ylim((-1, 1))
         ax[1, 1].set_title("Inflow/Outflow of Tank")
 
         # Plot tank control
@@ -368,7 +394,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             ax[1, 2].plot(
                 np.linspace(0, np.array(sim_data["time"])[-1], len(actions)),
                 [a[1] for a in actions],
-                color='black',
+                color=tank_colors[0],
                 label="Tank action",
                 alpha=0.35,
                 linestyle='--',
@@ -376,6 +402,19 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         ax[1, 2].set_ylabel("Tank Valve Control", color=tank_colors[0])
         ax[1, 2].set_title("Tank Valve Control")
         ax[1, 2].set_ylim((0, 1.01))
+
+        # Plot pressure at tank
+        ax2 = ax[1, 2].twinx()
+        ax2.plot(
+            sim_data["time"],
+            sim_data["water_network.p_rel_7"],
+            color='gray',
+            alpha=.9,
+            label="Pressure",
+            linewidth=1,
+        )
+        ax2.set_ylabel("Pressure [bar]", color='gray')
+        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.1))
 
         for a in ax.flatten():
             a.set_xlabel("Time [h]")
@@ -432,30 +471,3 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                 path = str.replace(path, "Final", "Final_reward")
                 fig.savefig(path + ".png")
             plt.close(fig)
-
-    def _get_simulation_state(self) -> (np.ndarray, bool):
-        sim_state, done = self.sim.get_current_state()
-        try:
-            controller_state = sim_state["control_api"]
-            sim_state = np.array(controller_state)
-        except KeyError:
-            raise KeyError("The key 'control_api' was not found in the global state.")
-
-        return sim_state, done
-
-    def _get_state(self) -> np.ndarray:
-        state = self._current_sim_state
-        state = np.array([0, 0, 0, 0])
-        return state
-
-    def _get_observations(self) -> List:
-        state = self._current_sim_state
-        obs = [
-            state[[0]],
-            state[[6, 9]],
-        ]
-        obs = [
-            np.array([0]),
-            np.array([0, 0])
-        ]
-        return obs

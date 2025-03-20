@@ -264,6 +264,7 @@ class ReplayMemoryObsMultiAgent(ReplayMemoryObs):
 
             self._idx += 1
             if self._idx == self._max_size:
+                print("Replay memory is full, overwriting old samples")
                 self._full = True
                 self._idx = 0
 

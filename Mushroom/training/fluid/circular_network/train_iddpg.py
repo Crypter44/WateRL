@@ -18,7 +18,7 @@ config = dict(
     lr_critic=5e-4,
 
     initial_replay_size=5000,
-    max_replay_size=15000,
+    max_replay_size=25000,
     batch_size=200,
 
     n_features=80,
@@ -35,7 +35,16 @@ config = dict(
     num_agents=2,
     n_episodes_final=1000,
     n_episodes_final_render=200,
-    n_epochs_per_checkpoint=100,
+    n_epochs_per_checkpoint=50,
+
+    state_selector=[
+        0, 1, 2, 3
+    ],
+
+    observation_selector=[
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+    ],
 
     criteria={
         "demand": {
@@ -45,13 +54,16 @@ config = dict(
             "max": 0,
             "min": -1
         },
-        "power_per_flow": {"w": 0.06},
-        "negative_flow": {"w": 3.0},
+        "power_per_flow": {"w": .05},
+        "negative_flow": {
+            "w": 2.0,
+            "threshold": -1e-6,
+        },
         "target_opening": {
             "max": 1,
             "min": 0,
-            "w": 5.0,
-            "left_bound": 0.7,
+            "w": 1.0,
+            "left_bound": 0.5,
             "value_at_left_bound": 0.001,
             "right_bound": 0.04,
             "value_at_right_bound": 0.001,
@@ -71,15 +83,17 @@ def train(run, save_path):
         gamma=run.config.gamma,
         criteria=run.config.criteria,
         demand=run.config.demand,
-        labeled_step=True
+        labeled_step=True,
+        state_selector=run.config.state_selector,
+        observation_selector=run.config.observation_selector,
     )
     agents = [create_ddpg_agent(
         mdp,
         agent_idx=i,
         n_features_actor=run.config.n_features,
-        lr_actor=run.config.lr_actor * run.config.lr_multiplier,
+        lr_actor=run.config.lr_actor,
         n_features_critic=run.config.n_features,
-        lr_critic=run.config.lr_actor * run.config.lr_multiplier * run.config.critic_multiplier,
+        lr_critic=run.config.lr_critic,
         batch_size=run.config.batch_size,
         initial_replay_size=run.config.initial_replay_size,
         max_replay_size=run.config.max_replay_size,
@@ -146,14 +160,12 @@ def train(run, save_path):
 
 wandb_training(
     project="CircularNetworkIDDPG",
-    group="PartialObservability",
+    group="ComparisonWithMultipleSeeds",
     train=train,
     base_path="./Plots/IDDPG/",
     base_config=config,
     params={
-        'lr_multiplier': [10, 1, 0.1],
-        'critic_multiplier': [10, 5],
+        'seed': [10, 20, 30, 40, 50, 526, 42, 69, 1337, 9001],
     },
-    notes="""Each pump only sees the demand of the first / last 3 consumers. 
-    Meaning only 2 / 4 consumers are partially observable."""
+    notes="""Test run of fully observable IDDPG with different seeds."""
 )

@@ -15,8 +15,8 @@ from Sofirpy.simulation import ManualStepSimulator
 class CircularFluidNetwork(AbstractFluidNetworkEnv):
     def __init__(
             self,
-            observation_spaces=None,
-            observation_selectors=None,
+            state_selector=None,
+            observation_selector=None,
             action_spaces=None,
             fluid_network_simulator=None,
             horizon=50,
@@ -32,13 +32,12 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         if fluid_network_simulator is None:
             fluid_network_simulator = self._setup_simulator()
 
-        self._obs_selectors = observation_selectors if observation_selectors is not None else [[0, 1], [2, 3]]
+        self._state_selector = state_selector if state_selector is not None else [0, 1, 2, 3]
+        self._observation_selector = observation_selector if observation_selector is not None else [[0, 1], [2, 3]]
         super().__init__(
-            state_space=spaces.Box(low=-500, high=500, shape=(4,)),  # TODO make this dynamic based on a parameter
+            state_space=spaces.Box(low=-500, high=500, shape=(len(self._state_selector),)),  # TODO make this dynamic based on a parameter
             observation_spaces=(
-                observation_spaces
-                if observation_spaces is not None
-                else [spaces.Box(low=-10, high=10, shape=(len(sel),)) for sel in observation_selectors]
+                [spaces.Box(low=-500, high=500, shape=(len(obs),)) for obs in self._observation_selector]
             ),
             action_spaces=(
                 action_spaces
@@ -131,7 +130,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self._current_sim_state, _ = self._get_simulation_state()
 
         sample = {
-            "state": self._current_sim_state[:4],
+            "state": self._get_state(),
             "obs": self._get_observations(),
         }
         return sample if self.labeled_step else self._get_observations()
@@ -140,6 +139,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         # clip action to action space
         action = np.clip(action, self._mdp_info.action_space_for_idx(0).low,
                          self._mdp_info.action_space_for_idx(0).high)
+
+        action = np.array([1, 1])
 
         if self.qs is not None:
             for i, a in enumerate(self._agents):
@@ -169,7 +170,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         absorbing = absorbing if not error else True
 
         step = {
-            "state": self._current_sim_state[:4],
+            "state": self._get_state(),
             "obs": self._get_observations(),
             "rewards": [reward] * self._mdp_info.n_agents,
             "absorbing": absorbing,
@@ -197,12 +198,12 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             raise KeyError("The key 'control_api' was not found in the global state.")
 
     def _get_observations(self):
-        state = self._current_sim_state[:4]
-        obs = [state[selector] for selector in self._obs_selectors]
+        state = self._current_sim_state
+        obs = [state[selector] for selector in self._observation_selector]
         return obs
 
     def _get_state(self):
-        return self._current_sim_state[:4]
+        return self._current_sim_state[self._state_selector]
 
     @staticmethod
     def _configure_demand(kind, low, high, test_case=None, num_valves=4) -> list[float]:
@@ -267,7 +268,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                                 exponential_reward(
                                     max([s[i] - s[i + 4] for i in range(4)]),
                                     0,
-                                    self._criteria["demand"].get("smoothness", 0.0001),
+                                    self._criteria["demand"].get("smoothness", 0.0),
                                     self._criteria["demand"].get("bound", 0.1),
                                     self._criteria["demand"].get("value_at_bound", 0.01),
                                 ) + min_val
@@ -280,7 +281,6 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             if "opening" in self._criteria.keys():
                 tmp += self._criteria["opening"]["w"] * max(s[8], s[9], s[10], s[11])
             if "target_opening" in self._criteria.keys():
-                r = 0
                 x = max(s[8], s[9], s[10], s[11])
                 target = self._criteria["target_opening"].get("target", 0.95)
                 smoothness = self._criteria["target_opening"].get("smoothness", 0.01)
@@ -289,7 +289,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                 right_bound = self._criteria["target_opening"].get("right_bound", 0.05)
                 value_at_right_bound = self._criteria["target_opening"].get("value_at_right_bound", 0.01)
                 if x < target:
-                    r += exponential_reward(
+                    r = exponential_reward(
                         x,  # only consider the valve with the highest opening
                         target,
                         smoothness,
@@ -297,9 +297,9 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                         value_at_left_bound,
                     )
                 elif x > 0.9999:
-                    r -= 1
+                    r = -1
                 else:
-                    r += exponential_reward(
+                    r = exponential_reward(
                         x,
                         target,
                         smoothness,
@@ -325,7 +325,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
                     )
                 )
             if "negative_flow" in self._criteria.keys():
-                if s[14] < -1e-6 or s[15] < -1e-6:
+                threshold = self._criteria["negative_flow"].get("threshold", 0)
+                if s[14] < threshold or s[15] < threshold:
                     tmp -= self._criteria["negative_flow"]["w"]
             if "error" in self._criteria.keys():
                 if error:
@@ -352,6 +353,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
             pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
             pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
+            pump_pressures=[results[f"water_network.p_rel_{p}"] for p in pumps],
             pump_actions=actions,
             title=title,
             save_path=save_path,
@@ -370,6 +372,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             pump_speeds,
             pump_powers,
             pump_flows,
+            pump_pressures=None,
             pump_actions=None,
             rewards=None,
             qs=None,
@@ -518,6 +521,20 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             ax.set_ylabel("Volume flow [m³/h]")
             ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15))
             ax.set_title(f"Volume flow @ pump p_{pumps[i]}")
+
+            if pump_pressures is not None:
+                ax2 = ax.twinx()
+                ax2.plot(
+                    time,
+                    pump_pressures[i],
+                    label=f"Pressure @ pump p_{pumps[i]}",
+                    color='gray',
+                    alpha=.9,
+                    linewidth=1,
+                    zorder=0
+                )
+                ax2.set_ylabel("Pressure [bar]", color='gray')
+                ax2.legend(loc="upper center", bbox_to_anchor=(0.5, -0.35))
 
         for i in range(2):
             axs[1][4].plot(

@@ -4,19 +4,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
+from Sofirpy.networks.agents import set_demand_for_consumers
 from Sofirpy.networks.circular_network.config import get_circular_network_config
 from Sofirpy.simulation import ManualStepSimulator
+
+config = get_circular_network_config()
+
+set_demand_for_consumers(
+    config["model_init_args"]["control_api"]["agent_configs"],
+    [0.9, 0.9, 1.4, 1.4]
+)
 
 sim = ManualStepSimulator(
     stop_time=200,
     step_size=1,
-    **get_circular_network_config(),
+    **config,
     logging_step_size=1,
     get_units=False,
     verbose=True,
 )
 sim.reset_simulation(200, 1)
-speeds = np.array([0.45, 0.45])
+speeds = np.array([0.82, 1])
 c = 0
 while not sim.is_done():
     sim.do_simulation_step(speeds)
@@ -53,6 +61,7 @@ CircularFluidNetwork.plot_valve_and_pump_data(
     pump_speeds=[results[f"control_api.w_p_{p}"] for p in pumps],
     pump_powers=[results[f"water_network.P_pum_{p}"] for p in pumps],
     pump_flows=[results[f"water_network.V_flow_{p}"] for p in pumps],
+    pump_pressures=[results[f"water_network.p_rel_{p}"] for p in pumps],
     title="/",
 )
 quit(0)

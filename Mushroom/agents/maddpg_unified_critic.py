@@ -70,7 +70,7 @@ class UnifiedCriticMADDPG(Agent):
 
         self.update_target_critic_hard()
 
-        self._debug_logging = False
+        self._debug_logging = True
         self._debug_info = {
             "actor_loss": [],
             "critic_loss": [],
@@ -413,7 +413,7 @@ class UnifiedCriticMADDPG(Agent):
     def set_debug_logging(self, enabled):
         self._debug_logging = enabled
 
-    def get_debug_info(self, previous_info=None):
+    def get_debug_info(self, previous_info=None, entries_as_list=True):
         averaged_info = {
             key: [np.mean(value).item()] for key, value in self._debug_info.items()
         }
@@ -421,4 +421,7 @@ class UnifiedCriticMADDPG(Agent):
             for key, _ in previous_info.items():
                 previous_info[key] += averaged_info[key]
             return previous_info
+
+        if not entries_as_list:
+            return {key: value[0] for key, value in averaged_info.items()}
         return averaged_info

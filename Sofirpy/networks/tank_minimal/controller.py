@@ -10,7 +10,7 @@ class ControllerMinimalTank(SimulationEntityWithAction):
     It connects the input and output values for the FMU to a custom code.
     """
     CONTROL_STEP_INTERVAL = 300
-    DEMAND_STEP_INTERVAL = 600
+    DEMAND_STEP_INTERVAL = 300
     ENSURE_POSSIBLE_DEMAND = True
 
     def __init__(self, demand_curve="tagesgang") -> None:
@@ -32,7 +32,7 @@ class ControllerMinimalTank(SimulationEntityWithAction):
             time_demand_curve = np.linspace(0, 86_400, 86_401)
             scale = 1 / 3_600
             self.demand_curve = (
-                    55  # daily demand in m3
+                    54.5  # daily demand in m3
                     # the following function gives a demand per time unit in % of the daily demand
                     # the total daily demand is reached after 24 time units
                     * (
