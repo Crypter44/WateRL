@@ -1,131 +1,194 @@
+import matplotlib as mpl
 import numpy as np
 from tqdm import tqdm
 
 from Mushroom.agents.agent_factory import setup_facmac_agents
-from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all, UnivariateGaussianPolicy
+from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
 from Mushroom.core.multi_agent_core_mixer import MultiAgentCoreMixer
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
-from Mushroom.utils.plotting import plot_training_data
-from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset
+from Mushroom.utils.utils import set_seed, compute_metrics_with_labeled_dataset, final_evaluation
+from Mushroom.utils.wandb_handler import wandb_training, create_log_dict
 
-# PARAMS
-gamma = 0.99
-gamma_eval = 1.
+config = dict(
+    seed=0,
+    gamma=0.99,
 
-lr_actor = 1e-5
-lr_critic = 1e-5
+    lr_actor=5e-4,
+    lr_critic=5e-3,
 
-initial_replay_size = 500
-max_replay_size = 5000
-batch_size = 200
+    initial_replay_size=5_000,
+    max_replay_size=60_000,
+    batch_size=200,
 
-n_features = 80
-tau = .005
+    n_features=80,
+    tau=.005,
+    grad_norm_clipping=None,
 
-sigma_checkpoints = [(0, 0.4), (50, 0.15), (75, 0.05)]
-decay_type = 'linear'
+    sigma=[(0, 1), (1, 0.075), (20, 0.01)],
+    decay_type="exponential",
 
-n_epochs = 20
-n_steps_learn = 1000
-n_steps_test = 300
-n_steps_per_fit = 1
+    n_epochs=200,
+    n_episodes_learn=100,
+    n_episodes_test=6,
+    n_steps_per_fit=1,
 
-num_agents = 2
-criteria = {
-    "target_speed": {
-        "w": 1.,
-        "target": 0.5
+    num_agents=2,
+    n_episodes_final=1,
+    n_episodes_final_render=1,
+    n_epochs_per_checkpoint=50,
+
+    state_selector=[
+        0, 1, 2, 3
+    ],
+
+    observation_selector=[
+        # [0, 2,],
+        # [1, 3,],
+
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+    ],
+
+    criteria={
+        "demand": {
+            "w": 10.0,
+            "bound": 0.05,
+            "value_at_bound": 0.001,
+            "max": 0,
+            "min": -1
+        },
+        "power_per_flow": {"w": .06},
+        "negative_flow": {
+            "w": 3.0,
+            "threshold": -1e-6,
+        },
+        "target_opening": {
+            "max": 1,
+            "min": 0,
+            "w": 1.0,
+            "target": 0.9,
+            "left_bound": 0.7,
+            "value_at_left_bound": 0.001,
+            "right_bound": 0.025,
+            "value_at_right_bound": 0.001,
+        }
     },
-}
-demand = ("constant", 0.5, 0.5)
+    demand=("uniform_global", 0.4, 1.4)
+)
 # END_PARAMS
 
+mpl.rcParams['figure.max_open_warning'] = -1
 
-# create a dictionary to store data for each seed
-def train(p1, p2, seed, save_path):
 
-    criteria["target_speed"]["target"] = p1
-    base_mul, critic_mul = p2
-
-    set_seed(seed)
-    mdp = CircularFluidNetwork(gamma=gamma, criteria=criteria, labeled_step=True, demand=demand)
+def train(run, save_path):
+    set_seed(run.config.seed)
+    # MDP
+    mdp = CircularFluidNetwork(
+        gamma=run.config.gamma,
+        criteria=run.config.criteria,
+        demand=run.config.demand,
+        labeled_step=True,
+        state_selector=run.config.state_selector,
+        observation_selector=run.config.observation_selector,
+    )
     agents, facmac = setup_facmac_agents(
         mdp,
-        policy=UnivariateGaussianPolicy(
-            sigma_checkpoints=sigma_checkpoints,
-            decay_type=decay_type,
-        ),
-        n_agents=num_agents,
-        n_features_actor=n_features,
-        lr_actor=lr_actor * base_mul,
-        n_features_critic=n_features,
-        lr_critic=lr_actor * base_mul * critic_mul,
-        batch_size=batch_size,
-        initial_replay_size=initial_replay_size,
-        max_replay_size=max_replay_size,
-        tau=tau,
+        n_agents=run.config.num_agents,
+        n_features_actor=run.config.n_features,
+        lr_actor=run.config.lr_actor,
+        n_features_critic=run.config.n_features,
+        lr_critic=run.config.lr_critic,
+        batch_size=run.config.batch_size,
+        initial_replay_size=run.config.initial_replay_size,
+        max_replay_size=run.config.max_replay_size,
+        tau=run.config.tau,
+        grad_norm_clip=run.config.grad_norm_clipping,
+        sigma_checkpoints=run.config.sigma,
     )
-    mdp.enable_q_logging(agents)
 
-    # Core
     core = MultiAgentCoreMixer(
         agents=agents,
         mixer=facmac,
         mdp=mdp,
     )
 
+    # Fill replay memory with random dataset
     core.learn(
-        n_steps=initial_replay_size,
-        n_steps_per_fit_per_agent=[initial_replay_size] * num_agents,
-        quiet=True
+        n_steps=run.config.initial_replay_size,
+        n_steps_per_fit_per_agent=[run.config.initial_replay_size] * run.config.num_agents,
     )
-    dataset, _ = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
-    data = [compute_metrics_with_labeled_dataset(dataset, gamma_eval)]
-    core.mdp.render(save_path=save_path + f"Epoch_0")
 
-    pbar = tqdm(range(n_epochs), unit='epoch', leave=False)
+    # Initial evaluation for comparison
+    set_noise_for_all(core.agents, False)
+    score = compute_metrics_with_labeled_dataset(core.evaluate(n_episodes=run.config.n_episodes_test, render=False)[0])
+    set_noise_for_all(core.agents, True)
+    core.mdp.render(save_path=save_path + f"Epoch_0")
+    run.log(create_log_dict(agents + [facmac], mdp, score))
+
+    # First fit
+    core.learn(
+        n_episodes=run.config.n_episodes_learn,
+        n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
+    )
+    run.log(create_log_dict(agents + [facmac], mdp, score))
+
+    # Reset replay memory and noise
+    facmac._replay_memory.reset()
+    update_sigma_for_all(core.agents, "next")
+
+    # Refill replay memory with random dataset, but with lower noise
+    core.learn(
+        n_steps=run.config.initial_replay_size,
+        n_steps_per_fit_per_agent=[run.config.initial_replay_size] * run.config.num_agents,
+    )
+
+    pbar = tqdm(range(run.config.n_epochs), unit='epoch', leave=False)
     for n in pbar:
         core.learn(
-            n_steps=n_steps_learn,
-            n_steps_per_fit_per_agent=[n_steps_per_fit] * num_agents,
-            quiet=True
+            n_episodes=run.config.n_episodes_learn,
+            n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
         )
 
         core.evaluate(n_episodes=1, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
         set_noise_for_all(core.agents, False)
-        dataset, _ = core.evaluate(n_steps=n_steps_test, render=False, quiet=True)
+        score = compute_metrics_with_labeled_dataset(
+            core.evaluate(n_episodes=run.config.n_episodes_test, render=False, )[0]
+        )
         set_noise_for_all(core.agents, True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
 
-        data.append(compute_metrics_with_labeled_dataset(dataset, gamma_eval))
+        run.log(create_log_dict(agents + [facmac], mdp, score))
         pbar.set_postfix(
-            MinMaxMean=np.round(data[-1][0:3], 2),
-            sigma=np.round(core.agents[0].policy._sigma_decay.get(), 2)
+            MinMaxMean=np.round(score[0:3], 2),
+            sigma=np.round(core.agents[0].policy.get_sigma(), 2),
         )
 
-        update_sigma_for_all(agents)
+        update_sigma_for_all(core.agents)
+
+        if (n + 1) % run.config.n_epochs_per_checkpoint == 0:
+            for i, a in enumerate(core.agents):
+                a.save(save_path + f"/checkpoints/Epoch_{n + 1}_Agent_{i}")
 
     set_noise_for_all(core.agents, False)
-    for i in range(0):
-        core.evaluate(n_episodes=1, quiet=True)
-        core.mdp.render(save_path=save_path + f"Final_{i}")
+    final = final_evaluation(
+        run.config.n_episodes_final,
+        run.config.n_episodes_final_render,
+        core,
+        save_path
+    )
+    run.summary.update({'final': final})
 
-    mdp.stop_renderer()
-
-    return {"metrics": np.array(data), "additional_data": {}}
+    return
 
 
-training_data, path = parametrized_training(
-    __file__,
-    [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-    [
-        (1, 0.2), (1, 0.5), (1, 1), (1, 2), (1, 5),
-        (2, 0.2), (2, 0.5), (2, 1), (2, 2), (2, 5),
-    ],
-    [1],
+wandb_training(
+    project="CircularNetworkFACMAC",
+    group="InitialTest",
+    base_config=config,
     train=train,
     base_path="./Plots/FACMAC/",
+    params={
+        'seed': [0],
+    },
 )
-
-plot_training_data(training_data, path)

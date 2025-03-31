@@ -39,7 +39,7 @@ def get_minimal_tank_network_config(demand_curve: str = "tagesgang", exclude_sta
                 "tank_9.crossArea": 3,
                 "tank_9.height": 5,
                 "init_level_tank_9": 0.05,
-                "elevation_tank_9": 12.5,
+                "elevation_tank_9": 14.5,
             }
         }
     }

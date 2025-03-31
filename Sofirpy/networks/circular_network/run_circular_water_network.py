@@ -12,7 +12,7 @@ config = get_circular_network_config()
 
 set_demand_for_consumers(
     config["model_init_args"]["control_api"]["agent_configs"],
-    [0.9, 0.9, 1.4, 1.4]
+    [0.4, 1.4, 0.4, 1.4],
 )
 
 sim = ManualStepSimulator(
@@ -24,7 +24,7 @@ sim = ManualStepSimulator(
     verbose=True,
 )
 sim.reset_simulation(200, 1)
-speeds = np.array([0.82, 1])
+speeds = np.array([1, 0.75])
 c = 0
 while not sim.is_done():
     sim.do_simulation_step(speeds)

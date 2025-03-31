@@ -276,7 +276,7 @@ def setup_facmac_agents(
         actor_params = dict(
             network=ActorNetwork,
             optimizer={
-                'class': optim.RMSprop,
+                'class': optim.Adam,
                 'params': {'lr': lr_actor}
             },
             n_features=n_features_actor,
@@ -290,7 +290,7 @@ def setup_facmac_agents(
         critic_input_shape = (actor_input_shape[0] + mdp.info.action_space_for_idx(i).shape[0],)
         critic_params = dict(
             network=CriticNetwork,
-            optimizer={'class': optim.RMSprop,
+            optimizer={'class': optim.Adam,
                        'params': {'lr': lr_critic}},
             loss=F.mse_loss,
             n_features=n_features_critic,

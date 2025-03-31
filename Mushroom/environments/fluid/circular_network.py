@@ -26,6 +26,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             labeled_step: bool = False,
             multi_threaded_rendering: bool = True,
             plot_rewards: bool = True,
+            activate_test_baseline_mode: bool = False,
     ):
 
         self._demand = demand
@@ -39,11 +40,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             observation_spaces=(
                 [spaces.Box(low=-500, high=500, shape=(len(obs),)) for obs in self._observation_selector]
             ),
-            action_spaces=(
-                action_spaces
-                if action_spaces is not None
-                else [spaces.Box(low=0, high=1, shape=(1,))]
-            ),
+            action_spaces=[spaces.Box(low=0, high=1, shape=(1,))],
             fluid_network_simulator=fluid_network_simulator,
             horizon=horizon,
             gamma=gamma,
@@ -57,6 +54,15 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
 
         self._agents = None
         self.qs = None
+
+        self._activate_test_baseline_mode = activate_test_baseline_mode
+        if self._activate_test_baseline_mode:
+            print("----------------------------------------------------")
+            print("----------------------------------------------------")
+            print("Warning: Test baseline mode is activated. This will lead to all actions being 1.")
+            print("This is only for testing purposes!")
+            print("----------------------------------------------------")
+            print("----------------------------------------------------")
 
         # Init rendering using matplotlib
         self._multi_threaded_rendering = multi_threaded_rendering
@@ -132,6 +138,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         sample = {
             "state": self._get_state(),
             "obs": self._get_observations(),
+            "info": {},
         }
         return sample if self.labeled_step else self._get_observations()
 
@@ -140,7 +147,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         action = np.clip(action, self._mdp_info.action_space_for_idx(0).low,
                          self._mdp_info.action_space_for_idx(0).high)
 
-        action = np.array([1, 1])
+        if self._activate_test_baseline_mode:
+            action = np.ones_like(action)
 
         if self.qs is not None:
             for i, a in enumerate(self._agents):
@@ -174,6 +182,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
             "obs": self._get_observations(),
             "rewards": [reward] * self._mdp_info.n_agents,
             "absorbing": absorbing,
+            "info": {}
         }
         return step if self.labeled_step else (self._get_observations(), reward, absorbing, {})
 
@@ -247,9 +256,8 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         - target_speed: The reward is based on the difference between the target speed and the actual mean pump speed.
         - negative_flow: The reward is based on the flow of the pumps, if the flow is negative, the reward is negative.
 
-        :param state: The current state of the simulation.
-        :param action: The action taken.
         :param sim_states: The states of the simulation during the control step.
+        :param error: Whether an error occurred during the simulation.
         :return: The reward.
         """
 

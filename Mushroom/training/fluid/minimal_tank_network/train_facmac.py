@@ -6,81 +6,90 @@ from Mushroom.agents.agent_factory import setup_facmac_agents
 from Mushroom.agents.sigma_decay_policies import set_noise_for_all, update_sigma_for_all
 from Mushroom.core.multi_agent_core_mixer import MultiAgentCoreMixer
 from Mushroom.environments.fluid.minimal_tank_network import MinimalTankNetwork
-from Mushroom.utils.plotting import plot_training_data, plot_debug_data
-from Mushroom.utils.utils import set_seed, parametrized_training, compute_metrics_with_labeled_dataset, final_evaluation
+from Mushroom.utils.utils import set_seed, compute_metrics_with_labeled_dataset, final_evaluation
+from Mushroom.utils.wandb_handler import wandb_training, create_log_dict
 
-# PARAMS
-num_agents = 2
-gamma = 0.99
-gamma_eval = 1.
+config = dict(
+    seed=0,
+    gamma=0.99,
 
-lr_actor = 2e-5
-actor_activation = 'sigmoid'
-lr_critic = 2e-5
+    lr_actor=1e-4,
+    lr_critic=4e-4,
 
-initial_replay_size_episodes = 5
-max_replay_size_episodes = 5000
-batch_size = 200
+    initial_replay_size=5_000,
+    max_replay_size=35_000,
+    batch_size=200,
 
-n_features = 80
-tau = .001
-grad_norm_clipping = 0.5
+    n_features=80,
+    tau=.005,
+    grad_norm_clipping=None,
 
-sigma = [(0, 0.7), (10, 0.2)]
-decay_type = 'exponential'
-cut_of_exploration_when_converged = False
+    sigma=[(0, 1), (1, 0.075), (20, 0.01)],
+    decay_type="exponential",
 
-n_epochs = 20
-n_episodes_learn = 10
-n_episodes_test = 3
-n_steps_per_fit = 1
+    n_epochs=150,
+    critic_warmup_episodes=30,
+    n_episodes_learn=6,
+    n_episodes_test=3,
+    n_steps_per_fit=1,
 
-n_episodes_final = 3
-n_episodes_final_render = 1
-n_epochs_per_checkpoint = 5
+    num_agents=2,
+    n_episodes_final=1,
+    n_episodes_final_render=1,
+    n_epochs_per_checkpoint=25,
 
-criteria = {
-    "demand": {
-        "w": 1,
-        "max": 0,
-        "min": -2,
-        "value_at_bound": 0.001,
-        "bound": 0.8
+    state_selector=[
+        0
+    ],
+
+    observation_selector=[
+        [0],
+        [0]
+    ],
+
+    criteria={
+        "demand": {
+            "w": 1.0,
+            "bound": 0.3,
+            "value_at_bound": 0.001,
+            "max": 0,
+            "min": -1,
+        },
+        # "power_per_flow": {
+        #     "w": 0.0006,
+        # }
     },
-}
-
-criteria = {
-    "target_action": {
-        "w": 1,
-        "target": 0.6,
-    },
-}
-
-demand_curve = "constant"
+    demand="tagesgang"
+)
 # END_PARAMS
 
-mpl.rcParams['figure.max_open_warning'] = n_episodes_final_render
+mpl.rcParams['figure.max_open_warning'] = -1
 
 
-def train(p1, p2, seed, save_path):
-    set_seed(seed)
+def train(run, save_path):
+    set_seed(run.config.seed)
     # MDP
-    mdp = MinimalTankNetwork(gamma=gamma, criteria=criteria, labeled_step=True, demand_curve=demand_curve, multi_threaded_rendering=False)
+    mdp = MinimalTankNetwork(
+        gamma=run.config.gamma,
+        criteria=run.config.criteria,
+        demand_curve=run.config.demand,
+        labeled_step=True,
+        observation_selector=run.config.observation_selector,
+        state_selector=run.config.state_selector,
+    )
     agents, facmac = setup_facmac_agents(
         mdp,
-        policy=None,
-        n_agents=num_agents,
-        n_features_actor=n_features,
-        lr_actor=lr_actor,
-        actor_activation=actor_activation,
-        n_features_critic=n_features,
-        lr_critic=lr_critic,
-        batch_size=batch_size,
-        initial_replay_size=initial_replay_size_episodes * mdp.info.horizon,
-        max_replay_size=max_replay_size_episodes * mdp.info.horizon,
-        tau=tau,
-        grad_norm_clip=grad_norm_clipping,
-        sigma_checkpoints=sigma,
+        n_agents=run.config.num_agents,
+        n_features_actor=run.config.n_features,
+        lr_actor=run.config.lr_actor * run.config.actor_multiplier,
+        n_features_critic=run.config.n_features,
+        lr_critic=run.config.lr_critic * run.config.critic_multiplier,
+        batch_size=run.config.batch_size,
+        initial_replay_size=run.config.initial_replay_size,
+        max_replay_size=run.config.max_replay_size,
+        tau=run.config.tau,
+        grad_norm_clip=run.config.grad_norm_clipping,
+        sigma_checkpoints=run.config.sigma,
     )
 
     core = MultiAgentCoreMixer(
@@ -89,71 +98,84 @@ def train(p1, p2, seed, save_path):
         mdp=mdp,
     )
 
+    # Fill replay memory with random dataset
     core.learn(
-        n_steps=initial_replay_size_episodes * mdp.info.horizon,
-        n_steps_per_fit_per_agent=[initial_replay_size_episodes * mdp.info.horizon] * num_agents,
+        n_steps=run.config.initial_replay_size,
+        n_steps_per_fit_per_agent=[run.config.initial_replay_size] * run.config.num_agents,
     )
+
+    # Initial evaluation for comparison
     set_noise_for_all(core.agents, False)
-    data = [compute_metrics_with_labeled_dataset(core.evaluate(n_episodes=n_episodes_test, render=False)[0])]
+    score = compute_metrics_with_labeled_dataset(core.evaluate(n_episodes=run.config.n_episodes_test, render=False)[0])
     set_noise_for_all(core.agents, True)
-    sigma_list = [core.agents[0].policy.get_sigma()]
-    sizes = [core.mixer._replay_memory.size]
     core.mdp.render(save_path=save_path + f"Epoch_0")
 
-    facmac.set_debug_logging(True)
-    debug_info = None
+    if run.config.critic_warmup_episodes > 0:
+        # First fit
+        core.learn(
+            n_episodes=run.config.critic_warmup_episodes,
+            n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
+        )
 
-    pbar = tqdm(range(n_epochs), unit='epoch', leave=False)
+        # Reset replay memory and noise
+        facmac._replay_memory.reset()
+        update_sigma_for_all(core.agents, "next")
+
+        # Refill replay memory with random dataset, but with lower noise
+        core.learn(
+            n_steps=run.config.initial_replay_size,
+            n_steps_per_fit_per_agent=[run.config.initial_replay_size] * run.config.num_agents,
+        )
+
+    pbar = tqdm(range(run.config.n_epochs), unit='epoch', leave=False)
     for n in pbar:
         core.learn(
-            n_episodes=n_episodes_learn,
-            n_steps_per_fit_per_agent=[n_steps_per_fit] * num_agents,
+            n_episodes=run.config.n_episodes_learn,
+            n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
         )
-        debug_info = facmac.get_debug_info(debug_info)
 
         core.evaluate(n_episodes=1, render=False, quiet=True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}_Noisy")
         set_noise_for_all(core.agents, False)
-        dataset, _ = core.evaluate(n_episodes=n_episodes_test, render=False, )
+        score = compute_metrics_with_labeled_dataset(
+            core.evaluate(n_episodes=run.config.n_episodes_test, render=False, )[0]
+        )
         set_noise_for_all(core.agents, True)
         core.mdp.render(save_path=save_path + f"Epoch_{n + 1}")
 
-        data.append(compute_metrics_with_labeled_dataset(dataset))
-        if data[-1][2] >= 280 and cut_of_exploration_when_converged:
-            update_sigma_for_all(core.agents, 0.005)
-        else:
-            update_sigma_for_all(core.agents)
-        sigma_list.append(core.agents[0].policy.get_sigma())
-        sizes.append(core.mixer._replay_memory.size)
-
+        run.log(create_log_dict(agents + [facmac], mdp, score))
         pbar.set_postfix(
-            MinMaxMean=np.round(data[-1][0:3], 2),
+            MinMaxMean=np.round(score[0:3], 2),
             sigma=np.round(core.agents[0].policy.get_sigma(), 2),
         )
 
-        if (n + 1) % n_epochs_per_checkpoint == 0:
+        update_sigma_for_all(core.agents)
+
+        if (n + 1) % run.config.n_epochs_per_checkpoint == 0:
             for i, a in enumerate(core.agents):
                 a.save(save_path + f"/checkpoints/Epoch_{n + 1}_Agent_{i}")
 
     set_noise_for_all(core.agents, False)
-    final_evaluation(n_episodes_final, n_episodes_final_render, core, save_path)
-    plot_debug_data(debug_info, save_path)
+    final = final_evaluation(
+        run.config.n_episodes_final,
+        run.config.n_episodes_final_render,
+        core,
+        save_path
+    )
+    run.summary.update({'final': final})
 
-    return {
-        "metrics": np.array(data),
-        "additional_data": {
-            "sigma": sigma_list,
-        }}
+    return
 
 
-training_data, path = parametrized_training(
-    __file__,
-    [None],
-    [None],
-    [1],
+wandb_training(
+    project="TankNetworkFACMAC",
+    group="Adam Test",
+    base_config=config,
     train=train,
-    base_path="Plots/FACMAC/",
-    save_whole_file=True,
+    base_path="./Plots/FACMAC/",
+    params={
+        'seed': [0],
+        'actor_multiplier': [1.05],
+        'critic_multiplier': [1],
+    },
 )
-
-plot_training_data(training_data, path, True)

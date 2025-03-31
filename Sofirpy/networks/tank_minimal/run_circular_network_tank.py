@@ -18,7 +18,7 @@ sim = ManualStepSimulator(
             "tank_9.crossArea": 3,
             "tank_9.height": 5,
             "init_level_tank_9": 0.05,
-            "elevation_tank_9": 12.5,
+            "elevation_tank_9": 14.5,
         }
     },
     logging_step_size=step_size,
@@ -35,22 +35,25 @@ pbar = tqdm(total=len(sim._time_series))
 while not sim.is_done():
     if use_logic:
         demand = sim.get_current_state()[0]["control_api"][0]
-        s = demand ** 0.8 / 3.58 ** 0.8
-        if demand < 0.7:
-            s = 1 - (demand / 0.7) ** 2 + 0.5
-        if demand > 3.58:
+        low_threshold = 0.75
+        high_threshold = 3.6
+        s = demand ** 0.8 / high_threshold ** 0.8
+        v = 0.0
+        if demand < low_threshold:
+            s = 1 - (demand / low_threshold) ** 2 + 0.5
+            if demand < low_threshold - 0.25:
+                v = 1.0
+        if demand > high_threshold:
             s = 1.0
+            v = 0.5
 
         s = np.clip(s, 0, 1)
 
         pressure_at_tank = sim.get_current_state()[0]["control_api"][9]
-        v = 0
-        if -0.22 < pressure_at_tank:
-            v = 1.0
 
         action = np.array([s, v])
     else:
-        action = np.array([1, 0])
+        action = np.array([1, 1])
     try:
         sim.do_simulation_step(action)
     except Exception as e:

@@ -110,6 +110,11 @@ class UnivariateGaussianPolicy(GaussianPolicy):
         self._sigma = self._sigma_decay.decay()
         self._inv_sigma = 1 / self._sigma
 
+    def skip_to_next_sigma(self):
+        self._sigma_decay.skip_to_next_checkpoint()
+        self._sigma = self._sigma_decay.get()
+        self._inv_sigma = 1 / self._sigma
+
     def get_sigma(self):
         return self._sigma
 
@@ -146,6 +151,18 @@ def set_noise_for_all(agents, active):
 
 
 def update_sigma_for_all(agents, sigma=None):
+    """
+    Update sigma for all agents.
+
+    Based on the value of sigma, the sigma of the agents will be updated.
+    If sigma is None, the sigma will be updated according to the decay policy.
+    If sigma is a number, the sigma will be temporarily set to this value. After this, the decay policy can be continued by setting
+    sigma to None and calling this function again.
+    If sigma is "next" or "skip", the sigma will be set to the next checkpoint value or skipped to the next checkpoint.
+
+    :param agents: list of agents or single agent
+    :param sigma: float or None or "next" or "skip"
+    """
     # Ensure agents is always iterable
     for agent in (agents if hasattr(agents, '__iter__') and not isinstance(agents, (str, bytes)) else [agents]):
         if sigma is None:
@@ -153,7 +170,7 @@ def update_sigma_for_all(agents, sigma=None):
         elif type(sigma) in (int, float):
             agent.policy.set_sigma(sigma)
         elif sigma == "next" or sigma == "skip":
-            agent.policy.skip_to_next_checkpoint()
+            agent.policy.skip_to_next_sigma()
         else:
             raise ValueError('Invalid sigma value! Must be a number or "next" or "skip" or None')
 

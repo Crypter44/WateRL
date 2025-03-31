@@ -1,0 +1,44 @@
+{
+    "obs_selector": [
+        [
+            0,
+            2
+        ],
+        [
+            1,
+            3
+        ]
+    ],
+    "state_selector": [
+        0,
+        1,
+        2,
+        3
+    ],
+    "criteria": {
+        "demand": {
+            "w": 10.0,
+            "bound": 0.05,
+            "value_at_bound": 0.001,
+            "max": 0,
+            "min": -1
+        },
+        "power_per_flow": {
+            "w": 0.025
+        },
+        "negative_flow": {
+            "w": 3.0,
+            "threshold": -1e-06
+        },
+        "target_opening": {
+            "max": 1,
+            "min": 0,
+            "w": 1.0,
+            "target": 0.9,
+            "left_bound": 0.5,
+            "value_at_left_bound": 0.001,
+            "right_bound": 0.075,
+            "value_at_right_bound": 0.001
+        }
+    }
+}

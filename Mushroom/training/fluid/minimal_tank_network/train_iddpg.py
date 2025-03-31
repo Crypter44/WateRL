@@ -12,19 +12,20 @@ from Mushroom.utils.wandb_handler import wandb_training, create_log_dict
 # PARAMS
 config = dict(
     seed=0,
-    gamma=0.999,
+    gamma=0.99,
 
     lr_actor=1e-4,
     lr_critic=5e-4,
 
     initial_replay_size=5_000,
-    max_replay_size=30_000,
+    max_replay_size=35_000,
     batch_size=200,
 
     n_features=80,
     tau=.005,
+    grad_norm_clipping=None,
 
-    sigma=[(0, 0.2), (1, 0.1), (20, 0.05)],
+    sigma=[(0, 1), (1, 0.075), (20, 0.01)],
     decay_type="exponential",
 
     n_epochs=70,
@@ -49,10 +50,10 @@ config = dict(
     criteria={
         "demand": {
             "w": 1.0,
-            "bound": 0.1,
+            "bound": 0.3,
             "value_at_bound": 0.001,
-            "max": 1,
-            "min": 0,
+            "max": 0,
+            "min": -1,
         },
         # "power_per_flow": {
         #     "w": 0.0006,
@@ -106,6 +107,22 @@ def train(run, save_path):
     set_noise_for_all(core.agents, True)
     core.mdp.render(save_path=save_path + f"Epoch_0")
 
+    # First fit
+    core.learn(
+        n_episodes=run.config.n_episodes_learn,
+        n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
+    )
+
+    # Reset replay memory and noise
+    for a in agents:
+        a._replay_memory.reset()
+    update_sigma_for_all(core.agents, "next")
+
+    # Refill replay memory with random dataset, but with lower noise
+    core.learn(
+        n_steps=run.config.initial_replay_size,
+        n_steps_per_fit_per_agent=[run.config.initial_replay_size] * run.config.num_agents,
+    )
 
     pbar = tqdm(range(run.config.n_epochs), unit='epoch', leave=False)
     for n in pbar:
@@ -114,7 +131,6 @@ def train(run, save_path):
             n_episodes=run.config.n_episodes_learn,
             n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
         )
-        mdp.warmup = False
 
         # Eval
         core.evaluate(n_episodes=1, render=False, quiet=True)
