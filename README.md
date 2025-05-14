@@ -1,23 +1,40 @@
-# BT Sammet
+# Decentralized Operation of Urban Water Distribution Networks Using Multi-Agent Reinforcement Learning
 
-You can currently find two Modelica water networks in this repository. They were created with `Dymola 2024x` and compiled as FMUs for Windows and Linux. If you face problems while using the FMUs, test the corresponding unit via [this website](https://fmu-check.herokuapp.com/).
+This repository contains the code for my bachelor's thesis. 
 
-Furthermore the code in the folder `code` shows how to interact with the FMU using [sofirpy](https://sofirpy.readthedocs.io/en/stable/). It may be helpful to have a look at [fmpy](https://github.com/CATIA-Systems/FMPy)
+## Abstract
+This thesis explores the use of Multi-Agent Reinforcement Learning (MARL) for the efficient operation of urban
+Water Distribution Networks (WDNs). While previous work focused on industrial networks with hierarchical
+topologies, we extend the application of MARL to urban WDNs with cyclic structures and more complex flow
+dynamics. Following the Centralized Training for Decentralized Execution (CTDE) paradigm, we investigate
+the performance of two deep MARL algorithms, IDDPG and FACMAC, across a range of control tasks.
+We evaluate the impact of different reward structures on energy efficiency and demonstrate that a multifaceted
+reward function, combining demand deviation, power penalties, and a target for maximum valve openings,
+leads to the most robust and efficient agent behavior. Our results further highlight the importance of
+observability: fully observable agents achieve the highest efficiency and generalize better to unseen scenarios,
+while partially observable agents face a trade-off between efficiency and robustness depending on training
+duration.
+Finally, we assess the importance of centralized learning in cooperative tasks with temporal planning. FACMAC,
+leveraging centralized training, enables agents to coordinate pump and tank operations to preserve water for
+peak demand hours, outperforming IDDPG’s decentralized learning approach. These findings demonstrate the
+potential of MARL to enable smart and sustainable control of urban water infrastructure.
 
-## Modelica Models
-- `simple_network_valve` consists of a pump, which is operated at a constant speed, and two sinks. There is a valve in front of one sink, the opening angle of which can be changed to vary the flow rate in the corresponding pipe.
-- `circular_water_network` consists of four valves and two pumps arranged around a circle of pipes. The pumps can be controlled by the rotational speed in the range from 0 to 1. The valves are connected to a PI controller which converts the input (volume flow in m^3/h) into a opening
-of the valve (ranging from 0 to 1).
-- `circular_water_network_wo_PI` is similar to `circular_water_network` except that the PI controller at the valves have beem removed. This means both the pumps and the valves can get inputs from 0 to 1. When opening the valves fully and
-speeding up the pumps to their maximal speed valve_2 gets 1.36 m^3/h, valve_3 gets 1.29 m^3/h, valve_5 gets 1.32 m^3/h and valve_6 gets 1.33 m^3/h.
-The pumps pressure is calculated with
-$$
-\Delta p_\mathrm{pump}= \alpha_1 Q^2 + \alpha_2 Q n + \alpha_3 n^2
-$$
-(volume flow $Q$ in m^3/h, $n \in [0, 1]$ und $p$ in m) for the pumps used in this model $\alpha_1 = -0.065158$, $\alpha_2 = 0.34196$ and $\alpha_3 = 8.1602$.
+## Installation
+To run the code, you need to install the required packages. You can  install them from the `requirements.txt` file.
+Some experiments use wandb for logging, for those an account is required. Alternatively, they can be run with the paramatrized
+training function provided in `utils.py`, but this will require some modifications to the code.
 
-The pump's power consumtion si calculated as
-$$
-P_\mathrm{pump} = \beta_1 Q^3 + \beta_2 Q^2 n + \beta_3 Q n^2 + \beta_4 n^3+\beta_5
-$$
-$n \in [0, 1]$, volume flow $Q$ in m^3/h and $P$ in W. In this model $\beta_1 = -0.14637$, $\beta_2 = 1.1881$, $\beta_3=23.0824$, $\beta_4 = 53.0304$ and $\beta_5 = 6.0431$.
+## Usage
+To run a training experiment, run the script `train_xxx.py` where `xxx` is the algorithm you want to use. 
+These scripts exist for each experiment, located in `Mushroom/training/fluid`.
+
+## Reproducing the experiments 
+### Observability Experiment comparing IDDPG with full and partial observability
+This experiment is performed in the circular network and can be found in `Mushroom/training/fluid/circular_network/`.
+To reproduce the experiment, choose the desired output folder in the scripts and run the script `reproduce_fully_obs.py`,
+`reproduce_partially_obs.py` and `reproduce_partially_obs_early_stopped.py` for the different observability settings.
+
+The results can then be evaluated using the weights saved in the previously chosen folder and the evaluation tools provided in the evaluation folder.
+### Cooperation Experiment comparing IDDPG and FACMAC
+When cloning the repository, the default training parameters of FACMAC are set to reproduce the results shown in the thesis.
+Simply run the script `train_facmac.py` in the `Mushroom/training/fluid/minimal_tank_network` to train the model.
