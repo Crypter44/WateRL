@@ -2,15 +2,8 @@ from copy import deepcopy
 
 import numpy as np
 import torch
-import torch.nn.functional as F
-from gymnasium.spaces import Box
 from mushroom_rl.approximators.parametric import TorchApproximator
-from torch import optim
-
-from Mushroom.agents.networks import CriticNetwork, ActorNetwork
-from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
-from Mushroom.utils.replay_memories import ReplayMemoryObs
-from aryaman import Agent, GaussianPolicy
+from mushroom_rl.core import Agent
 
 
 class MixerDDPG(Agent):
@@ -60,7 +53,8 @@ class MixerDDPG(Agent):
         Constructor.
 
         """
-        super().__init__(mdp_info, policy, idx_agent)
+        self._idx_agent = idx_agent
+        super().__init__(mdp_info, policy)
 
         self._batch_size = batch_size
         self._target_update_frequency = target_update_frequency

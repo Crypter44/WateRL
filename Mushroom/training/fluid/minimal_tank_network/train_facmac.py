@@ -83,7 +83,7 @@ def train(run, save_path):
         n_features_actor=run.config.n_features,
         lr_actor=run.config.lr_actor,
         n_features_critic=run.config.n_features,
-        lr_critic=run.config.lr_critic * run.config.critic_multiplier,
+        lr_critic=run.config.lr_critic,
         batch_size=run.config.batch_size,
         initial_replay_size=run.config.initial_replay_size,
         max_replay_size=run.config.max_replay_size,
