@@ -36,41 +36,41 @@ config = dict(
     num_agents=2,
     n_episodes_final=1000,
     n_episodes_final_render=200,
-    n_epochs_per_checkpoint=5,
+    n_epochs_per_checkpoint=20,
 
     state_selector=[
         0, 1, 2, 3
     ],
 
     observation_selector=[
-        [0, 2,],
-        [1, 3,],
+        # [0, 2,],
+        # [1, 3,],
 
-        # [0, 1, 2, 3],
-        # [0, 1, 2, 3],
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
     ],
 
     criteria={
-        "demand": {
-            "w": 10.0,
-            "bound": 0.05,
-            "value_at_bound": 0.001,
-            "max": 0,
-            "min": -1
-        },
-        "power_per_flow": {"w": .1},
+        # "demand": {
+        #     "w": 10.0,
+        #     "bound": 0.05,
+        #     "value_at_bound": 0.001,
+        #     "max": 0,
+        #     "min": -1
+        # },
+        # "power_per_flow": {"w": .1},
         "negative_flow": {
             "w": 3.0,
-            "threshold": -1e-6,
+            "threshold": 0,
         },
         "target_opening": {
             "max": 1,
             "min": 0,
-            "w": 2.0,
+            "w": 10.0,
             "target": 0.9,
-            "left_bound": 0.7,
-            "value_at_left_bound": 0.001,
-            "right_bound": 0.025,
+            "left_bound": 0.2,
+            "value_at_left_bound": 0.05,
+            "right_bound": 0.05,
             "value_at_right_bound": 0.001,
         }
     },
@@ -196,8 +196,9 @@ wandb_training(
     base_config=config,
     params={
         # 'seed': [42, 69, 420]
-        'seed': [0, 42, 69, 420, 526, 7334, 4366, 873837, 6464, 7359, 738377]
-        # 'seed': [0]
+        # 'seed': [0, 42, 69, 420, 526, 7334, 4366, 873837, 6464, 7359, 738377]
+        # 'seed': [4366, 873837]
+        'seed': [0]
     },
     notes="""Final training with partial observability""",
     time_limit_in_sec=60 * 40,

@@ -45,7 +45,11 @@ if os.path.isdir(path_input):
             agent = f"Epoch_{agent}_Agent_0"
         for p in os.listdir(path_input):
             if os.path.isdir(os.path.join(path_input, p)):
-                if p.count("wandb") == 0:
+                count = 0
+                excludes = ["wandb",]
+                for e in excludes:
+                    count += p.count(str(e))
+                if count == 0:
                     save_paths.append(os.path.join(save_path_input, p.split("/")[-1]))
                     paths.append(os.path.join(path_input, p) + "/checkpoints/" + agent)
 

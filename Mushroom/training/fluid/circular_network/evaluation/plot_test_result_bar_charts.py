@@ -39,15 +39,21 @@ for num_run in range(int(num_runs)):
         if average:
             test_result = np.zeros((num_tests, len(os.listdir(path))))
             for i, folder in enumerate(os.listdir(path)):
+                excludes = [".DS_Store", ]
+                if folder in excludes:
+                    continue
                 try:
-                    test_result[:, i] = np.load(os.path.join(path, folder)+f"/{criteria}s.npy")
+                    test_result[:, i] = np.load(os.path.join(path, folder) + f"/{criteria}s.npy")
                 except FileNotFoundError:
-                    raise FileNotFoundError(f"'{criteria}s.npy' not found."
-                                            f"Make sure each subdirectory contains a file named '{criteria}s.npy'.")
+                    print(f"'{criteria}s.npy' not found."
+                          f"Make sure each subdirectory contains a file named '{criteria}s.npy'.")
+                except Exception as e:
+                    print(f"Error loading '{criteria}s.npy' from {folder}.")
+                    print(e)
             test_result = np.mean(test_result, axis=1)
         else:
             try:
-                test_result = np.load(path+f"/{criteria}s.npy")
+                test_result = np.load(path + f"/{criteria}s.npy")
             except FileNotFoundError:
                 raise FileNotFoundError(f"'{criteria}s.npy' not found. "
                                         f"Make sure the directory contains a file named '{criteria}s.npy'.")
@@ -56,7 +62,7 @@ for num_run in range(int(num_runs)):
 for criteria in criterias:
     # Number of runs
     # Width of each bar
-    bar_width = 0.6 / num_runs
+    bar_width = 0.8 / num_runs
     # Positions of the bars
     positions = np.arange(num_tests)
 
@@ -70,14 +76,16 @@ for criteria in criterias:
     best_counts = np.bincount(best_runs, minlength=num_runs)
     best_test_ids = [np.where(best_runs == i)[0] for i in range(num_runs)]
 
-    plt.figure(figsize=(16 + 0.2 * num_runs, 8), dpi=150)
+    plt.figure(figsize=(10 + 0.2 * num_runs, 6), dpi=150)
     for i, test_result in enumerate(test_results[criteria]):
         label = f"{labels[i]} ({best_counts[i]} best scores: {list(best_test_ids[i])})"
         bars = plt.bar(positions + i * bar_width, test_result, bar_width, alpha=0.75, label=label)
         for j, bar in enumerate(bars):
+            if j in [0, 5, 12, 17] and i == 3:
+                plt.axvline(bar.get_x() + bar.get_width() * 1.5, color='black', linewidth=1, linestyle='--')
             if best_runs[j] == i:
-                plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), '*', ha='center', va='top',
-                         fontsize=12, color='black')
+                plt.scatter(bar.get_x() + bar.get_width() / 2, bar.get_height(), marker='v', color='black', s=20,
+                            label="Best method per test" if j == 0 else "")
 
     plt.xlabel("Test case")
     plt.xticks(positions + bar_width * (num_runs - 1) / 2, range(num_tests))
@@ -85,17 +93,15 @@ for criteria in criterias:
     if criteria == "power":
         plt.ylabel("Combined power consumption [W]")
         plt.ylim((0, 300))
-        plt.title(f"Comparison of combined power usage for {num_runs} methods per test case")
     elif criteria == "opening":
         plt.ylabel("Opening")
         plt.ylim((0, 1))
-        plt.title(f"Comparison of maximum valve position for {num_runs} methods per test case")
     elif criteria == "deviation":
         # make y axis logarithmic
         plt.yscale('log')
-        plt.ylabel("Deviation")
-        plt.title(f"Comparison of deviation from the demand for {num_runs} methods per test case")
+        plt.ylabel("Deviation (lower = better) [m³/h]")
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True, ncol=3)
-    plt.subplots_adjust(left=0.075, bottom=0.3, right=0.925, top=0.9)
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True, ncol=1)
+    plt.subplots_adjust(left=0.1, bottom=0.4, right=0.975, top=0.975)
+    plt.savefig(f"comparison_{criteria}.pdf")
     plt.show()

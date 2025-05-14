@@ -61,12 +61,22 @@ for num_run in range(int(num_runs)):
 kernel_input = input("Enter the kernel size for smoothing the difference (0 for no smoothing): ")
 kernels = [int(kernel_input)] if kernel_input != "0" else []
 
+test_set_for_x_axis = input("Enter the test set for x axis (default will just label the tests with number): ")
+
 for criterion in criterions:
     # Plot the difference between the two methods
-    plt.figure(figsize=(16, 8))
+    plt.figure(figsize=(10, 6), dpi=150)
     plt.axhline(0, color='black', linewidth=1, linestyle='--')
-
     x = np.arange(len(test_results[criterion][0]))
+    if test_set_for_x_axis == "":
+        plt.xlabel("Test case")
+    else:
+        ts = np.load(test_set_for_x_axis)
+        x_ticks = (np.sum(ts, axis=1) - 1.6) / (5.6 - 1.6) * 100
+        x_ticks = np.round(x_ticks, 2)
+        plt.xlabel("Total load of the test case (%)")
+        plt.xticks(x[1::12], x_ticks[1::12])
+
     diff = test_results[criterion][0] - test_results[criterion][1]
     smoothed_diff = diff
     for k in kernels:
@@ -96,17 +106,17 @@ for criterion in criterions:
         label=labels[1] + " is better"
     )
 
-    plt.plot(smoothed_diff, label='Smoothed difference', color='black')
+    plt.plot(x, smoothed_diff, label='Smoothed difference', color='black')
 
     if criterion == "power":
-        plt.ylabel("Difference in power consumption [W]")
+        plt.ylabel("Difference in power consumption (W)")
     elif criterion == "opening":
         plt.ylabel("Difference in valve opening")
     elif criterion == "deviation":
         plt.ylabel("Difference in deviation [m³/h]")
 
-    plt.title(f"Difference in {criterion} between {labels[0]} and {labels[1]}")
-
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=True, ncol=1)
     plt.subplots_adjust(left=0.075, bottom=0.3, right=0.925, top=0.9)
+    plt.grid(True)
+    plt.savefig(f"{criterion}.pdf")
     plt.show()
