@@ -42,7 +42,7 @@ demand = ("constant", 0.5, 0.5)
 
 
 # create a dictionary to store data for each seed
-def train(p1, p2, seed, save_path):
+def train(p1, p2, seed, save_path, last):
     criteria["target_speed"]["target"] = p1
 
     set_seed(seed)

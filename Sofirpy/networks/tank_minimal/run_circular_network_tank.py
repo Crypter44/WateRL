@@ -81,5 +81,5 @@ print(f"Max power per flow at index: {power_per_flow.argmax()}")
 print(f"Min power per flow: {np.round(power_per_flow.min(), 4)} W/m³/h")
 print(f"Min power per flow at index: {power_per_flow.argmin()}")
 
-MinimalTankNetwork._render_task(sim.get_results(), title=f"Power consumption: {np.round(power/1000, 4)} kWh")
+MinimalTankNetwork._render_task(sim.get_results(), title=f"", save_path="test")
 sim.finalize()

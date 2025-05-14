@@ -249,10 +249,10 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
 
     @staticmethod
     def _render_task(sim_data, rewards=None, actions=None, save_path=None, title=None):
-        fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(27, 18))
+        fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(12, 16))
         valve_colors = ['#FFA500']
-        pump_colors = ['#1E90FF']
-        tank_colors = ['#FF4500']
+        pump_colors = ['#1E90FF', '#00BFFF']
+        tank_colors = ['#00008B', '#4169E1', '#8A2BE2']
         stop_time = np.array(sim_data["time"])[-1]
 
         # Plot the valve
@@ -291,22 +291,22 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         )
         ax2.set_ylabel("Opening", color='gray')
         ax2.set_ylim(0, 1)
-        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.1))
+        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.15))
         ax[0, 0].set_ylabel("Volume flow [m³/h]", color=valve_colors[0])
-        ax[0, 0].set_ylim((0, 4.5))
+        ax[0, 0].set_ylim((0.15, 3.95))
         ax[0, 0].set_title("Valve 5")
 
         # Plot pump speed and power
-        ax[0, 1].plot(
+        ax[1, 0].plot(
             sim_data["time"],
             sim_data["control_api.w_p_4"] * 10 / 13,
             color=pump_colors[0],
-            label="Speed",
+            label="Rotational speed",
             zorder=0,
             linewidth=2,
         )
         if actions is not None:
-            ax[0, 1].plot(
+            ax[1, 0].plot(
                 np.linspace(0, np.array(sim_data["time"])[-1], len(actions)),
                 [a[0] for a in actions],
                 color='black',
@@ -315,7 +315,7 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
                 zorder=1,
                 linestyle='--',
             )
-        ax2 = ax[0, 1].twinx()
+        ax2 = ax[1, 0].twinx()
         ax2.plot(
             sim_data["time"],
             sim_data["water_network.P_pum_4"],
@@ -327,28 +327,28 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
         )
         ax2.set_ylabel("Power consumption [W]", color='gray')
         ax2.set_ylim((0, 450))
-        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.1))
-        ax[0, 1].set_ylim((0, 1.01))
-        ax[0, 1].set_ylabel("Rotational speed", color=pump_colors[0])
-        ax[0, 1].set_title("Pump")
+        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.15))
+        ax[1, 0].set_ylim((0, 1.01))
+        ax[1, 0].set_ylabel("Rotational speed", color=pump_colors[0])
+        ax[1, 0].set_title("Pump")
 
         # Plot Volume flow at pump
-        ax[0, 2].plot(
+        ax[2, 0].plot(
             sim_data["time"],
             sim_data["water_network.V_flow_4"],
-            color=pump_colors[0],
-            label="Volume flow",
+            color=pump_colors[1],
+            label="Volume flow supplied by pump",
             zorder=2,
         )
-        ax[0, 2].fill_between(
+        ax[2, 0].fill_between(
             sim_data["time"],
             sim_data["water_network.V_flow_4"],
             where=sim_data["water_network.V_flow_4"] < 0,
             color='red',
             alpha=0.3,
-            label="Negative flow",
+            label="Backwards flow",
         )
-        ax[0, 2].plot(
+        ax[2, 0].plot(
             sim_data["time"],
             [0] * len(sim_data["time"]),
             color='red',
@@ -356,70 +356,69 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             linewidth=1,
             zorder=1,
         )
-        ax[0, 2].set_ylabel("Volume flow [m³/h]", color=pump_colors[0])
-        ax[0, 2].set_title("Volume Flow through Pump")
+        ax[2, 0].set_ylabel("Volume flow [m³/h]", color=pump_colors[1])
+        ax[2, 0].set_title("Volume Flow through Pump")
 
         # Plot tank level
-        ax[1, 0].plot(
+        ax[0, 1].plot(
             sim_data["time"],
-            sim_data["water_network.level_tank_9"],
-            color=pump_colors[0],
-            label="Level",
+            np.array(sim_data["water_network.level_tank_9"])-0.03,
+            color=tank_colors[0],
+            label="Level of the water in the tank",
         )
         # shade the tank level above 0
-        ax[1, 0].fill_between(
+        ax[0, 1].fill_between(
             sim_data["time"],
-            sim_data["water_network.level_tank_9"],
-            where=sim_data["water_network.level_tank_9"] > 0,
-            color=pump_colors[0],
+            np.array(sim_data["water_network.level_tank_9"])-0.03,
+            where=np.array(sim_data["water_network.level_tank_9"])-0.03 >= 0,
+            color=tank_colors[0],
             alpha=0.3,
         )
-        ax[1, 0].set_ylabel("Level [m]", color=pump_colors[0])
-        ax[1, 0].set_title("Tank Level")
+        ax[0, 1].set_ylabel("Level [m]", color=tank_colors[0])
+        ax[0, 1].set_title("Tank Level")
 
         # Plot inflow and outflow
         ax[1, 1].plot(
             sim_data["time"],
             sim_data["water_network.V_flow_7"],
-            color='green',
+            color=tank_colors[1],
             label="In/Outflow",
         )
-        ax[1, 1].set_ylabel("Volume flow [m³/h]", color='green')
+        ax[1, 1].set_ylabel("Volume flow [m³/h]", color=tank_colors[1])
         ax[1, 1].set_ylim((-1, 1))
         ax[1, 1].set_title("Inflow/Outflow of Tank")
 
         # Plot tank control
-        ax[1, 2].plot(
-            sim_data["time"],
-            sim_data["control_api.w_v_7"],
-            color=tank_colors[0],
-            label="Tank action (corrected)",
-        )
         if actions is not None:
-            ax[1, 2].plot(
+            ax[2, 1].plot(
                 np.linspace(0, np.array(sim_data["time"])[-1], len(actions)),
                 [a[1] for a in actions],
-                color=tank_colors[0],
+                color=tank_colors[2],
                 label="Tank action",
-                alpha=0.35,
-                linestyle='--',
             )
-        ax[1, 2].set_ylabel("Tank Valve Control", color=tank_colors[0])
-        ax[1, 2].set_title("Tank Valve Control")
-        ax[1, 2].set_ylim((0, 1.01))
+        else:
+            ax[2, 1].plot(
+                sim_data["time"],
+                sim_data["control_api.w_v_7"],
+                color=tank_colors[2],
+                label="Tank action",
+            )
+        ax[2, 1].set_ylabel("Tank Valve Control", color=tank_colors[2])
+        ax[2, 1].set_title("Tank Valve Control")
+        ax[2, 1].set_ylim((0, 1.01))
 
         # Plot pressure at tank
-        ax2 = ax[1, 2].twinx()
+        ax2 = ax[2, 1].twinx()
         ax2.plot(
             sim_data["time"],
             sim_data["water_network.p_rel_7"],
             color='gray',
             alpha=.9,
-            label="Pressure",
+            label="Relative pressure of\ntank across its valve",
             linewidth=1,
         )
         ax2.set_ylabel("Pressure [bar]", color='gray')
-        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.1))
+        ax2.legend(loc='upper right', bbox_to_anchor=(1, -0.15))
 
         for a in ax.flatten():
             a.set_xlabel("Time [h]")
@@ -429,22 +428,22 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             a.set_xticklabels(custom_labels)
             a.set_xlim((0, stop_time))
             a.grid(axis='x')
-            a.legend(loc='upper left', bbox_to_anchor=(0, -0.1))
+            a.legend(loc='upper left', bbox_to_anchor=(0, -0.15))
 
         fig.subplots_adjust(
-            left=0.05,
-            bottom=0.12,
-            right=0.95,
-            top=0.9,
-            hspace=0.4,
+            left=0.1,
+            bottom=0.1,
+            right=0.9,
+            top=0.95,
+            hspace=0.55,
             wspace=0.4
         )
-        fig.suptitle(title)
+        # fig.suptitle(title)
 
         if save_path is None:
             fig.show()
         else:
-            fig.savefig(save_path + ".png")
+            fig.savefig(save_path + ".pdf")
         plt.close(fig)
 
         if rewards is not None:
@@ -458,15 +457,15 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             ax.set_xlabel("Time [h]")
             ax.set_ylabel("Reward")
             ax.set_title("Reward")
-            ax.legend(loc='upper left', bbox_to_anchor=(0, -0.1))
+            ax.legend(loc='upper left', bbox_to_anchor=(0, -0.15))
             ax.set_xticks(range(0, int(stop_time), 60 * 60 * 3))
             ax.set_xticklabels([i // 3600 for i in range(0, int(stop_time), 60 * 60 * 3)])
             fig.subplots_adjust(
                 left=0.05,
                 bottom=0.12,
                 right=0.95,
-                top=0.9,
-                hspace=0.4,
+                top=1,
+                hspace=0.45,
                 wspace=0.4
             )
             if save_path is None:
@@ -474,5 +473,5 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             else:
                 path = str.replace(save_path, "Epoch", "Epoch_reward")
                 path = str.replace(path, "Final", "Final_reward")
-                fig.savefig(path + ".png")
+                fig.savefig(path + ".pdf")
             plt.close(fig)

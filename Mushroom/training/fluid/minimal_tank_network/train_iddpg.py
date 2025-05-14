@@ -14,8 +14,8 @@ config = dict(
     seed=0,
     gamma=0.99,
 
-    lr_actor=1e-4,
-    lr_critic=5e-4,
+    lr_actor=1e-3,
+    lr_critic=2e-3,
 
     initial_replay_size=5_000,
     max_replay_size=35_000,
@@ -28,7 +28,8 @@ config = dict(
     sigma=[(0, 1), (1, 0.075), (20, 0.01)],
     decay_type="exponential",
 
-    n_epochs=70,
+    n_epochs=150,
+    critic_warmup_episodes=30,
     n_episodes_learn=6,
     n_episodes_test=3,
     n_steps_per_fit=1,
@@ -81,9 +82,9 @@ def train(run, save_path):
         mdp,
         agent_idx=i,
         n_features_actor=run.config.n_features,
-        lr_actor=run.config.lr_actor,
+        lr_actor=run.config.lr_actor * run.config.lr_multi,
         n_features_critic=run.config.n_features,
-        lr_critic=run.config.lr_critic,
+        lr_critic=run.config.lr_critic * run.config.critic_multi * run.config.lr_multi,
         batch_size=run.config.batch_size,
         initial_replay_size=run.config.initial_replay_size,
         max_replay_size=run.config.max_replay_size,
@@ -107,22 +108,23 @@ def train(run, save_path):
     set_noise_for_all(core.agents, True)
     core.mdp.render(save_path=save_path + f"Epoch_0")
 
-    # First fit
-    core.learn(
-        n_episodes=run.config.n_episodes_learn,
-        n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
-    )
+    if run.config.critic_warmup_episodes > 0:
+        # First fit
+        core.learn(
+            n_episodes=run.config.critic_warmup_episodes,
+            n_steps_per_fit_per_agent=[run.config.n_steps_per_fit] * run.config.num_agents,
+        )
 
-    # Reset replay memory and noise
-    for a in agents:
-        a._replay_memory.reset()
-    update_sigma_for_all(core.agents, "next")
+        # Reset replay memory and noise
+        for a in agents:
+            a._replay_memory.reset()
+        update_sigma_for_all(core.agents, "next")
 
-    # Refill replay memory with random dataset, but with lower noise
-    core.learn(
-        n_steps=run.config.initial_replay_size,
-        n_steps_per_fit_per_agent=[run.config.initial_replay_size] * run.config.num_agents,
-    )
+        # Refill replay memory with random dataset, but with lower noise
+        core.learn(
+            n_steps=run.config.initial_replay_size,
+            n_steps_per_fit_per_agent=[run.config.initial_replay_size] * run.config.num_agents,
+        )
 
     pbar = tqdm(range(run.config.n_epochs), unit='epoch', leave=False)
     for n in pbar:
@@ -167,12 +169,14 @@ def train(run, save_path):
 
 wandb_training(
     project="TankNetworkIDDPG",
-    group="InitialRun",
+    group="Hopefully a fail",
     train=train,
     base_path="./Plots/IDDPG/",
     base_config=config,
     params={
         'seed': [0],
+        'critic_multi': [5],
+        'lr_multi': [1.0, 0.1, 0.01],
         # 'criteria.power_per_flow.w': [0.001, 0.003],
     },
     notes="""Tuning of the DDPG algorithm for the minimal tank network."""
