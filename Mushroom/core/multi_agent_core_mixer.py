@@ -6,6 +6,12 @@ from Mushroom.environments.environment import MAEnvironment
 
 
 class MultiAgentCoreMixer(object):
+    """
+    Implements the functions to run a generic algorithm.
+
+    This core uses a labeled dict for state, action, reward, next_state, absorbing, ...
+    It also features the ability to use a mixer for the critic.
+    """
     def __init__(
             self,
             agents: list = None,

@@ -1,3 +1,5 @@
+import warnings
+
 from mushroom_rl.utils import spaces
 
 from Mushroom.environments.fluid.circular_network import CircularFluidNetwork
@@ -11,6 +13,12 @@ from Sofirpy.simulation import ManualStepSimulator
 
 
 class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
+    """
+    WARNING: NOT SUPPORTED ANYMORE
+
+    This environment is a circular fluid network without PI controllers.
+    Instead, the valves are also controlled by the agents.
+    """
     def __init__(
             self,
             observation_space=spaces.Box(low=-10, high=10, shape=(4,)),
@@ -26,6 +34,7 @@ class CircularFluidNetworkWithoutPI(CircularFluidNetwork):
             gamma: float = 0.99,
             criteria=None,
     ):
+        warnings.warn("This environment is not supported, use at your own risk.")
         super().__init__(
             observation_spaces=[observation_space],
             action_spaces=[action_space],

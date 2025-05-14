@@ -5,6 +5,11 @@ from Mushroom.environments.environment import MAEnvironment
 
 
 class MultiAgentCoreLabeled(object):
+    """
+    Implements the functions to run a generic algorithm.
+
+    This core uses a labeled dict for state, action, reward, next_state, absorbing, ...
+    """
     def __init__(
         self,
         agents: list = None,

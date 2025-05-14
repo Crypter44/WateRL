@@ -14,6 +14,10 @@ from Mushroom.agents.networks import ActorNetwork, CriticNetwork, MADDPGCriticNe
 from Mushroom.agents.sigma_decay_policies import UnivariateGaussianPolicy
 from Mushroom.utils.replay_memories import ReplayMemoryObsMultiAgent
 
+"""
+This module contains the factory functions to create agents of different types.
+"""
+
 
 def create_ddpg_agent(
         mdp,

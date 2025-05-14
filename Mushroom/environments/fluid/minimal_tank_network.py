@@ -14,6 +14,42 @@ from Sofirpy.simulation import ManualStepSimulator
 
 
 class MinimalTankNetwork(AbstractFluidNetworkEnv):
+    """
+    The MinimalTankNetwork class represents a fluid network simulation environment.
+
+    This class is designed to simulate and control a minimal tank network with
+    two agents, where each agent can perform specific actions such as controlling
+    a pump and a tank. The class integrates with a manual step simulator and
+    provides functionalities to perform simulation steps, calculate rewards,
+    manage states, and render simulation outputs.
+
+    Attributes:
+        _criteria (dict): Criteria used to compute various rewards. Default is
+            configured with a single key-value pair for `demand`.
+        state_selector (List[int]): Specific indices of the state variables to
+            use in the training. Default is [0, 6, 9].
+        observation_selector (List[List[int]]): Observations for specific agents,
+            represented as lists of indices. Default is [[0], [9]].
+        rewards (list): Stores the rewards obtained during the simulation steps.
+        actions (list): Stores the agent actions performed during the simulation.
+        _step_size (int): The size of each simulation step in seconds. Default
+            is 10.
+        _multi_threaded_rendering (bool): Configures whether rendering tasks use
+            multiple threads. Default is True.
+        _render_executor (concurrent.futures.ThreadPoolExecutor): A thread pool
+            executor for handling rendering tasks asynchronously.
+
+    Parameters:
+        gamma (float): Discount factor for future rewards.
+        state_selector (List[int]): State indices selected for use in the training.
+        observation_selector (List[List[int]]): Indices defining observations per agent.
+        criteria (dict): Reward computation criteria and corresponding weights.
+        labeled_step (bool): Specifies if step results should be a labeled dictionary or a tuple.
+        demand_curve (str): Demand curve type for the simulation.
+        multi_threaded_rendering (bool): Determines whether rendering is performed
+            in a multi-threaded way.
+        sim_step_size (int): The size of the simulation step.
+    """
     def __init__(
             self,
             gamma: float = 0.99,
@@ -26,12 +62,10 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
             sim_step_size: int = 10,
     ):
         self._criteria = criteria or {
-            "target_opening": {
+            "demand": {
                 "w": 1.0,
             }
         }
-
-        self.warmup = False
 
         self.state_selector = state_selector or [0, 6, 9]
         self.observation_selector = observation_selector or [[0], [9]]
@@ -94,9 +128,6 @@ class MinimalTankNetwork(AbstractFluidNetworkEnv):
     def step(self, action):
         action = np.clip(action, 0, 1)
         self.actions.append(action)
-
-        if self.warmup:
-            action[1] = np.random.uniform(0.9, 1)
 
         error = False
         sim_states = []

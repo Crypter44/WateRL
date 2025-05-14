@@ -51,7 +51,6 @@ class FACMAC(Agent):
         self._n_updates = 0
 
         self._state_shape_int = int(np.prod(self.mdp_info.state_space.shape))
-        # TODO Check! This and the ones below were obs space before
 
         self._mixer = QMixer(
             state_shape=mdp_info.state_space.shape,

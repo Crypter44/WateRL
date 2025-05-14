@@ -13,6 +13,42 @@ from Sofirpy.simulation import ManualStepSimulator
 
 
 class CircularFluidNetwork(AbstractFluidNetworkEnv):
+    """
+    This is the environment for the circular fluid network simulation.
+
+    The class provides functionality for simulating the network, managing its state and for rendering.
+    It handles the definition of states, observations, actions, and simulation parameters.
+    The environment is designed for reinforcement learning tasks where agents interact
+    with the fluid network and learn control policies over time.
+
+    Attributes:
+        _demand: Initialization parameters for demand such as type, range, or test case configuration.
+        _state_selector: List of indices defining the information used as a state.
+        _observation_selector: Multi-dimensional list defining which parts of the state are visible to individual agents.
+        _criteria: A dictionary of configuration parameters defining criteria and weights for the reward.
+        _current_simulation_state: Stores the last computed state information during simulation steps.
+        actions: List of the actions executed within the simulation for a logging or visualization purpose.
+        rewards: List of rewards accumulated during simulation steps.
+        _agents: List of agent objects, if relevant for this configuration.
+        qs: Stores Q-values associated with actions for debugging or evaluation, if enabled.
+
+    Parameters:
+        state_selector: Optional; Specifies the state indices to use.
+        observation_selector: Optional; Specifies the observations each agent can perceive.
+        action_spaces: Optional; Action limits and definition for decision-making.
+        fluid_network_simulator: Optional; Provides a specific simulation backend for managing the fluid
+            network; Default will initialize simulator automatically.
+        horizon: Integer; Defines the planning or simulation horizon in discrete time steps.
+        gamma: Float; Discount factor to determine the importance of future rewards.
+        criteria: Optional; Configuration containing reward weights or other criteria details.
+        demand: Tuple; Contains demand parameters such as type, minimum, and maximum usage values.
+        labeled_step: Boolean; Determines whether to return the output of `step()` calls using tuples or a labeled dict.
+        multi_threaded_rendering: Boolean; Configures whether rendering operates asynchronously using threads.
+        plot_rewards: Boolean; Indicates whether to plot rewards during render.
+        activate_test_baseline_mode: Boolean; Configures whether the test baseline mode is active,
+        which will force all actions to be 1.
+    """
+
     def __init__(
             self,
             state_selector=None,
@@ -36,7 +72,7 @@ class CircularFluidNetwork(AbstractFluidNetworkEnv):
         self._state_selector = state_selector if state_selector is not None else [0, 1, 2, 3]
         self._observation_selector = observation_selector if observation_selector is not None else [[0, 1], [2, 3]]
         super().__init__(
-            state_space=spaces.Box(low=-500, high=500, shape=(len(self._state_selector),)),  # TODO make this dynamic based on a parameter
+            state_space=spaces.Box(low=-500, high=500, shape=(len(self._state_selector),)),
             observation_spaces=(
                 [spaces.Box(low=-500, high=500, shape=(len(obs),)) for obs in self._observation_selector]
             ),

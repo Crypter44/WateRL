@@ -9,8 +9,36 @@ from mushroom_rl.utils.parameters import to_parameter
 from Mushroom.environments.mdp_info import MAMDPInfo
 from Mushroom.utils.replay_memories import ReplayMemoryObsMultiAgent
 
-
 class IDDPG(DeepAC):
+    """
+    Represents the IDDPG (Independent Deep Deterministic Policy Gradient) algorithm.
+
+    This class implements the IDDPG algorithm. It inherits from the
+    DeepAC base class from MushroomRl and simply extends the DDPG implementation of MushroomRl to support
+    Multi-Agent Systems.
+
+    Attributes:
+        agent_idx (int): Index of the agent in the multi-agent system.
+        _actor_params (dict): Parameters for the actor network.
+        _actor_optimizer_params (dict): Parameters for the actor optimizer.
+        _critic_params (dict): Parameters for the critic network.
+        _critic_fit_params (dict): Parameters for fitting the critic.
+        _actor_predict_params (dict): Parameters for actor predictions.
+        _critic_predict_params (dict): Parameters for critic predictions.
+        _batch_size (Parameter): Batch size of the training dataset.
+        _tau (Parameter): Soft update coefficient for target networks.
+        _critic_tau (Parameter or None): Custom soft update coefficient for critic (if any).
+        _policy_delay (Parameter): Delay frequency for policy updates.
+        _fit_count (int): Counter for the number of training iterations.
+        _initial_replay_size (int): Minimum number of samples in the replay memory before training.
+        _replay_memory (ReplayMemoryObsMultiAgent): Replay buffer for storing experiences.
+        _critic_approximator (Regressor): Critic network regressor.
+        _target_critic_approximator (Regressor): Target critic network regressor.
+        _actor_approximator (Regressor): Actor network regressor.
+        _target_actor_approximator (Regressor): Target actor network regressor.
+        _debug_logging (bool): Flag for enabling debug information logging.
+        _debug_info (dict): Debug metrics recorded during training.
+    """
     def __init__(
             self,
             agent_idx: int,

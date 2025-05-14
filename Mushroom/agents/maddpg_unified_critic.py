@@ -10,7 +10,32 @@ from mushroom_rl.core import Agent
 
 class UnifiedCriticMADDPG(Agent):
     """
-    MADDPG Discrete Agent with a centralised critic common to all agents.
+    UnifiedCriticMADDPG extends the MADDPG algorithm to support a unified critic network.
+
+    The unified critic network is shared among multiple agents, with backpropagation from a common q-value back to the agents.
+
+    Attributes:
+        _batch_size (int): Number of samples per batch used during training.
+        _replay_memory (ReplayBuffer): Replay memory for storing experiences.
+        _target_update_frequency (int): Frequency of target network hard update.
+        _tau (float): Interpolation factor for soft updates.
+        _warmup_replay_size (int): Number of experiences to collect before starting to train.
+        _target_update_mode (str): Target update mode, either 'soft' or 'hard'.
+        _grad_norm_clip (float): Maximum permissible L2 norm for gradient clipping.
+        _scale_critic_loss (bool): Flag to normalize critic loss by the number of agents.
+        _scale_actor_loss (bool): Flag to normalize actor loss by the number of agents.
+        _obs_last_action (bool): Indicates whether the observation includes the last chosen action.
+        _host_agents (list[Agent]): List of agents sharing the unified critic network.
+        _use_cuda (bool): Indicates if CUDA should be used for computations.
+        _n_updates (int): Counter maintaining the number of update steps applied.
+        critic_approximator (TorchApproximator): Torch-based critic approximator for value estimation.
+        target_critic_approximator (TorchApproximator): Target network counterpart for the critic.
+        actor_params (list[torch.nn.parameter.Parameter]): Actor network parameters of all host agents.
+        critic_params (generator): Generator object for critic network parameters.
+        _actor_optimizer (torch.optim.Optimizer): Optimizer for updating actor networks.
+        _critic_optimizer (torch.optim.Optimizer): Optimizer for updating critic network.
+        _debug_logging (bool): Enables/disables debug logging during training.
+        _debug_info (dict): Dictionary storing various debugging metrics during training.
     """
 
     def __init__(

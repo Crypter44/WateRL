@@ -13,6 +13,13 @@ from sofirpy.simulation.simulation import System
 
 
 class ResettableFmu(Fmu):
+    """
+    This class overrides the Fmu of Sofirpy to allow quick resource-saving resets of the FMU.
+
+    This class also fixes a storage leak in the FMU2Slave class of fmpy. The unzip directory of the FMU is cleared when
+    the FMU is finalized. This is important if many FMUs are used in a simulation, as the unzip directory is not cleared by fmpy.
+    In the case of a reset, the unzip directory is reused, so the FMU does not need to be unzipped again.
+    """
     def initialize(self, start_values: dict[str, co.StartValue]) -> None:
         """Initialize the fmu.
 

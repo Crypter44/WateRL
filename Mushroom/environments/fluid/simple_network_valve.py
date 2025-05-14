@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -9,7 +10,16 @@ from Sofirpy.networks.simple_network.config import get_simple_network_valve_conf
 from Sofirpy.simulation import ManualStepSimulator
 
 class SimpleNetworkValve(AbstractFluidNetworkEnv):
+    """
+    WARNING: This environment is not supported anymore.
+    This is a simple network environment where the agent controls a valve.
+
+    It is a simple test environment for the fluid network simulator.
+    """
     def __init__(self, gamma: float, horizon: int, fluid_network_simulator_args: dict = None):
+        warnings.warn(
+            "This environment is not supported, use at your own risk."
+        )
         super().__init__(
             observation_space=spaces.Box(low=-10, high=10, shape=(2,)),
             action_space=spaces.Box(low=0, high=1, shape=(1,)),

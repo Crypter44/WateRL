@@ -15,10 +15,29 @@ from aryaman import Agent, GaussianPolicy
 
 class MixerDDPG(Agent):
     """
-    Deep Deterministic Policy Gradient algorithm.
-    "Continuous Control with Deep Reinforcement Learning".
-    Lillicrap T. P. et al.. 2016.
+    This MixerDDPG implementation is used for multi-agent environments with centralized training.
 
+    This agent supports the use of a mixer for the critic network. In this case, the fit method
+    should be called on the mixer agent. The MixerDDPG will only be used to update the target networks.
+
+    Attributes:
+        _batch_size (int): The size of the mini-batches sampled from
+            the replay memory.
+        _target_update_frequency (int): Frequency of target network updates.
+        _tau (float): Soft update parameter to control the interpolation
+            between target and online network weights during updates.
+        _warmup_replay_size (int): Minimum size of replay memory required
+            before learning starts.
+        _use_mixer (bool): Defines whether a mixer is used.
+        _use_cuda (bool): Indicates whether CUDA is used for training.
+        _replay_memory: Memory to store experiences sampled for training.
+        _n_updates (int): Counter for the number of updates performed.
+        _primary_agent: Reference to the primary agent in multi-agent setups.
+        actor_approximator: Neural network representing the actor.
+        target_actor_approximator: Copy of the actor used for stable training.
+        critic_approximator: Neural network representing the critic.
+        target_critic_approximator: Copy of the critic used for stable training.
+        _optimizer: Optimizer used for updating the actor network.
     """
 
     def __init__(

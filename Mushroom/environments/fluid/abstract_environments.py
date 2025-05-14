@@ -11,6 +11,9 @@ from Sofirpy.simulation import ManualStepSimulator
 
 
 class AbstractEnvironment(MAEnvironment):
+    """
+    Abstract class for multi-agent environments.
+    """
     def __init__(self, mdp_info: MAMDPInfo):
         super().__init__(mdp_info)
 
@@ -25,6 +28,9 @@ class AbstractEnvironment(MAEnvironment):
 
 
 class AbstractFluidNetworkEnv(AbstractEnvironment):
+    """
+    Abstract class for fluid network environments.
+    """
     def __init__(
             self,
             state_space: spaces.Box,

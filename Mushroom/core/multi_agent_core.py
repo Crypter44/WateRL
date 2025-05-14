@@ -7,6 +7,7 @@ class Core(object):
     """
     Implements the functions to run a generic algorithm.
 
+    This core uses tuples for state, action, reward, next_state, absorbing, ...
     """
 
     def __init__(

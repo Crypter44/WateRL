@@ -4,6 +4,9 @@ from torch.nn import functional as F
 
 
 class CriticNetwork(nn.Module):
+    """
+    Critic network
+    """
     def __init__(self, input_shape, output_shape, n_features, agent_idx=-1, ma_critic=False, **kwargs):
         super().__init__()
 
@@ -41,6 +44,9 @@ class CriticNetwork(nn.Module):
 
 
 class MADDPGCriticNetwork(nn.Module):
+    """
+    Critic network for the Unified MADDPG algorithm
+    """
     def __init__(self, input_shape, output_shape, n_features, **kwargs):
         super().__init__()
 
@@ -68,6 +74,7 @@ class MADDPGCriticNetwork(nn.Module):
 
 
 class ActorNetwork(nn.Module):
+    """Actor network"""
     def __init__(self, input_shape, output_shape, n_features, agent_idx=-1, **kwargs):
         super(ActorNetwork, self).__init__()
 

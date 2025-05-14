@@ -7,10 +7,18 @@ from Mushroom.agents.iddpg import IDDPG
 from Mushroom.environments.mdp_info import MAMDPInfo
 
 
-# Define the neural networks for the actor and the critic
-
-
 class MADDPG(IDDPG):
+    """
+    A specialized agent class implementing MADDPG (Multi-Agent Deep Deterministic Policy Gradient).
+
+    The MADDPG class extends the IDDPG class for multi-agent environments.
+    It features a shared critic for each agent, which is trained on the global state and actions.
+
+    Attributes:
+    agent_idx (int): An index representing the current agent's position among all agents.
+    agents (Optional[List[MADDPG]]): List of other agents in the environment, including itself.
+    """
+
     def __init__(
             self,
             agent_idx: int,

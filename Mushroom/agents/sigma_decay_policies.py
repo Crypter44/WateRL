@@ -8,6 +8,24 @@ from scipy.stats import stats
 
 
 class Decay:
+    """
+    Represents a decay system for adjusting values based on defined checkpoints.
+
+    The Decay class allows gradual transition of a parameter's value through a series
+    of checkpoints over time. It supports linear and exponential decay types, providing
+    flexibility for various use cases in parameter scheduling. The class maintains the
+    current value, the next checkpoint, and tracks the number of updates performed.
+
+    Attributes:
+        checkpoints (list[tuple[int, float]]): A list of checkpoints, where each checkpoint
+            is a tuple containing the number of updates at which the checkpoint occurs and
+            the value to be reached at that checkpoint.
+        next_checkpoint (tuple[int, float]): The next checkpoint to transition to, updated
+            dynamically as checkpoints are completed.
+        current (float): The current value of the parameter, updated based on the decay logic.
+        num_updates (int): The number of updates that have occurred so far.
+        decay_type (str): The type of decay to use, either 'linear' or 'exponential'.
+    """
     def __init__(self, checkpoints, decay_type='linear'):
         self.checkpoints = deepcopy(checkpoints)
         self.next_checkpoint = self.checkpoints.pop(0)
@@ -16,6 +34,23 @@ class Decay:
         self.decay_type = decay_type
 
     def decay(self):
+        """
+        Controls the decay behavior for a variable dependent on checkpoints and decay type.
+
+        The method manages updates of the internal value `current` based on predefined
+        checkpoints and the decay type. It either applies linear or exponential decay upon
+        certain conditions and raises an error if an invalid decay type is encountered.
+
+        Raises
+        ------
+        ValueError
+            If the decay type is not 'linear' or 'exponential'.
+
+        Returns
+        -------
+        float
+            The current updated value after applying the appropriate decay logic.
+        """
         if self.num_updates == self.next_checkpoint[0]:
             self.current = self.next_checkpoint[1]
             if len(self.checkpoints) > 0:
@@ -32,9 +67,15 @@ class Decay:
         return self.current
 
     def _decay_linear(self):
+        """
+        Applies linear decay to the current value based on the next checkpoint.
+        """
         self.current += (self.next_checkpoint[1] - self.current) / self._updates_till_next_checkpoint()
 
     def _decay_exponential(self):
+        """
+        Applies exponential decay to the current value based on the next checkpoint.
+        """
         self.current *= (self.next_checkpoint[1] / self.current) ** (1 / self._updates_till_next_checkpoint())
 
     def _updates_till_next_checkpoint(self):
@@ -44,6 +85,9 @@ class Decay:
         return self.current
 
     def skip_to_next_checkpoint(self):
+        """
+        Skips to the next checkpoint in the decay process.
+        """
         self.current = self.next_checkpoint[1]
         if len(self.checkpoints) > 0:
             self.next_checkpoint = self.checkpoints.pop(0)
@@ -71,6 +115,25 @@ class OUPolicyWithNoiseDecay(OrnsteinUhlenbeckPolicy):
 
 
 class UnivariateGaussianPolicy(GaussianPolicy):
+    """
+    Represents a univariate Gaussian policy for action sampling in reinforcement learning.
+
+    This class defines a univariate Gaussian policy.
+    It allows for dynamic adjustments of the variance based on a specified decay schedule
+    or provided checkpoints.
+
+    Attributes:
+        _sigma : float
+            Current standard deviation of the Gaussian policy.
+        _inv_sigma : float
+            Inverse of the current standard deviation for computational efficiency.
+        _sigma_decay : Decay
+            An instance of the Decay class handling the decay behavior of the variance.
+        _sigma_tmp : float
+            A temporary storage for the latest active sigma, used in noise activation/deactivation.
+        _approximator : Any
+            A function or model used to approximate the mean value (mu) based on the state.
+    """
     def __init__(
             self,
             mu=None,
@@ -142,6 +205,9 @@ class UnivariateGaussianPolicy(GaussianPolicy):
 
 
 def set_noise_for_all(agents, active):
+    """
+    Disable or enable noise for all agents.
+    """
     # Ensure agents is always iterable
     for agent in (agents if hasattr(agents, '__iter__') and not isinstance(agents, (str, bytes)) else [agents]):
         if active:
